@@ -13,7 +13,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 
-
+#include "pcl/kdtree/kdtree_flann.h"
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/io.h>
@@ -38,6 +38,7 @@ int
   typedef pcl::PointXYZRGB    Point;
   typedef pcl::KdTree<Point>::Ptr KdTreePtr;    
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
+pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
   // Fill in the cloud data
   pcl::PCDReader reader;
@@ -57,10 +58,10 @@ int
   std::cerr << *cloud_filtered << std::endl;
 
   pcl::PCDWriter writer;
-  writer.write<pcl::PointXYZRGB> ("inliers.pcd", *cloud_filtered, false);
     pcl::PassThrough<Point> pass_;
  pass_.setInputCloud (cloud_filtered);
   pass_.filter (*cloud_filtered2);
+  writer.write<pcl::PointXYZRGB> ("inliers.pcd", *cloud_filtered2, false);
   // release sor.
 //  sor.setNegative (true);
 //  sor.filter (*cloud_filtered);
@@ -69,7 +70,7 @@ int
    pcl::NormalEstimation<Point, pcl::Normal> n3d_;
      KdTreePtr normals_tree_, clusters_tree_;
   normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
-  clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
+//  clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
 pcl::PointCloud<pcl::Normal> cloud_normals;
   // Normal estimation parameters
   n3d_.setKSearch (10);  
@@ -77,6 +78,13 @@ pcl::PointCloud<pcl::Normal> cloud_normals;
    n3d_.setInputCloud (cloud_filtered2);
   n3d_.compute (cloud_normals); 
   writer.write<pcl::Normal> ("normals.pcd", cloud_normals, false);
+ pcl::concatenateFields (*cloud_filtered2, cloud_normals, *final_cloud);
+  writer.write<pcl::PointXYZRGBNormal> ("xyzRGBnormals.pcd", *final_cloud, false);
+ 
+  pcl::KdTreeFLANN<Point> nnFinder;
+  nnFinder.setInputCloud(final_cloud);
+
+
   return (0);
 }
 /* ]--- */
