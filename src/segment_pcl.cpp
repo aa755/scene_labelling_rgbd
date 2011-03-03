@@ -42,8 +42,12 @@ int
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
+int stage=3;
   // Fill in the cloud data
   pcl::PCDReader reader;
+  pcl::PCDWriter writer;
+  if(stage<=1)
+{
   reader.read<pcl::PointXYZRGB> ("/home/aa755/combined.pcd", *cloud);
 
 
@@ -59,16 +63,22 @@ pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pc
   std::cerr << "Cloud after filtering: " << std::endl;
   std::cerr << *cloud_filtered << std::endl;
 
-  pcl::PCDWriter writer;
+
     pcl::PassThrough<Point> pass_;
  pass_.setInputCloud (cloud_filtered);
   pass_.filter (*cloud_filtered2);
   writer.write<pcl::PointXYZRGB> ("inliers.pcd", *cloud_filtered2, false);
+}
+else if(stage==2)
+{
+  reader.read<pcl::PointXYZRGB> ("inliers.pcd", *cloud_filtered2);
+}
   // release sor.
 //  sor.setNegative (true);
 //  sor.filter (*cloud_filtered);
 //  writer.write<pcl::PointXYZRGB> ("outliers.pcd", *cloud_filtered, false);
-
+if(stage<=2)
+{
    pcl::NormalEstimation<Point, pcl::Normal> n3d_;
      KdTreePtr normals_tree_, clusters_tree_;
   normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
@@ -82,25 +92,30 @@ pcl::PointCloud<pcl::Normal> cloud_normals;
   writer.write<pcl::Normal> ("normals.pcd", cloud_normals, false);
  pcl::concatenateFields (*cloud_filtered2, cloud_normals, *final_cloud);
   writer.write<pcl::PointXYZRGBNormal> ("xyzRGBnormals.pcd", *final_cloud, false);
- 
-  pcl::KdTreeFLANN<pcl::PointXYZRGBNormal> nnFinder;
-  nnFinder.setInputCloud(final_cloud);
+}
+else
+  reader.read<pcl::PointXYZRGBNormal> ("xyzRGBnormals.pcd", *final_cloud);
+  
   size_t numPoints=final_cloud->size();
   std::cerr << "number of points : " << numPoints<<std::endl;
   std::vector<int> k_indices;
   std::vector<float> k_distances;
 
+  pcl::KdTreeFLANN<pcl::PointXYZRGBNormal> nnFinder;
+  nnFinder.setInputCloud(final_cloud);
 
-  size_t *numNeighbors=new size_t[numPoints];
+
+ // size_t *numNeighbors=new size_t[numPoints];
   ofstream myfile;
-  myfile.open ("numNeighbors.txt");
+  myfile.open ("numNeighbors.005.txt");
+  int numNeighbors;
   for(size_t i=1;i<numPoints;i++)
   {
-    numNeighbors[i]=nnFinder.radiusSearch(i,0.01,k_indices,k_distances,20);
-    myfile << numNeighbors[i]<<endl;
+    numNeighbors=nnFinder.radiusSearch(i,0.005,k_indices,k_distances,20);
+    myfile << numNeighbors<<endl;
   }
   myfile.close();
-
+ 
   return (0);
 }
 /* ]--- */
