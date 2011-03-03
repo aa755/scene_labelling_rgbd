@@ -8,7 +8,7 @@
 #include <string>
 
 #include <ros/ros.h>
-
+#include <algorithm>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
@@ -32,7 +32,20 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 using namespace std;
+
+float sqrG(float y)
+{
+    return y*y;
+}
+float distanceG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
+{
+    float ans=sqrG(p1.x-p2.x)+sqrG(p1.y-p2.y)+sqrG(p1.z-p2.z);//+sqrG(p1.normal_x-p2.normal_x);
+    ans=sqrt(ans);
+    return ans;
+
+}
 /* ---[ */
 int
   main (int argc, char** argv)
@@ -108,12 +121,28 @@ else
  // size_t *numNeighbors=new size_t[numPoints];
   ofstream myfile;
   myfile.open ("numNeighbors.005.txt");
-  int numNeighbors;
-  for(size_t i=1;i<numPoints;i++)
+  size_t numNeighbors;
+  
+//  for(size_t i=1;i<numPoints;i++)
+//  {
+    numNeighbors=nnFinder.radiusSearch(4,0.01,k_indices,k_distances,20);
+  std::cerr << "number of points : " << numNeighbors<<std::endl;
+  std::sort(k_indices.begin(),k_indices.end());
+  for(size_t i=0;i<numNeighbors;i++)
   {
-    numNeighbors=nnFinder.radiusSearch(i,0.005,k_indices,k_distances,20);
-    myfile << numNeighbors<<endl;
+    std::cerr <<"," << k_indices[i];
   }
+  std::cerr<<std::endl<<"brute"<<endl;
+  
+  for(size_t i=0;i<numPoints;i++)
+  {
+//    myfile << k_indices[i] <<" "<< distanceG(final_cloud->points[1],final_cloud->points[k_indices[i]])<<" "<< k_distances[i]<<endl;
+       if(distanceG(final_cloud->points[4],final_cloud->points[i])<0.01)
+           std::cerr<<","<<i;
+//    myfile << k_indices[i] <<" "<< final_cloud->points[1]<<","<<final_cloud->points[k_indices[i]]<<" "<< k_distances[i]<<endl;
+
+  }
+  std::cerr<<std::endl;
   myfile.close();
  
   return (0);
