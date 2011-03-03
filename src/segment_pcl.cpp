@@ -30,7 +30,9 @@
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/segmentation/extract_clusters.h>
 
-
+#include <iostream>
+#include <fstream>
+using namespace std;
 /* ---[ */
 int
   main (int argc, char** argv)
@@ -81,9 +83,23 @@ pcl::PointCloud<pcl::Normal> cloud_normals;
  pcl::concatenateFields (*cloud_filtered2, cloud_normals, *final_cloud);
   writer.write<pcl::PointXYZRGBNormal> ("xyzRGBnormals.pcd", *final_cloud, false);
  
-  pcl::KdTreeFLANN<Point> nnFinder;
+  pcl::KdTreeFLANN<pcl::PointXYZRGBNormal> nnFinder;
   nnFinder.setInputCloud(final_cloud);
+  size_t numPoints=final_cloud->size();
+  std::cerr << "number of points : " << numPoints<<std::endl;
+  std::vector<int> k_indices;
+  std::vector<float> k_distances;
 
+
+  size_t *numNeighbors=new size_t[numPoints];
+  ofstream myfile;
+  myfile.open ("numNeighbors.txt");
+  for(size_t i=1;i<numPoints;i++)
+  {
+    numNeighbors[i]=nnFinder.radiusSearch(i,0.01,k_indices,k_distances,20);
+    myfile << numNeighbors[i]<<endl;
+  }
+  myfile.close();
 
   return (0);
 }
