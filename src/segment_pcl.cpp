@@ -83,7 +83,7 @@ public:
 
     float getFloatRep()
     {
-        int color=(((int)r/255)<<16)+(((int)g/255)<<8)+(((int)b/255));
+        int color=(((int)r*255)<<16)+(((int)g*255)<<8)+(((int)b*255));
         return *reinterpret_cast<float*>(&color);
     }
 
@@ -234,27 +234,30 @@ else
         std::cerr<<" num_edges: "<<edges.size()<<endl;
 	clock_t end=clock();
   std::cerr << "Time elapsed: " << double(diffclock(end,begin)) << " ms"<< endl;
-    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 10);
+    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 0.1);
 	end=clock();
   std::cerr << "Time elapsed after segmentation: " << double(diffclock(end,begin)) << " ms"<< endl;
         vector<int> colors;
-        colors.reserve(numPoints);
+        //colors.reserve(numPoints);
         long value=0;
-        for(size_t i=0;i<numPoints;)
+        std::cerr << "started loop: " << double(diffclock(end,begin)) << " ms"<< endl;
+        for(size_t i=0;i<numPoints;i++)
         {
             value=value+72857234;
-            colors[i]=(int)value;
+            colors.push_back((int)value);
         }
 	end=clock();
         std::cerr << "finished generating random nos: " << double(diffclock(end,begin)) << " ms"<< endl;
         int comp;
-        for(size_t i=0;i<numPoints;)
+        for(size_t i=0;i<numPoints;i++)
         {
-            std::cerr<<i<<endl;
+//            std::cerr<<i<<endl;
             comp = u->find(i);
             ColorRGB tempc(comp);
             final_cloud->points[i].rgb=tempc.getFloatRep();
         }
+	end=clock();
+        std::cerr << "finished generating segmented pcd: " << double(diffclock(end,begin)) << " ms"<< endl;
 
   writer.write<pcl::PointXYZRGBNormal> ("Segmentation.pcd", *final_cloud, false);
 
