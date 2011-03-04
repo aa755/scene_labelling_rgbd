@@ -127,19 +127,28 @@ double diffclock(clock_t clock1,clock_t clock2)
 int
   main (int argc, char** argv)
 {
+   float thresh;
+    if(argc<3)
+        thresh=1.5;
+    else
+    {
+        thresh=atof(argv[2]);
+    }
+        std::cerr<<"using thresh of: "<<thresh<<endl;
+    
     float radius=0.01;
   typedef pcl::PointXYZRGB    Point;
   typedef pcl::KdTree<Point>::Ptr KdTreePtr;    
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
-int stage=3;
+int stage=1;
   // Fill in the cloud data
   pcl::PCDReader reader;
   pcl::PCDWriter writer;
   if(stage<=1)
 {
-  reader.read<pcl::PointXYZRGB> ("/home/aa755/combined.pcd", *cloud);
+  reader.read<pcl::PointXYZRGB> (argv[1], *cloud);
 
     pcl::PassThrough<Point> pass_;
  pass_.setInputCloud (cloud);
@@ -236,7 +245,7 @@ else
         std::cerr<<" num_edges: "<<edges.size()<<endl;
 	clock_t end=clock();
   std::cerr << "Time elapsed: " << double(diffclock(end,begin)) << " ms"<< endl;
-    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 1.8);
+    universe *u = segment_graph(numPoints, edges.size(), edges.data(), thresh);
 	end=clock();
   std::cerr << "Time elapsed after segmentation: " << double(diffclock(end,begin)) << " ms"<< endl;
         vector<int> colors;
