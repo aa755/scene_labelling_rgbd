@@ -6,7 +6,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <ros/ros.h>
 #include <string>
-
+#include "pcl/filters/extract_indices.h"
 #include <ros/ros.h>
 #include <algorithm>
 #include <sensor_msgs/PointCloud.h>
@@ -29,7 +29,15 @@
 #include <pcl/surface/convex_hull.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/radius_outlier_removal.h>
+#include "pcl/io/pcd_io.h"
+#include "pcl/point_types.h"
 
+#include "pcl/sample_consensus/method_types.h"
+#include "pcl/sample_consensus/model_types.h"
+#include "pcl/segmentation/sac_segmentation.h"
+#include "pcl/filters/voxel_grid.h"
+#include "pcl/filters/extract_indices.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -50,12 +58,13 @@ float distanceG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
 int
   main (int argc, char** argv)
 {
+    float radius=0.005;
   typedef pcl::PointXYZRGB    Point;
   typedef pcl::KdTree<Point>::Ptr KdTreePtr;    
- pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
+ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
-int stage=3;
+int stage=1;
   // Fill in the cloud data
   pcl::PCDReader reader;
   pcl::PCDWriter writer;
@@ -63,23 +72,27 @@ int stage=3;
 {
   reader.read<pcl::PointXYZRGB> ("/home/aa755/combined.pcd", *cloud);
 
+    pcl::PassThrough<Point> pass_;
+ pass_.setInputCloud (cloud);
+  pass_.filter (*cloud_filtered);
 
   // Fill in the cloud data
 
   // Create the filtering object
   pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-  sor.setInputCloud (cloud);
+  sor.setInputCloud (cloud_filtered);
   sor.setMeanK (50);
   sor.setStddevMulThresh (1.0);
-  sor.filter (*cloud_filtered);
+  sor.filter (*cloud_filtered1);
 
-  std::cerr << "Cloud after filtering: " << std::endl;
-  std::cerr << *cloud_filtered << std::endl;
+  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> ror;
+  ror.setInputCloud (cloud_filtered1);
+  std::cerr << "before radius : " << cloud_filtered1->size()<<std::endl;
+  ror.setRadiusSearch(0.999*radius);
+  ror.setMinNeighborsInRadius(2);
+  ror.filter (*cloud_filtered2);
+  std::cerr << "after radius : " <<cloud_filtered2->size()<<std::endl;
 
-
-    pcl::PassThrough<Point> pass_;
- pass_.setInputCloud (cloud_filtered);
-  pass_.filter (*cloud_filtered2);
   writer.write<pcl::PointXYZRGB> ("inliers.pcd", *cloud_filtered2, false);
 }
 else if(stage==2)
@@ -118,33 +131,23 @@ else
   nnFinder.setInputCloud(final_cloud);
 
 
- // size_t *numNeighbors=new size_t[numPoints];
   ofstream myfile;
   myfile.open ("numNeighbors.005.txt");
   size_t numNeighbors;
-  
-//  for(size_t i=1;i<numPoints;i++)
-//  {
-    numNeighbors=nnFinder.radiusSearch(4,0.01,k_indices,k_distances,20);
-  std::cerr << "number of points : " << numNeighbors<<std::endl;
-  std::sort(k_indices.begin(),k_indices.end());
-  for(size_t i=0;i<numNeighbors;i++)
-  {
-    std::cerr <<"," << k_indices[i];
-  }
-  std::cerr<<std::endl<<"brute"<<endl;
-  
+//  delete cloud;
+//  delete cloud_filtered;
+//  delete cloud_filtered2;
+//  pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+   //pcl::ExtractIndices<pcl::PointXYZ> extract;
+//   vector<int> isolated
   for(size_t i=0;i<numPoints;i++)
   {
-//    myfile << k_indices[i] <<" "<< distanceG(final_cloud->points[1],final_cloud->points[k_indices[i]])<<" "<< k_distances[i]<<endl;
-       if(distanceG(final_cloud->points[4],final_cloud->points[i])<0.01)
-           std::cerr<<","<<i;
-//    myfile << k_indices[i] <<" "<< final_cloud->points[1]<<","<<final_cloud->points[k_indices[i]]<<" "<< k_distances[i]<<endl;
-
+    numNeighbors=nnFinder.radiusSearch(i,radius,k_indices,k_distances,20);
+    myfile<<numNeighbors<<endl;
   }
-  std::cerr<<std::endl;
+  
   myfile.close();
- 
+
   return (0);
 }
 /* ]--- */
