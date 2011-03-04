@@ -83,7 +83,7 @@ public:
 
     float getFloatRep()
     {
-        int color=(((int)r*255)<<16)+(((int)g*255)<<8)+(((int)b*255));
+        int color=(((int)(r*255))<<16)+(((int)(g*255))<<8)+(((int)(b*255)));
         return *reinterpret_cast<float*>(&color);
     }
 
@@ -109,7 +109,9 @@ float weightG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
 {
     ColorRGB c1(p1.rgb);
     ColorRGB c2(p2.rgb);
-    float ans=c1.squaredError(c2)+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
+//    float ans=c1.squaredError(c2)+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
+    float ans=0.1*c1.squaredError(c2)+(1-sqrG(p1.normal_x*p2.normal_x+p1.normal_y*p2.normal_y+p1.normal_z*p2.normal_z));
+//    float ans=(c1.squaredError(c2));//+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
     return ans;
 
 }
@@ -125,7 +127,7 @@ double diffclock(clock_t clock1,clock_t clock2)
 int
   main (int argc, char** argv)
 {
-    float radius=0.005;
+    float radius=0.01;
   typedef pcl::PointXYZRGB    Point;
   typedef pcl::KdTree<Point>::Ptr KdTreePtr;    
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
@@ -178,7 +180,7 @@ if(stage<=2)
 //  clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
 pcl::PointCloud<pcl::Normal> cloud_normals;
   // Normal estimation parameters
-  n3d_.setKSearch (10);  
+  n3d_.setKSearch (50);
   n3d_.setSearchMethod (normals_tree_);
    n3d_.setInputCloud (cloud_filtered2);
   n3d_.compute (cloud_normals); 
@@ -234,17 +236,16 @@ else
         std::cerr<<" num_edges: "<<edges.size()<<endl;
 	clock_t end=clock();
   std::cerr << "Time elapsed: " << double(diffclock(end,begin)) << " ms"<< endl;
-    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 0.1);
+    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 1.8);
 	end=clock();
   std::cerr << "Time elapsed after segmentation: " << double(diffclock(end,begin)) << " ms"<< endl;
         vector<int> colors;
         //colors.reserve(numPoints);
-        long value=0;
         std::cerr << "started loop: " << double(diffclock(end,begin)) << " ms"<< endl;
         for(size_t i=0;i<numPoints;i++)
         {
-            value=value+72857234;
-            colors.push_back((int)value);
+            //value=value+72857234;
+            colors.push_back((int)random());
         }
 	end=clock();
         std::cerr << "finished generating random nos: " << double(diffclock(end,begin)) << " ms"<< endl;
@@ -253,7 +254,7 @@ else
         {
 //            std::cerr<<i<<endl;
             comp = u->find(i);
-            ColorRGB tempc(comp);
+            ColorRGB tempc(colors[comp]);
             final_cloud->points[i].rgb=tempc.getFloatRep();
         }
 	end=clock();
