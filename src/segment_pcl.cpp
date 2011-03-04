@@ -32,7 +32,10 @@
 #include <pcl/filters/radius_outlier_removal.h>
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
-
+#include "image.h"
+#include "misc.h"
+//#include "filter.h>
+#include "segment-graph.h"
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
@@ -41,12 +44,60 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <time.h>
+
 using namespace std;
 
 float sqrG(float y)
 {
     return y*y;
 }
+
+class ColorRGB
+{
+    float r;
+    float g;
+    float b;
+
+public:
+    ColorRGB(float rgb)
+    {
+        int rgbi=*reinterpret_cast<int*>(&rgb);
+        parseColorRGB(rgbi);
+    }
+
+    ColorRGB(int rgbi)
+    {
+        parseColorRGB(rgbi);
+    }
+
+    void parseColorRGB(int rgbi)
+    {
+        int ri=(rgbi&(0xff0000))>>16;
+        int gi=(rgbi&(0xff00))>>8;
+        int bi=(rgbi&(0xff));
+        r=ri/255.0;
+        g=gi/255.0;
+        b=bi/255.0;
+    }
+
+    float getFloatRep()
+    {
+        int color=(((int)r/255)<<16)+(((int)g/255)<<8)+(((int)b/255));
+        return *reinterpret_cast<float*>(&color);
+    }
+
+    float squaredError(ColorRGB c)
+    {
+        return sqrG(r-c.r)+sqrG(g-c.g)+sqrG(b-c.b);
+    }
+
+    void print()
+    {
+        std::cerr<<r*255<<" "<<g*255<<" "<<b*255<<endl;
+    }
+};
+
 float distanceG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
 {
     float ans=sqrG(p1.x-p2.x)+sqrG(p1.y-p2.y)+sqrG(p1.z-p2.z);//+sqrG(p1.normal_x-p2.normal_x);
@@ -54,6 +105,22 @@ float distanceG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
     return ans;
 
 }
+float weightG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
+{
+    ColorRGB c1(p1.rgb);
+    ColorRGB c2(p2.rgb);
+    float ans=c1.squaredError(c2)+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
+    return ans;
+
+}
+
+double diffclock(clock_t clock1,clock_t clock2)
+{
+	double diffticks=clock1-clock2;
+	double diffms=(diffticks*10)/CLOCKS_PER_SEC;
+	return diffms;
+}
+
 /* ---[ */
 int
   main (int argc, char** argv)
@@ -64,7 +131,7 @@ int
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
-int stage=1;
+int stage=3;
   // Fill in the cloud data
   pcl::PCDReader reader;
   pcl::PCDWriter writer;
@@ -132,7 +199,7 @@ else
 
 
   ofstream myfile;
-  myfile.open ("numNeighbors.005.txt");
+  myfile.open ("edges.txt");
   size_t numNeighbors;
 //  delete cloud;
 //  delete cloud_filtered;
@@ -140,13 +207,57 @@ else
 //  pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
    //pcl::ExtractIndices<pcl::PointXYZ> extract;
 //   vector<int> isolated
+  std::vector<edge> edges;
+  size_t nbr;
+  	clock_t begin=clock();
+                    edge tedg;//=new edge;
+
   for(size_t i=0;i<numPoints;i++)
   {
     numNeighbors=nnFinder.radiusSearch(i,radius,k_indices,k_distances,20);
-    myfile<<numNeighbors<<endl;
+    for(size_t j=0;j<numNeighbors;j++)
+    {
+
+        nbr=k_indices[j];
+        if(nbr>i)
+        {
+            tedg.a=i;
+            tedg.b=nbr;
+            tedg.w=weightG(final_cloud->points[i],final_cloud->points[nbr]);
+            myfile<<tedg.a<<","<<tedg.b<<","<<tedg.w<<endl;
+            edges.push_back(tedg);
+        }
+    }
+
   }
-  
   myfile.close();
+        std::cerr<<" num_edges: "<<edges.size()<<endl;
+	clock_t end=clock();
+  std::cerr << "Time elapsed: " << double(diffclock(end,begin)) << " ms"<< endl;
+    universe *u = segment_graph(numPoints, edges.size(), edges.data(), 10);
+	end=clock();
+  std::cerr << "Time elapsed after segmentation: " << double(diffclock(end,begin)) << " ms"<< endl;
+        vector<int> colors;
+        colors.reserve(numPoints);
+        long value=0;
+        for(size_t i=0;i<numPoints;)
+        {
+            value=value+72857234;
+            colors[i]=(int)value;
+        }
+	end=clock();
+        std::cerr << "finished generating random nos: " << double(diffclock(end,begin)) << " ms"<< endl;
+        int comp;
+        for(size_t i=0;i<numPoints;)
+        {
+            std::cerr<<i<<endl;
+            comp = u->find(i);
+            ColorRGB tempc(comp);
+            final_cloud->points[i].rgb=tempc.getFloatRep();
+        }
+
+  writer.write<pcl::PointXYZRGBNormal> ("Segmentation.pcd", *final_cloud, false);
+
 
   return (0);
 }
