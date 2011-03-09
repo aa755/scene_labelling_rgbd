@@ -13,6 +13,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 
+
 #include "pcl/kdtree/kdtree_flann.h"
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -249,12 +250,17 @@ else
 	end=clock();
   std::cerr << "Time elapsed after segmentation: " << double(diffclock(end,begin)) << " ms"<< endl;
         vector<int> colors;
-        //colors.reserve(numPoints);
+        vector<int> counts;
+        vector<int> segmentIndices;
+        colors.reserve(numPoints);
+        counts.reserve(numPoints);
+        segmentIndices.reserve(numPoints);
         std::cerr << "started loop: " << double(diffclock(end,begin)) << " ms"<< endl;
         for(size_t i=0;i<numPoints;i++)
         {
             //value=value+72857234;
             colors.push_back((int)random());
+            counts.push_back(0);
         }
 	end=clock();
         std::cerr << "finished generating random nos: " << double(diffclock(end,begin)) << " ms"<< endl;
@@ -263,12 +269,25 @@ else
         {
 //            std::cerr<<i<<endl;
             comp = u->find(i);
+            counts[comp]=counts[comp]+1;
             ColorRGB tempc(colors[comp]);
             final_cloud->points[i].rgb=tempc.getFloatRep();
+            segmentIndices.push_back(comp);
+            
         }
+        pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+
 	end=clock();
         std::cerr << "finished generating segmented pcd: " << double(diffclock(end,begin)) << " ms"<< endl;
+      myfile.open ("counts.txt");
+        sort(counts.begin(),counts.end());
+        for(size_t i=0;i<numPoints;i++)
+        {
+            myfile<<counts[i]<<endl;
+        }
+      myfile.close();
 
+        
   writer.write<pcl::PointXYZRGBNormal> ("Segmentation.pcd", *final_cloud, false);
 
 
