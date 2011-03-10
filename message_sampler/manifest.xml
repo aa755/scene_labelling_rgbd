@@ -1,0 +1,29 @@
+<package>
+  <description brief="message_sampler">
+
+     message_sampler
+
+  </description>
+  <author>Hema Koppula</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/message_sampler</url>
+
+  <depend package="tf"/>
+  <depend package="tf2"/>
+  <depend package="pcl"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="eigen"/>
+  <depend package="pcl_ros"/>
+  <depend package="opencv2"/>
+  <depend package="cv_bridge"/>
+  <depend package="sensor_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="image_geometry"/>
+  <depend package="pcl_ros"/>
+
+
+</package>
+
+
