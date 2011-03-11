@@ -63,7 +63,7 @@ class OpenNIListener  {
                          const s::PointCloud2ConstPtr& t_point_cloud 
                          );
   
-    static const int radius=0.01;
+    static const double radius=0.01;
   protected:
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudMerged;
       bool firstFrame;
@@ -80,6 +80,8 @@ class OpenNIListener  {
     //bool pause_;
     //bool first_frame_;
     ros::Subscriber sub_;
+               pcl::PCDWriter writer;
+
 
 };
 
