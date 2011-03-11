@@ -49,103 +49,6 @@ boost::numeric::ublas::matrix<double> transformAsMatrix(const tf::Transform& bt)
 
 using namespace cv;
 
-float sqrG(float y)
-{
-    return y*y;
-}
-
-class VectorG
-{
-    double v[3];
-public:
-    VectorG()
-    {
-        
-    }
-    VectorG(double unitX,double unitY, double unitZ , bool normalize_=false)
-    {
-        v[0]=unitX;
-        v[1]=unitY;
-        v[2]=unitZ;
-
-        if(normalize_)
-        {
-            normalize();
-        }
-
-    }
-    void normalize()
-    {
-            double norm=getNorm();
-            for(int i=0;i<3;i++)
-                v[i]=v[i]/norm;
-    }
-
-    double getNorm()
-    {
-        return sqrt(sqrG(v[0])+sqrG(v[1])+sqrG(v[2]));
-    }
-    
-    double dotProduct(VectorG v2g)
-    {
-        double sum=0;
-        for(int i=0;i<3;i++)
-            sum=sum+v[i]*v2g.v[i];
-        return sum;
-    }
-
-    VectorG subtract(VectorG v2g)
-    {
-        VectorG out;
-        for(int i=0;i<3;i++)
-            out.v[i]=v[i]-v2g.v[i];
-        return out;
-
-    }
-
-};
-
-class TransformG
-{
-public:
-    boost::numeric::ublas::matrix<double>  transformMat;
-
-    
-    TransformG(const tf::Transform& bt)
-    {
-        transformMat=transformAsMatrix(bt);
-    }
-
-    VectorG getXUnitVector()
-    {
-        return getIthRow(0);
-    }
-
-    VectorG getZUnitVector()
-    {
-        return getIthRow(2);
-    }
-
-    VectorG getIthRow(int i)
-    {
-        return VectorG(transformMat(i,0),transformMat(i,1),transformMat(i,2));
-    }
-
-    VectorG getOrigin()
-    {
-        return VectorG(transformMat(0,3),transformMat(1,3),transformMat(2,3));
-    }
-
-    void print()
-    {
-        for(int i=0;i<4;i++)
-        {
-            for(int j=0;j<4;j++)
-                std::cerr<<transformMat(i,j);
-            std::cerr<<endl;
-        }
-    }
-};
 
 
 void transformPointCloud (const Eigen::Matrix4f &transform, const sensor_msgs::PointCloud2 &in,
@@ -363,7 +266,7 @@ void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  po
      {
          *cloudMerged+=*cloudTemp;
          if(count>20)
-        //writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
+        writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
         std::cerr<<"wrote  pcl countaining "<< cloudMerged->size()<<" "<<count<<endl;
          
      }
