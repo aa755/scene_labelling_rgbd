@@ -4,7 +4,7 @@
  * - a ROS Node, 
  * - a ROS listener, listening to and processing kinect data
  */
-#include "openni_listener.h"
+
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -182,6 +182,29 @@ btVector3 getVector3(geometry_msgs::Vector3 v)
     return btVector3(v.x,v.y,v.z);
 
 }
+    typedef pcl::PointXYZRGB PointT ;
+
+void applyFilters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr,pcl::PointCloud<pcl::PointXYZRGB>::Ptr outp )
+{
+ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ());
+
+  pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+ 
+  sor.setInputCloud (inp_cloud_ptr);
+  std::cerr << "initially : " << inp_cloud_ptr->size()<<std::endl;
+
+  sor.setMeanK (50);
+  sor.setStddevMulThresh (1.0);
+  sor.filter (*cloud_filtered);
+
+  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> ror;
+  ror.setInputCloud (cloud_filtered);
+  std::cerr << "before radius : " << cloud_filtered->size()<<std::endl;
+  ror.setRadiusSearch(0.01);
+  ror.setMinNeighborsInRadius(2);
+  ror.filter (*outp);
+  std::cerr << "after radius : " <<outp->size()<<std::endl;
+}
 int main(int argc, char** argv)
 {
 //  ros::init(argc, argv,"hi");
@@ -190,40 +213,77 @@ int main(int argc, char** argv)
     std::cerr<<"opening "<<argv[1]<<endl;
     bag.open(argv[1], rosbag::bagmode::Read);
 
-    std::vector<std::string> topics;
-    topics.push_back(std::string("/tf"));
-    topics.push_back(std::string("/rgbdslam/my_clouds"));
-    rosbag::View view(bag, rosbag::TopicQuery(topics));
+ //   std::vector<std::string> topics_tf;
+ //   std::vector<std::string> topics_pcl;
+//    topics_tf.push_back(std::string("/tf"));
+  //  topics_pcl.push_back(std::string("/rgbdslam/my_clouds"));
+    rosbag::View view(bag, rosbag::TopicQuery("/rgbdslam/my_clouds"));
+    
+ pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ());
 
 
-    int count =0;
+    int tf_count =0;
+    int pcl_count=0;
+
     BOOST_FOREACH(rosbag::MessageInstance const m, view)
     {
         sensor_msgs::PointCloud2ConstPtr pcl_ptr = m.instantiate<sensor_msgs::PointCloud2>();
-        if(pcl_ptr==NULL)
-            std::cerr<<"null1"<<endl;
-        else
-            std::cerr<<count<<"time_pcl"<<pcl_ptr->header.stamp<<", frameid="/*<<pcl_ptr->header.frame_id*/<<endl;
+        assert(pcl_ptr!=NULL);
+        ros::Time ptime=pcl_ptr->header.stamp;
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"),ptime-ros::Duration(0,1),ptime+ros::Duration(0,100000000));
+        //std::cerr<<(view_tf.size())<<endl;
+        std::cerr<<pcl_ptr->header.frame_id<<endl;;
+        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
+        tf_count=0;
+
+        tf::Transform final_tft;
 
 
-        tf::tfMessageConstPtr tf_ptr = m.instantiate<tf::tfMessage>();
-        std::vector<geometry_msgs::TransformStamped> bt;
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage>();
+            assert(tf_ptr!=NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation),getVector3(bt[0].transform.translation));
+            final_tft=tft;
 
-        if(tf_ptr==NULL)
-            std::cerr<<"null2"<<endl;
+         //  transG.print();
+            if(ptime==bt[0].header.stamp)
+            {
+                tf_count++;
+                std::cerr<<"tf qid:"<<bt[0].header.seq<<endl;
+            }
+            assert(tf_count<=1);
+        }
+
+        if (tf_count == 1) {
+            pcl_count++;
+            TransformG transG(final_tft);
+            pcl::PointCloud<PointT> inp_cloud;
+            pcl::fromROSMsg(*pcl_ptr, inp_cloud);
+            pcl::PointCloud<PointT>::Ptr inp_cloud_ptr(new pcl::PointCloud<PointT > (inp_cloud));
+            applyFilters(inp_cloud_ptr,cloud_filtered);
+
+            if(pcl_count==1)
+                *final_cloud = *cloud_filtered;
+            else if(pcl_count%20==1)
+                *final_cloud += *cloud_filtered;
+        }
         else
         {
-          //  tf::StampedTransform tf1(bt[0]);
-            tf_ptr->get_transforms_vec(bt);
-            TransformG transG(tf::Transform(getQuaternion(bt[0].transform.rotation),getVector3(bt[0].transform.translation)));
-        std::cerr<<count<<"time_tf"<<bt[0].header.stamp<<", frameid="/*<<pcl_ptr->header.frame_id*/<<endl;
-            transG.print();
+            std::cerr<<"no tf found";
         }
-        count++;
-        
+
+ 
     }
+            applyFilters(final_cloud,cloud_filtered);
 
     bag.close();
+                   pcl::PCDWriter writer;
+
+            writer.write<PointT> ("/home/aa755/VisibilityMerged.pcd", *cloud_filtered, false);
+            
 //  ros::NodeHandle n;
   //Instantiate the kinect image listener
 /*  OpenNIListener kinect_listener(n,

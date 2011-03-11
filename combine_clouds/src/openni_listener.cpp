@@ -206,32 +206,7 @@ void OpenNIListener::Callback (const sensor_msgs::PointCloud2ConstPtr&  point_cl
    ROS_INFO ("Got the msg");
 }
 
-void applyFilters(const sensor_msgs::PointCloud2ConstPtr& sinp,pcl::PointCloud<pcl::PointXYZRGB>::Ptr outp )
-{
- pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ());
 
-  pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-    pcl::PointCloud<pcl::PointXYZRGB> inp_cloud;
-  pcl::fromROSMsg (*sinp, inp_cloud);
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB> (inp_cloud));
- /*
-  sor.setInputCloud (inp_cloud_ptr);
-  std::cerr << "initially : " << inp_cloud_ptr->size()<<std::endl;
-  
-  sor.setMeanK (50);
-  sor.setStddevMulThresh (1.0);
-  sor.filter (*cloud_filtered);
-
-  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> ror;
-  ror.setInputCloud (cloud_filtered);
-  std::cerr << "before radius : " << cloud_filtered->size()<<std::endl;
-  ror.setRadiusSearch(0.999*OpenNIListener::radius);
-  ror.setMinNeighborsInRadius(2);
-  ror.filter (*outp);
-  std::cerr << "after radius : " <<outp->size()<<std::endl;
-  */
-*outp=*inp_cloud_ptr;
-}
 
 void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  point_cloud,
                                      const sensor_msgs::PointCloud2ConstPtr& t_point_cloud) {
