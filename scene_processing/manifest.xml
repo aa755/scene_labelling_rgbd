@@ -1,0 +1,19 @@
+<package>
+  <description brief="scene_processing">
+
+     scene_processing
+
+  </description>
+  <author>Hema Koppula</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/scene_processing</url>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+  <depend package="pcl_visualization"/>
+  <depend package="eigen"/>
+  <depend package="stereo_msgs"/>
+
+</package>
+
+
