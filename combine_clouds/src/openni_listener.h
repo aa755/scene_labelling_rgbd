@@ -81,6 +81,7 @@ class OpenNIListener  {
     //bool first_frame_;
     ros::Subscriber sub_;
                pcl::PCDWriter writer;
+               int count;
 
 
 };

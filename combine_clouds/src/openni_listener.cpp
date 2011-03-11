@@ -278,9 +278,11 @@ OpenNIListener::OpenNIListener( ros::NodeHandle nh, const char* pointcloud_topic
 : pointcloud_sub_ (nh, pointcloud_topic, 3),
   t_pointcloud_sub_(nh, t_pointcloud_topic, 3),
   sync_(MySyncPolicy(10),  pointcloud_sub_ , t_pointcloud_sub_),
+  cloudMerged (new pcl::PointCloud<pcl::PointXYZRGB> ()),
   callback_counter_(0)
 {
     firstFrame=true;
+    count=0;
     std::cerr<<"first frame false"<<endl;
   // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
   sync_.registerCallback(boost::bind(&OpenNIListener::cameraCallback, this, _1, _2 ));
@@ -308,8 +310,8 @@ void applyFilters(const sensor_msgs::PointCloud2ConstPtr& sinp,pcl::PointCloud<p
   pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
     pcl::PointCloud<pcl::PointXYZRGB> inp_cloud;
   pcl::fromROSMsg (*sinp, inp_cloud);
-
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB> (inp_cloud));
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB> (inp_cloud));
+ /*
   sor.setInputCloud (inp_cloud_ptr);
   std::cerr << "initially : " << inp_cloud_ptr->size()<<std::endl;
   
@@ -324,10 +326,12 @@ void applyFilters(const sensor_msgs::PointCloud2ConstPtr& sinp,pcl::PointCloud<p
   ror.setMinNeighborsInRadius(2);
   ror.filter (*outp);
   std::cerr << "after radius : " <<outp->size()<<std::endl;
+  */
+*outp=*inp_cloud_ptr;
 }
 
-void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_point_cloud,
-                                     const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
+void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  point_cloud,
+                                     const sensor_msgs::PointCloud2ConstPtr& t_point_cloud) {
    ROS_INFO("Received data from kinect");
    tf::StampedTransform transform;
    try{
@@ -341,19 +345,26 @@ void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_
      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudTemp (new pcl::PointCloud<pcl::PointXYZRGB> ());
 
          applyFilters(t_point_cloud,cloudTemp);
+         std::stringstream ss;
+    ss << count;
+
+        writer.write<pcl::PointXYZRGB> ("/home/aa755/tempv/pc"+ss.str()+".pcd", *cloudTemp, false);
+
+         count++;
      if(firstFrame)
      {
          firstFrame=false;
-           cloudMerged=cloudTemp;
-        writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
+           *cloudMerged=*cloudTemp;
+        //writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
         std::cerr<<"wrote  pcl countaining "<< cloudMerged->size()<<endl;
         
      }
-     else
+     else if(count%5==2)
      {
          *cloudMerged+=*cloudTemp;
-        writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
-        std::cerr<<"wrote  pcl countaining "<< cloudMerged->size()<<endl;
+         if(count>20)
+        //writer.write<pcl::PointXYZRGB> ("/home/aa755/VisibilityMerged.pcd", *cloudMerged, false);
+        std::cerr<<"wrote  pcl countaining "<< cloudMerged->size()<<" "<<count<<endl;
          
      }
      
