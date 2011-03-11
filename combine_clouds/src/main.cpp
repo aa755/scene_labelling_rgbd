@@ -14,6 +14,13 @@
 
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
+#include <stdint.h>
+#include "pcl/ros/register_point_struct.h"
+#include "pcl/kdtree/kdtree.h"
+#include "pcl/kdtree/tree_types.h"
+#include "pcl/io/pcd_io.h"
+#include <string>
+#include <pcl_ros/io/bag_io.h>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -212,28 +219,42 @@ int main(int argc, char** argv)
     rosbag::Bag bag;
     std::cerr<<"opening "<<argv[1]<<endl;
     bag.open(argv[1], rosbag::bagmode::Read);
-
- //   std::vector<std::string> topics_tf;
- //   std::vector<std::string> topics_pcl;
-//    topics_tf.push_back(std::string("/tf"));
-  //  topics_pcl.push_back(std::string("/rgbdslam/my_clouds"));
-    rosbag::View view(bag, rosbag::TopicQuery("/rgbdslam/my_clouds"));
-    
- pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ());
+     pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ());
 
 
     int tf_count =0;
     int pcl_count=0;
 
-    BOOST_FOREACH(rosbag::MessageInstance const m, view)
+pcl_ros::BAGReader reader;
+  if (!reader.open (argv[1], "/rgbdslam/my_clouds"))
+  {
+    ROS_ERROR ("Couldn't read file ");
+    return (-1);
+  }
+  sensor_msgs::PointCloud2ConstPtr cloud_blob, cloud_blob_prev;
+            pcl::PointCloud<PointT> inp_cloud;
+
+ pcl::PassThrough<PointT> pass_;
+  do
+  {
+    cloud_blob_prev = cloud_blob;
+    cloud_blob = reader.getNextCloud ();
+    ros::Time ptime=cloud_blob->header.stamp;
+
+    if (cloud_blob_prev != cloud_blob)
     {
-        sensor_msgs::PointCloud2ConstPtr pcl_ptr = m.instantiate<sensor_msgs::PointCloud2>();
-        assert(pcl_ptr!=NULL);
-        ros::Time ptime=pcl_ptr->header.stamp;
+      pcl::fromROSMsg (*cloud_blob, inp_cloud);
+      //ROS_INFO ("PointCloud with %d data points and frame %s (%f) received.", (int)cloud.points.size (), cloud.header.frame_id.c_str (), cloud.header.stamp.toSec ());
+      pcl_count++;
+    }
+
+//    rosbag::View view(bag, rosbag::TopicQuery("/rgbdslam/my_clouds"));
+    
+
         rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"),ptime-ros::Duration(0,1),ptime+ros::Duration(0,100000000));
         //std::cerr<<(view_tf.size())<<endl;
-        std::cerr<<pcl_ptr->header.frame_id<<endl;;
-        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
+        std::cerr<<ptime<<endl;;
+//        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
         tf_count=0;
 
         tf::Transform final_tft;
@@ -258,16 +279,15 @@ int main(int argc, char** argv)
         }
 
         if (tf_count == 1) {
-            pcl_count++;
             TransformG transG(final_tft);
-            pcl::PointCloud<PointT> inp_cloud;
-            pcl::fromROSMsg(*pcl_ptr, inp_cloud);
             pcl::PointCloud<PointT>::Ptr inp_cloud_ptr(new pcl::PointCloud<PointT > (inp_cloud));
-            applyFilters(inp_cloud_ptr,cloud_filtered);
+           // applyFilters(inp_cloud_ptr,cloud_filtered);
 
+    pass_.setInputCloud (inp_cloud_ptr);
+    pass_.filter (*cloud_filtered);
             if(pcl_count==1)
                 *final_cloud = *cloud_filtered;
-            else if(pcl_count%20==1)
+            else if(pcl_count%5==1)
                 *final_cloud += *cloud_filtered;
         }
         else
@@ -276,7 +296,8 @@ int main(int argc, char** argv)
         }
 
  
-    }
+    }while (cloud_blob != cloud_blob_prev);
+    
             applyFilters(final_cloud,cloud_filtered);
 
     bag.close();
