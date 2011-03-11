@@ -12,7 +12,8 @@
 #include <cv.h>
 #include <ctime>
 #include <sensor_msgs/PointCloud2.h>
-
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 
 boost::numeric::ublas::matrix<double> transformAsMatrix(const tf::Transform& bt)
@@ -56,13 +57,18 @@ float sqrG(float y)
 class VectorG
 {
     double v[3];
-    VectorG(double unitX,double unitY, double unitZ , bool normalize=false)
+public:
+    VectorG()
+    {
+        
+    }
+    VectorG(double unitX,double unitY, double unitZ , bool normalize_=false)
     {
         v[0]=unitX;
         v[1]=unitY;
         v[2]=unitZ;
 
-        if(normalize)
+        if(normalize_)
         {
             normalize();
         }
@@ -82,9 +88,10 @@ class VectorG
     
     double dotProduct(VectorG v2g)
     {
-        sum=0;
+        double sum=0;
         for(int i=0;i<3;i++)
             sum=sum+v[i]*v2g.v[i];
+        return sum;
     }
 
     VectorG subtract(VectorG v2g)
@@ -92,8 +99,10 @@ class VectorG
         VectorG out;
         for(int i=0;i<3;i++)
             out.v[i]=v[i]-v2g.v[i];
+        return out;
 
     }
+
 };
 
 class TransformG
@@ -261,6 +270,7 @@ OpenNIListener::OpenNIListener( ros::NodeHandle nh, const char* pointcloud_topic
   sync_(MySyncPolicy(10),  pointcloud_sub_ , t_pointcloud_sub_),
   callback_counter_(0)
 {
+    firstFrame=true;
   // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
   sync_.registerCallback(boost::bind(&OpenNIListener::cameraCallback, this, _1, _2 ));
   ROS_INFO_STREAM("OpenNIListener listening to " << pointcloud_topic << ", " << t_pointcloud_topic << "\n");
@@ -279,6 +289,32 @@ void OpenNIListener::Callback (const sensor_msgs::PointCloud2ConstPtr&  point_cl
 {
    ROS_INFO ("Got the msg");
 }
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr applyFilters(const sensor_msgs::PointCloud2ConstPtr& sinp)
+{
+ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
+
+  pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+    pcl::PointCloud<PointT> inp_cloud
+  pcl::fromROSMsg (sinp, inp_cloud);
+
+  pcl::PointCloud<PointT>::Ptr inp_cloud_ptr (new pcl::PointCloud<PointT> (inp_cloud));
+  sor.setInputCloud (inp_cloud_ptr);
+  
+  sor.setMeanK (50);
+  sor.setStddevMulThresh (1.0);
+  sor.filter (*cloud_filtered);
+
+  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> ror;
+  ror.setInputCloud (cloud_filtered);
+  std::cerr << "before radius : " << cloud_filtered->size()<<std::endl;
+  ror.setRadiusSearch(0.999*OpenNIListener::radius);
+  ror.setMinNeighborsInRadius(2);
+  ror.filter (*cloud_filtered2);
+  std::cerr << "after radius : " <<cloud_filtered2->size()<<std::endl;
+  return *cloud_filtered2;
+}
+
 void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_point_cloud,
                                      const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
    ROS_INFO("Received data from kinect");
@@ -286,9 +322,14 @@ void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_
    try{
      listener.lookupTransform("/openni_camera", "/batch_transform",
                               point_cloud->header.stamp, transform);
-     TransformG transfG(transform);
      ROS_INFO ("origin: %f %f %f", transform.getOrigin().x(),transform.getOrigin().y(),transform.getOrigin().z());
      ROS_INFO ("rotation: %f %f %f %f", transform.getRotation().getX(),transform.getRotation().getY(),transform.getRotation().getZ(),transform.getRotation().getW());
+     TransformG transfG(transform);
+     if(firstFrame)
+     {
+         firstFrame=false;         
+     }
+         
    }
    catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
