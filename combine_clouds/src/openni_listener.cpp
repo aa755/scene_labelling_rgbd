@@ -14,60 +14,120 @@
 #include <sensor_msgs/PointCloud2.h>
 
 
-OpenNIListener::OpenNIListener( ros::NodeHandle nh, const char* pointcloud_topic, const char* t_pointcloud_topic ) 
-: pointcloud_sub_ (nh, pointcloud_topic, 3),
-  t_pointcloud_sub_(nh, t_pointcloud_topic, 3),
-  sync_(MySyncPolicy(10),  pointcloud_sub_ , t_pointcloud_sub_),
-  callback_counter_(0)
+
+boost::numeric::ublas::matrix<double> transformAsMatrix(const tf::Transform& bt)
 {
-  // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
-  sync_.registerCallback(boost::bind(&OpenNIListener::cameraCallback, this, _1, _2 ));
-  ROS_INFO_STREAM("OpenNIListener listening to " << pointcloud_topic << ", " << t_pointcloud_topic << "\n"); 
-  sub_ = nh.subscribe(pointcloud_topic, 1000, &OpenNIListener::Callback, this);
+   boost::numeric::ublas::matrix<double> outMat(4,4);
 
-//  matcher_ = new cv::BruteForceMatcher<cv::L2<float> >() ;
-//  pub_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
-//            "/rgbdslam/cloud", 5);
-//  pub_transf_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
-//            "/rgbdslam/transformed_slowdown_cloud", 5);
-//  pub_ref_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
- //           "/rgbdslam/first_frame", 1);
-}
+   //  double * mat = outMat.Store();
 
-void OpenNIListener::Callback (const sensor_msgs::PointCloud2ConstPtr&  point_cloud)
-{
-   ROS_INFO ("Got the msg");
-} 
-void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_point_cloud, 
-                                     const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
-   ROS_INFO("Received data from kinect");
-   tf::StampedTransform transform;
-   try{
-     listener.lookupTransform("/openni_camera", "/batch_transform",  
-                              point_cloud->header.stamp, transform);
-     ROS_INFO ("origin: %f %f %f", transform.getOrigin().x(),transform.getOrigin().y(),transform.getOrigin().z());
-     ROS_INFO ("rotation: %f %f %f %f", transform.getRotation().getX(),transform.getRotation().getY(),transform.getRotation().getZ(),transform.getRotation().getW());
-   }
-   catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-   }
-  
+   double mv[12];
+   bt.getBasis().getOpenGLSubMatrix(mv);
 
-/*  if(++callback_counter_ % 3 != 0 || pause_) return;
-  //Get images into correct format
-	sensor_msgs::CvBridge bridge;
-	cv::Mat depth_float_img = bridge.imgMsgToCv(depth_img_msg); 
-	cv::Mat visual_img =  bridge.imgMsgToCv(visual_img_msg, "mono8");
-  if(visual_img.rows != depth_float_img.rows || visual_img.cols != depth_float_img.cols){
-    ROS_ERROR("Depth and Visual image differ in size!");
-    return;
-  }
-   
-*/
+   btVector3 origin = bt.getOrigin();
 
+   outMat(0,0)= mv[0];
+   outMat(0,1)  = mv[4];
+   outMat(0,2)  = mv[8];
+   outMat(1,0)  = mv[1];
+   outMat(1,1)  = mv[5];
+   outMat(1,2)  = mv[9];
+   outMat(2,0)  = mv[2];
+   outMat(2,1)  = mv[6];
+   outMat(2,2) = mv[10];
+
+   outMat(3,0)  = outMat(3,1) = outMat(3,2) = 0;
+   outMat(0,3) = origin.x();
+   outMat(1,3) = origin.y();
+   outMat(2,3) = origin.z();
+   outMat(3,3) = 1;
+
+
+   return outMat;
 }
 
 using namespace cv;
+
+float sqrG(float y)
+{
+    return y*y;
+}
+
+class VectorG
+{
+    double v[3];
+    VectorG(double unitX,double unitY, double unitZ , bool normalize=false)
+    {
+        v[0]=unitX;
+        v[1]=unitY;
+        v[2]=unitZ;
+
+        if(normalize)
+        {
+            normalize();
+        }
+
+    }
+    void normalize()
+    {
+            double norm=getNorm();
+            for(int i=0;i<3;i++)
+                v[i]=v[i]/norm;
+    }
+
+    double getNorm()
+    {
+        return sqrt(sqrG(v[0])+sqrG(v[1])+sqrG(v[2]));
+    }
+    
+    double dotProduct(VectorG v2g)
+    {
+        sum=0;
+        for(int i=0;i<3;i++)
+            sum=sum+v[i]*v2g.v[i];
+    }
+
+    VectorG subtract(VectorG v2g)
+    {
+        VectorG out;
+        for(int i=0;i<3;i++)
+            out.v[i]=v[i]-v2g.v[i];
+
+    }
+};
+
+class TransformG
+{
+public:
+    boost::numeric::ublas::matrix<double>  transformMat;
+
+    
+    TransformG(const tf::Transform& bt)
+    {
+        transformMat=transformAsMatrix(bt);
+    }
+
+    VectorG getXUnitVector()
+    {
+        return getIthRow(0);
+    }
+
+    VectorG getZUnitVector()
+    {
+        return getIthRow(2);
+    }
+
+    VectorG getIthRow(int i)
+    {
+        return VectorG(transformMat(i,0),transformMat(i,1),transformMat(i,2));
+    }
+
+    VectorG getOrigin()
+    {
+        return VectorG(transformMat(0,3),transformMat(1,3),transformMat(2,3));
+    }
+};
+
 
 void transformPointCloud (const Eigen::Matrix4f &transform, const sensor_msgs::PointCloud2 &in,
                           sensor_msgs::PointCloud2 &out)
@@ -193,4 +253,58 @@ std::string openCVCode2String(unsigned int code){
 
 void printMatrixInfo(cv::Mat& image){
   ROS_DEBUG_STREAM("Matrix Type:" << openCVCode2String(image.type()) <<  " rows: " <<  image.rows  <<  " cols: " <<  image.cols);
+}
+
+OpenNIListener::OpenNIListener( ros::NodeHandle nh, const char* pointcloud_topic, const char* t_pointcloud_topic )
+: pointcloud_sub_ (nh, pointcloud_topic, 3),
+  t_pointcloud_sub_(nh, t_pointcloud_topic, 3),
+  sync_(MySyncPolicy(10),  pointcloud_sub_ , t_pointcloud_sub_),
+  callback_counter_(0)
+{
+  // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
+  sync_.registerCallback(boost::bind(&OpenNIListener::cameraCallback, this, _1, _2 ));
+  ROS_INFO_STREAM("OpenNIListener listening to " << pointcloud_topic << ", " << t_pointcloud_topic << "\n");
+  sub_ = nh.subscribe(pointcloud_topic, 1000, &OpenNIListener::Callback, this);
+
+//  matcher_ = new cv::BruteForceMatcher<cv::L2<float> >() ;
+//  pub_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
+//            "/rgbdslam/cloud", 5);
+//  pub_transf_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
+//            "/rgbdslam/transformed_slowdown_cloud", 5);
+//  pub_ref_cloud_ = nh.advertise<sensor_msgs::PointCloud2> (
+ //           "/rgbdslam/first_frame", 1);
+}
+
+void OpenNIListener::Callback (const sensor_msgs::PointCloud2ConstPtr&  point_cloud)
+{
+   ROS_INFO ("Got the msg");
+}
+void OpenNIListener::cameraCallback (const sensor_msgs::PointCloud2ConstPtr&  t_point_cloud,
+                                     const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
+   ROS_INFO("Received data from kinect");
+   tf::StampedTransform transform;
+   try{
+     listener.lookupTransform("/openni_camera", "/batch_transform",
+                              point_cloud->header.stamp, transform);
+     TransformG transfG(transform);
+     ROS_INFO ("origin: %f %f %f", transform.getOrigin().x(),transform.getOrigin().y(),transform.getOrigin().z());
+     ROS_INFO ("rotation: %f %f %f %f", transform.getRotation().getX(),transform.getRotation().getY(),transform.getRotation().getZ(),transform.getRotation().getW());
+   }
+   catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+   }
+
+
+/*  if(++callback_counter_ % 3 != 0 || pause_) return;
+  //Get images into correct format
+	sensor_msgs::CvBridge bridge;
+	cv::Mat depth_float_img = bridge.imgMsgToCv(depth_img_msg);
+	cv::Mat visual_img =  bridge.imgMsgToCv(visual_img_msg, "mono8");
+  if(visual_img.rows != depth_float_img.rows || visual_img.cols != depth_float_img.cols){
+    ROS_ERROR("Depth and Visual image differ in size!");
+    return;
+  }
+
+*/
+
 }

@@ -26,6 +26,7 @@ namespace m = message_filters;
 //The policy merges kinect messages with approximately equal timestamp into one callback 
 typedef m::sync_policies::ApproximateTime<s::PointCloud2, s::PointCloud2> MySyncPolicy;
 
+
 class OpenNIListener  {
 
   public:
