@@ -10,7 +10,8 @@ For standard pair-wise Markov Network, we have
   P_\Phi (y) = \frac{1}{Z} \prod_{i=1}^{N} \Phi_i(y_i) \prod_{(i,j)\in E} \Phi_{ij}(y_i,y_j)
   \end{equation}
   
-  We can define the log of node potential as a linear function of the node features:  $log \Phi_i(k) = w_n^k.x_i$ , where $x_i$ is the feature vector of node i. Intuitively, the training process(margin-maximization) will try to pick $w_n^1...w_n^K$ such that $w_n^k.x_i>w_n^l.x_i \forall l$ if the correct label is k.\\
+  We can define the log of node potential as a linear function of the node features:  $log \Phi_i(k) = w_n^k.x_i$ , 
+where $x_i$ is the feature vector of node i. Intuitively, the training process(margin-maximization) will try to pick $w_n^1...w_n^K$ such that $w_n^k.x_i>w_n^l.x_i \forall l$ if the correct label is k.\\
   Similarly, the log of edge potential can be defined as $log \Phi_{ij}(l,k) = w_{e}^{l,k}.x_{ij}$. The intuition is that $w_{e}^{l,k}$ will be high if segments of label k and label l appear frequently in configurations having relative features(relations) $x_{ij}$ . $x_{ij}$ could be a vector of indicator variables each indicating whether a particular relation holds between segments i and j.
 However, instead that hard-coding the thresholds for relations like on-top, nearby, coplanar , we believe it would be better to include more informative continuous continuous features in $x_{i,j}$ like difference of coordinates of centroids of the 2 segments, difference between mean normals etc.\\
 
@@ -36,7 +37,8 @@ min: \frac{1}{2} ||w||^2 + C\epsilon\\
 s.t.: wX(\hat{y}-y)\ge \Delta(\hat{y}-y) -\epsilon \forall y\neq \hat{y}
 \end{eqnarray*}
 where, $\Delta(\hat{y}-y)$ counts the number of elements in which $\hat{y}$ and y differ.
-The number of constraints is $K^N-1$. We hope that the cutting plane methods\cite{joachims2009cutting} which start by removing all constraints and  iteratively keeps adding most violated constraints would work.
+The number of constraints is $K^N-1$. We hope that the cutting plane methods\cite{joachims2009cutting} 
+which start by removing all constraints and  iteratively keeps adding most violated constraints would work.
 \section{Prediction}
 
 Prediction is an integer programming problem(which is NP complete):

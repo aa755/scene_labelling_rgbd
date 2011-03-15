@@ -419,7 +419,8 @@ void extractEuclideanClusters (
             normals.points[i].normal[2] * normals.points[nn_indices[j]].normal[2];
           ColorRGB a (cloud.points[i].rgb);
 		  ColorRGB b (cloud.points[nn_indices[j]].rgb);
-          double color_diff = ColorRGB::distance(a, b);
+          double color_diff = ColorRGB::HSVdistance(a, b);
+//ROS_INFO ("diff = %f",color_diff);
           if ( fabs (acos (dot_p)) < eps_angle && color_diff < rgb_tolerance )
           {
             processed[nn_indices[j]] = true;
@@ -563,7 +564,7 @@ int
   if (atoi(argv[2]) == 1)
    extractEuclideanClusters ( *cloud_filtered,*cloud_normals_ptr,clusters_tree_,radius,clusters,angle ,min_pts_per_cluster, max_pts_per_cluster);
   else
-   extractEuclideanClusters ( *cloud_filtered,*cloud_normals_ptr,clusters_tree_,radius,0.5,clusters,angle ,min_pts_per_cluster, max_pts_per_cluster);
+   extractEuclideanClusters ( *cloud_filtered,*cloud_normals_ptr,clusters_tree_,radius,50,clusters,angle ,min_pts_per_cluster, max_pts_per_cluster);
   ROS_INFO ("Number of clusters found matching the given constraints: %d.", (int)clusters.size ());
 
   std::vector<pcl::PointCloud<my_ns::MyPoint> > clusters2;
@@ -578,9 +579,13 @@ int
     writer.write ( fn, clusters2[i], false);
 
   }*/
-  writer.write ( "segmented.pcd",combined_cloud, false);
+  std::string fn (argv[1]);
+  fn = fn.substr(0,fn.find('.')-1);
 
+  if (atoi(argv[2]) == 1) {fn = fn + "_segmented_xyzn.pcd";} else { fn = fn + "_segmented_xyzrgbn.pcd";}
+  writer.write ( fn,combined_cloud, false);
 
+cout <<"wrote file "<<fn<<endl;
   return (0);
 }
 /* ]--- */
