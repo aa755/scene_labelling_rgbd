@@ -27,11 +27,8 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include <image_geometry/pinhole_camera_model.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
 #include <Eigen/Core>
 #include <tf/transform_listener.h>
 #include <pcl/filters/passthrough.h>
@@ -174,7 +171,7 @@ public:
         {
             for(int j=0;j<4;j++)
                 std::cerr<<transformMat(i,j)<<",";
-            std::cerr<<endl;
+            std::cerr<<std::endl;
         }
     }
 };
@@ -217,7 +214,7 @@ int main(int argc, char** argv)
 //  ros::init(argc, argv,"hi");
 
     rosbag::Bag bag;
-    std::cerr<<"opening "<<argv[1]<<endl;
+    std::cerr<<"opening "<<argv[1]<<std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
      pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ());
 
@@ -253,7 +250,7 @@ pcl_ros::BAGReader reader;
 
         rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"),ptime-ros::Duration(0,1),ptime+ros::Duration(0,100000000));
         //std::cerr<<(view_tf.size())<<endl;
-        std::cerr<<ptime<<endl;;
+        std::cerr<<ptime<<std::endl;
 //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
         tf_count=0;
 
@@ -273,7 +270,7 @@ pcl_ros::BAGReader reader;
             if(ptime==bt[0].header.stamp)
             {
                 tf_count++;
-                std::cerr<<"tf qid:"<<bt[0].header.seq<<endl;
+                std::cerr<<"tf qid:"<<bt[0].header.seq<<std::endl;
             }
             assert(tf_count<=1);
         }
