@@ -1,0 +1,51 @@
+\documentclass[11pt,a4paper,oneside]{report}
+
+\begin{document}
+\section{Model Formulation}
+Given labels $\{1,.., K\}$, $y_i^k$ is an indicator variable which is 1 if segment i has label k. 
+
+For standard pair-wise Markov Network, we have 
+
+\begin{equation}
+  P_\Phi (y) = \frac{1}{Z} \prod_{i=1}^{N} \Phi_i(y_i) \prod_{(i,j)\in E} \Phi_{ij}(y_i,y_j)
+  \end{equation}
+  
+  We can define the log of node potential as a linear function of the node features:  $log \Phi_i(k) = w_n^k.x_i$ , 
+where $x_i$ is the feature vector of node i. Intuitively, the training process(margin-maximization) will try to pick $w_n^1...w_n^K$ such that $w_n^k.x_i>w_n^l.x_i \forall l$ if the correct label is k.\\
+  Similarly, the log of edge potential can be defined as $log \Phi_{ij}(l,k) = w_{e}^{l,k}.x_{ij}$. The intuition is that $w_{e}^{l,k}$ will be high if segments of label k and label l appear frequently in configurations having relative features(relations) $x_{ij}$ . $x_{ij}$ could be a vector of indicator variables each indicating whether a particular relation holds between segments i and j.
+However, instead that hard-coding the thresholds for relations like on-top, nearby, coplanar , we believe it would be better to include more informative continuous continuous features in $x_{i,j}$ like difference of coordinates of centroids of the 2 segments, difference between mean normals etc.\\
+
+Substituting these potential functions, we get:
+
+\begin{equation}
+ \log P_w (y|x) = \sum_{i=1}^{N} \sum_{k=1}^{K} (w^{k}_{n}.x_{i})y_{i}^{k} + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} (w_{e}^{l,k}.x_{ij})y_i^l y_j^k - \log Z_w(x)
+\end{equation}
+
+Doing some matrix manipulations(as shown in \cite{taskar2004learning}), we get:
+
+\begin{equation}
+ \log P_w (y|x) = wXy -logZ_w(x)
+\end{equation}
+where $w=[w_n w_e], y=[y_1^1...y_1^K....y_N^1...y_N^K]$ and X is constructed accordingly.
+$w$ is of size $K*|x_i|+K^2*|x_{ij}|$
+
+\section{Training}
+The idea is to maximize the margin by which probability of correct label-sequence beats the probability of any incorrect label-sequence.
+
+\begin{eqnarray*}
+min: \frac{1}{2} ||w||^2 + C\epsilon\\
+s.t.: wX(\hat{y}-y)\ge \Delta(\hat{y}-y) -\epsilon \forall y\neq \hat{y}
+\end{eqnarray*}
+where, $\Delta(\hat{y}-y)$ counts the number of elements in which $\hat{y}$ and y differ.
+The number of constraints is $K^N-1$. We hope that the cutting plane methods\cite{joachims2009cutting} 
+which start by removing all constraints and  iteratively keeps adding most violated constraints would work.
+\section{Prediction}
+
+Prediction is an integer programming problem(which is NP complete):
+
+$y^*=\arg \max _y wXy$(subject to appropriate constraints ensuring that y is well formed)
+
+We hope we can prove that the LP-relaxation of this problem has provable approximation bounds.
+\bibliographystyle{alpha}
+\bibliography{mrf_formulation}
+\end{document}
