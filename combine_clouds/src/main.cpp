@@ -203,17 +203,25 @@ public:
         return VectorG(transformMat(0, 3), transformMat(1, 3), transformMat(2, 3));
     }
 
-    double isPointVisible(VectorG vPoint)
+    bool isPointVisible(VectorG vPoint)
     {
         VectorG cam2PointRay=vPoint.subtract(getOrigin());
         cam2PointRay.normalize();
         VectorG cam2PointRayUnit=cam2PointRay;
         double xDot=cam2PointRayUnit.dotProduct(getXUnitVector());
         double zDot=cam2PointRayUnit.dotProduct(getZUnitVector());
-        std::cerr<<"dots"<<zDot<<","<<xDot<<","<<xDot/zDot<<std::endl;
-        return xDot/zDot;
+       // std::cerr<<"dots"<<zDot<<","<<xDot<<","<<xDot/zDot<<std::endl;
+        if(zDot>0 && xDot/zDot<0.5)
+            return true;
+        else
+            return false;
     }
 
+    void filterPeripheryCloud()
+    {
+        
+    }
+    
     void
     print()
     {
@@ -346,33 +354,27 @@ main(int argc, char** argv)
             {
                 *final_cloud = *cloud_filtered;
                 transformsG.push_back(transG);
+            }
+            else if (pcl_count % 5 == 1)
+            {
                 PointT cpoint;
-                double mint=10000;
-                double maxt=-10000;
 
                 for (int p = 0; p < cloud_filtered->size(); p++)
                 {
                     cpoint = cloud_filtered->points[p];
-                    for (int c = 0; c < transformsG.size(); c++)
+                    int c;
+                    for (c = 0; c < transformsG.size(); c++)
                     {
                         TransformG ctrans=transformsG[c];
-                        VectorG vpointCam(cpoint.x,cpoint.y,cpoint.z,true);
-                        double tt=ctrans.isPointVisible(vpointCam);
-                        if(tt>maxt)
-                            maxt=tt;
-
-                        if(tt<mint)
-                            mint=tt;
-
-
-
+                        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
+                        if((ctrans.isPointVisible(vpoint)))
+                            break;
                     }
+                    if(c==transformsG.size())
+                        final_cloud->points.push_back(cpoint);
                 }
-                std::cerr<<"min-max"<<mint<<","<<maxt<<std::endl;
-            }
-            else if (pcl_count % 5 == 1)
-            {
                 //*final_cloud +=
+                transformsG.push_back(transG);
             }
         }
         else
