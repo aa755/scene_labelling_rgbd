@@ -11,7 +11,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/foreach.hpp>
-
+#include <Eigen/Core>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <stdint.h>
@@ -47,6 +47,120 @@
 #include "pcl/point_types.h"
 #include "pcl/filters/statistical_outlier_removal.h"
 #include "pcl/point_cloud.h"
+
+void transformPointCloud (boost::numeric::ublas::matrix<double> &transform,  pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
+                           pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
+{
+
+     boost::numeric::ublas::matrix<double> matIn(4, 1);
+     *out=*in;
+
+    for (size_t i = 0; i < in->points.size (); ++i)
+    {
+      double * matrixPtr = matIn.data().begin();
+
+      matrixPtr[0] = in->points[i].x;
+      matrixPtr[1] = in->points[i].y;
+      matrixPtr[2] = in->points[i].z;
+      matrixPtr[3] = 1;
+      boost::numeric::ublas::matrix<double> matOut = prod (transform,matIn);
+   	  matrixPtr = matOut.data().begin();
+
+      out->points[i].x = matrixPtr[0];
+      out->points[i].y = matrixPtr[1];
+      out->points[i].z = matrixPtr[2];
+    }
+}
+
+void transformPointCloudMsg (const Eigen::Matrix4f &transform, const sensor_msgs::PointCloud2 &in,
+                          sensor_msgs::PointCloud2 &out)
+{
+  // Get X-Y-Z indices
+  int x_idx = pcl::getFieldIndex (in, "x");
+  int y_idx = pcl::getFieldIndex (in, "y");
+  int z_idx = pcl::getFieldIndex (in, "z");
+
+  if (x_idx == -1 || y_idx == -1 || z_idx == -1) {
+    ROS_ERROR ("Input dataset has no X-Y-Z coordinates! Cannot convert to Eigen format.");
+    return;
+  }
+
+  if (in.fields[x_idx].datatype != sensor_msgs::PointField::FLOAT32 ||
+      in.fields[y_idx].datatype != sensor_msgs::PointField::FLOAT32 ||
+      in.fields[z_idx].datatype != sensor_msgs::PointField::FLOAT32) {
+    ROS_ERROR ("X-Y-Z coordinates not floats. Currently only floats are supported.");
+    return;
+  }
+  // Check if distance is available
+  int dist_idx = pcl::getFieldIndex (in, "distance");
+  // Copy the other data
+  if (&in != &out)
+  {
+    out.header = in.header;
+    out.height = in.height;
+    out.width  = in.width;
+    out.fields = in.fields;
+    out.is_bigendian = in.is_bigendian;
+    out.point_step   = in.point_step;
+    out.row_step     = in.row_step;
+    out.is_dense     = in.is_dense;
+    out.data.resize (in.data.size ());
+    // Copy everything as it's faster than copying individual elements
+    memcpy (&out.data[0], &in.data[0], in.data.size ());
+  }
+
+  Eigen::Array4i xyz_offset (in.fields[x_idx].offset, in.fields[y_idx].offset, in.fields[z_idx].offset, 0);
+
+  for (size_t i = 0; i < in.width * in.height; ++i) {
+    Eigen::Vector4f pt (*(float*)&in.data[xyz_offset[0]], *(float*)&in.data[xyz_offset[1]], *(float*)&in.data[xyz_offset[2]], 1);
+    Eigen::Vector4f pt_out;
+
+    bool max_range_point = false;
+    int distance_ptr_offset = i*in.point_step + in.fields[dist_idx].offset;
+    float* distance_ptr = (dist_idx < 0 ? NULL : (float*)(&in.data[distance_ptr_offset]));
+    if (!std::isfinite (pt[0]) || !std::isfinite (pt[1]) || !std::isfinite (pt[2])) {
+      if (distance_ptr==NULL || !std::isfinite(*distance_ptr)) { // Invalid point
+        pt_out = pt;
+      } else { // max range point
+        pt[0] = *distance_ptr;  // Replace x with the x value saved in distance
+        pt_out = transform * pt;
+        max_range_point = true;
+        //std::cout << pt[0]<<","<<pt[1]<<","<<pt[2]<<" => "<<pt_out[0]<<","<<pt_out[1]<<","<<pt_out[2]<<"\n";
+      }
+    } else {
+      pt_out = transform * pt;
+    }
+
+    if (max_range_point) {
+      // Save x value in distance again
+      *(float*)(&out.data[distance_ptr_offset]) = pt_out[0];
+      pt_out[0] = std::numeric_limits<float>::quiet_NaN();
+      //std::cout << __PRETTY_FUNCTION__<<": "<<i << "is a max range point.\n";
+    }
+
+    memcpy (&out.data[xyz_offset[0]], &pt_out[0], sizeof (float));
+    memcpy (&out.data[xyz_offset[1]], &pt_out[1], sizeof (float));
+    memcpy (&out.data[xyz_offset[2]], &pt_out[2], sizeof (float));
+
+    xyz_offset += in.point_step;
+  }
+
+  // Check if the viewpoint information is present
+  int vp_idx = pcl::getFieldIndex (in, "vp_x");
+  if (vp_idx != -1) {
+    // Transform the viewpoint info too
+    for (size_t i = 0; i < out.width * out.height; ++i) {
+      float *pstep = (float*)&out.data[i * out.point_step + out.fields[vp_idx].offset];
+      // Assume vp_x, vp_y, vp_z are consecutive
+      Eigen::Vector4f vp_in (pstep[0], pstep[1], pstep[2], 1);
+      Eigen::Vector4f vp_out = transform * vp_in;
+
+      pstep[0] = vp_out[0];
+      pstep[1] = vp_out[1];
+      pstep[2] = vp_out[2];
+    }
+  }
+}
 
 float sqrG(float y)
 {
@@ -209,6 +323,7 @@ void applyFilters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr,pcl::Poin
   ror.filter (*outp);
   std::cerr << "after radius : " <<outp->size()<<std::endl;
 }
+
 int main(int argc, char** argv)
 {
 //  ros::init(argc, argv,"hi");
@@ -216,14 +331,14 @@ int main(int argc, char** argv)
     rosbag::Bag bag;
     std::cerr<<"opening "<<argv[1]<<std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
-     pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ());
+     pcl::PointCloud<PointT>::Ptr final_cloud (new pcl::PointCloud<PointT> ()),cloud_filtered (new pcl::PointCloud<PointT> ()),cloud_transformed (new pcl::PointCloud<PointT> ());
 
 
     int tf_count =0;
     int pcl_count=0;
 
 pcl_ros::BAGReader reader;
-  if (!reader.open (argv[1], "/rgbdslam/my_clouds"))
+  if (!reader.open (argv[1], "/rgbdslam/batch_clouds"))
   {
     ROS_ERROR ("Couldn't read file ");
     return (-1);
@@ -264,28 +379,32 @@ pcl_ros::BAGReader reader;
             std::vector<geometry_msgs::TransformStamped> bt;
             tf_ptr->get_transforms_vec(bt);
             tf::Transform tft(getQuaternion(bt[0].transform.rotation),getVector3(bt[0].transform.translation));
-            final_tft=tft;
-
+            
          //  transG.print();
             if(ptime==bt[0].header.stamp)
             {
                 tf_count++;
                 std::cerr<<"tf qid:"<<bt[0].header.seq<<std::endl;
+            final_tft=tft;
             }
             assert(tf_count<=1);
         }
-
+        
         if (tf_count == 1) {
             TransformG transG(final_tft);
             pcl::PointCloud<PointT>::Ptr inp_cloud_ptr(new pcl::PointCloud<PointT > (inp_cloud));
+            transformPointCloud(transG.transformMat,inp_cloud_ptr,cloud_transformed);
            // applyFilters(inp_cloud_ptr,cloud_filtered);
+            std::cerr<<"Origin"<<inp_cloud.sensor_origin_[0]<<","<<inp_cloud.sensor_origin_[1]<<","<<inp_cloud.sensor_origin_[2]<<","<<inp_cloud.sensor_origin_[3]<<std::endl;
+            transG.print();
 
-    pass_.setInputCloud (inp_cloud_ptr);
-    pass_.filter (*cloud_filtered);
-            if(pcl_count==1)
-                *final_cloud = *cloud_filtered;
-            else if(pcl_count%5==1)
-                *final_cloud += *cloud_filtered;
+        pass_.setInputCloud (cloud_transformed);
+        pass_.filter (*cloud_filtered);
+
+        if(pcl_count==1)
+            *final_cloud = *cloud_filtered;
+        else if(pcl_count%5==1)
+            *final_cloud += *cloud_filtered;
         }
         else
         {
