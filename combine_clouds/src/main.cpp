@@ -182,19 +182,19 @@ public:
     VectorG
     getXUnitVector()
     {
-        return getIthRow(0);
+        return getIthColumn(0);
     }
 
     VectorG
     getZUnitVector()
     {
-        return getIthRow(2);
+        return getIthColumn(2);
     }
 
     VectorG
-    getIthRow(int i)
+    getIthColumn(int i)
     {
-        return VectorG(transformMat(i, 0), transformMat(i, 1), transformMat(i, 2));
+        return VectorG(transformMat(0,i), transformMat(1,i), transformMat(2,i));
     }
 
     VectorG
