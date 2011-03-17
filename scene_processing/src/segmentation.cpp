@@ -485,11 +485,11 @@ int
 {
 
   int min_cluster_size_= 300;
-  int min_pts_per_cluster = 100;
+  int min_pts_per_cluster = 0;
   int max_pts_per_cluster = 3000000;
   int number_neighbours = 50;
-  float radius = 0.01; 
-  float angle = 0.52; 
+  float radius = 0.025;// 0.01 
+  float angle = 0.52;
 
 
   sensor_msgs::PointCloud2 cloud_blob;
