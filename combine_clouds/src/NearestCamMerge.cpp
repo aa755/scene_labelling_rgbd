@@ -1,5 +1,6 @@
 #include "CombineUtils.h"
-
+#include <iostream>
+using namespace std;
 
 void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr out,int camIndex)
 {
@@ -15,6 +16,60 @@ void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<scene_proces
     }
 }
 
+void filterBasedOnCam(pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr in,pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr out, vector<TransformG> & trasforms)
+{
+   double radius=0.05;
+   scene_processing::PointXYGRGBCam cpoint;
+    out->header=in->header;
+  pcl::KdTreeFLANN<scene_processing::PointXYGRGBCam> nnFinder;
+  nnFinder.setInputCloud(in);
+  std::vector<int> k_indices;
+  std::vector<float> k_distances;
+  int numNeighbors;
+  int minDist;
+  int minCamIndex;
+  float distance;
+        pcl::ExtractIndices<scene_processing::PointXYGRGBCam> extract;
+        pcl::PointIndices::Ptr outliers (new pcl::PointIndices ());
+    for(int i=0;i<in->size();i++)
+    {
+
+        cpoint = in->points[i];
+        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
+        minDist=100000;
+        minCamIndex=-1;
+        for(int t=0;t<trasforms.size();t++)
+        {
+            // among shots from which it is visible, find the shot in which it is nearest to the camera
+            if(!trasforms[t].isPointVisible(vpoint))
+                continue;
+            distance=trasforms[t].getDistanceFromOrigin(vpoint);
+            if(distance<minDist)
+            {
+                minDist=distance;
+                minCamIndex=t;
+            }
+        }
+        if(minCamIndex==-1)
+            continue;
+        //remove neighbors from all other cams
+        numNeighbors=nnFinder.radiusSearch(i,radius,k_indices,k_distances,20);
+        for(int nn=0;nn<numNeighbors;nn++)
+        {
+
+            if(in->points[k_indices[nn]].cameraIndex!=minCamIndex)
+                outliers->indices.push_back(i);          
+        }
+
+
+    }
+    extract.setInputCloud (in);
+    extract.setIndices (outliers);
+    extract.setNegative (false);
+    extract.filter (*out);
+
+}
+
 int
 main(int argc, char** argv)
 {
@@ -24,7 +79,7 @@ main(int argc, char** argv)
     std::cerr << "opening " << argv[1] << std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
-    pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ()),cloud_wCamIndices(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ());
+    pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ()),cloud_wCamIndices(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ()),final_wCamIndices(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ());
 
     int tf_count = 0;
     int pcl_count = 0;
@@ -103,7 +158,6 @@ main(int argc, char** argv)
             {
                 appendCamIndex(cloud_filtered,cloud_wCamIndices,transformsG.size());
                 *final_cloud += *cloud_wCamIndices;
-
                 transformsG.push_back(transG);
             }
         }
@@ -118,11 +172,13 @@ main(int argc, char** argv)
     while (cloud_blob != cloud_blob_prev);
 
 //    applyFilters(final_cloud, cloud_filtered);
+    filterBasedOnCam(final_cloud,final_wCamIndices,transformsG);
+
 
     bag.close();
     pcl::PCDWriter writer;
 
- //   writer.write<PointT > ("/home/aa755/VisibilityMerged.pcd", *cloud_filtered, false);
+    writer.write<scene_processing::PointXYGRGBCam > ("/home/aa755/VisibilityMerged.pcd", *final_wCamIndices, false);
 
 
 }

@@ -30,7 +30,7 @@
 #include "pcl/io/pcd_io.h"
 #include <string>
 #include <pcl_ros/io/bag_io.h>
-
+#include "pcl/kdtree/kdtree_flann.h"
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <message_filters/subscriber.h>
@@ -70,6 +70,15 @@ namespace scene_processing
        uint32_t cameraIndex;
 //       uint32_t label;
     };
+    struct PointXYGRGBDist
+    {
+       float x;
+       float y;
+       float z;
+       float rgb;
+       float dist;
+//       uint32_t label;
+    };
 } // namespace scene_processing
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
@@ -79,6 +88,14 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
       (float, z, z)
       (float, rgb, rgb)
       (uint32_t, cameraIndex, cameraIndex)
+      );
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+      scene_processing::PointXYGRGBDist,
+      (float, x, x)
+      (float, y, y)
+      (float, z, z)
+      (float, rgb, rgb)
+      (float, dist, dist)
       );
 
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
@@ -166,6 +183,15 @@ public:
         return out;
 
     }
+    float
+    eucliedianDistance(VectorG v2g)
+    {
+        float sum=0;
+        for (int i = 0; i < 3; i++)
+            sum=sum + sqrG(v[i] - v2g.v[i]);
+        return sqrt(sum);
+
+    }
 
 };
 
@@ -211,6 +237,11 @@ public:
         transformMat = transformAsMatrix(bt);
     }
 
+    float getDistanceFromOrigin(VectorG point)
+    {
+        return point.eucliedianDistance(getOrigin());
+    }
+    
     VectorG
     getXUnitVector()
     {
