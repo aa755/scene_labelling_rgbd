@@ -243,7 +243,7 @@ public:
         double yDot=cam2PointRayUnit.dotProduct(getYUnitVector());
         double zDot=cam2PointRayUnit.dotProduct(getZUnitVector());
        // std::cerr<<"dots"<<zDot<<","<<xDot<<","<<xDot/zDot<<std::endl;
-        if(zDot>0 && fabs(xDot/zDot)<0.51 && fabs(yDot/zDot)<0.52)
+        if(zDot>0 && fabs(xDot/zDot)<0.51 && fabs(yDot/zDot)<0.4)
             return true;
         else
             return false;
