@@ -59,6 +59,7 @@
 
 
 
+typedef pcl::PointXYZRGB PointT;
 
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
@@ -109,6 +110,14 @@ public:
 
     }
 
+    VectorG(PointT p)
+    {
+        v[0] = p.x;
+        v[1] = p.y;
+        v[2] = p.z;
+
+
+    }
     /**
      * compute the distance from the line joining p1 and p2
      */
@@ -148,6 +157,15 @@ public:
             v[i] = v[i] / norm;
     }
 
+    PointT getAsPoint()
+    {
+        PointT p;
+        p.x=v[0];
+        p.y=v[1];
+        p.z=v[2];
+        return p;
+    }
+    
     double
     getNorm()
     {
@@ -170,6 +188,15 @@ public:
     }
 
     VectorG
+    multiply(double scalar)
+    {
+        VectorG out;
+        for (int i = 0; i < 3; i++)
+            out.v[i] = scalar*v[i];
+        return out;
+    }
+
+    VectorG
     subtract(VectorG v2g)
     {
         VectorG out;
@@ -178,6 +205,18 @@ public:
         return out;
 
     }
+
+
+    VectorG
+    add(VectorG v2g)
+    {
+        VectorG out;
+        for (int i = 0; i < 3; i++)
+            out.v[i] = v[i] + v2g.v[i];
+        return out;
+
+    }
+
     float
     eucliedianDistance(VectorG v2g)
     {
@@ -311,7 +350,6 @@ getVector3(geometry_msgs::Vector3 v)
     return btVector3(v.x, v.y, v.z);
 
 }
-typedef pcl::PointXYZRGB PointT;
 
 void
 applyFilters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr outp)

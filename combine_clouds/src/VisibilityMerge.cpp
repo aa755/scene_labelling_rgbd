@@ -1,4 +1,6 @@
 #include "CombineUtils.h"
+#include<set>
+using namespace std;
 
 int
 main(int argc, char** argv)
@@ -17,6 +19,10 @@ main(int argc, char** argv)
 
     std::vector<TransformG> transformsG;
     std::vector<pcl::PointCloud<PointT>::Ptr> pointClouds;
+    std::vector<pcl::KdTreeFLANN<PointT>::Ptr> searchTrees;
+  std::vector<int> k_indices;
+  std::vector<float> k_distances;
+
     pcl_ros::BAGReader reader;
     if (!reader.open(argv[1], "/rgbdslam/my_clouds"))
     {
@@ -89,6 +95,10 @@ main(int argc, char** argv)
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
                 *aCloud=*cloud_filtered;
                 pointClouds.push_back(aCloud);
+                pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
+                nnFinder->setInputCloud(aCloud);
+                searchTrees.push_back(nnFinder);
+
             }
             else if (pcl_count % 5 == 1)
             {
@@ -110,25 +120,42 @@ main(int argc, char** argv)
                         {
                             // is it also not occluded in the same camera in which it is visible? only then it will be an outlier
                             pcl::PointCloud<PointT>::Ptr apc=pointClouds[c];
-                            int ppc;
+                            pcl::KdTreeFLANN<PointT>::Ptr annFinder=searchTrees[c];
+                            int lpt;
                             // if any point in the same frame occludes it, it wont be an outlier
-                            occluded=false;
-                            for(ppc=0;ppc<apc->size();ppc++)
+                                VectorG cam2point=vpoint.subtract(ctrans.getOrigin());
+                                double distance=cam2point.getNorm();
+                                double radiusCyl=0.05;
+                                cam2point.normalize();
+                                int numPointsInBw=(int)(distance/radiusCyl);
+                                set<int> indices;
+                                indices.clear();
+                            for(lpt=2;lpt<numPointsInBw;lpt++)
                             {
-                                PointT ppcPoint=apc->points[ppc];
-                                VectorG ppcPointV(ppcPoint.x,ppcPoint.y,ppcPoint.z);
-                                double distanceLine=ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(),vpoint);
-                                if(distanceLine<(0.003*0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(),vpoint))
+                                VectorG offset=cam2point.multiply(lpt*radiusCyl);
+                                VectorG linePt = offset.add(ctrans.getOrigin());
+                                int numNeighbors = annFinder->radiusSearch(linePt.getAsPoint(), radiusCyl, k_indices, k_distances, 20);
+                                //apc->
+                                for (int nn = 0; nn < numNeighbors; nn++)
                                 {
-                                    occluded=true;
+                                        indices.insert(k_indices[nn]);
+                                }
+                                k_indices.clear();
+                                k_distances.clear();
+
+                            }
+
+                            set<int>::iterator iter;
+                            occluded=false;
+                            for (iter = indices.begin(); iter != indices.end(); iter++)
+                            {
+                                VectorG ppcPointV(apc->points[*iter]);
+                                double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
+                                if (distanceLine < (0.003 * 0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                {
+                                    occluded = true;
                                     break;
                                 }
-
-                                /*VectorG cam2point=ppcPointV.subtract(ctrans.getOrigin());
-                                double distance=cam2point.getNorm();
-                                int numPointsInBw=distance/0.05;
-                                */
-
                             }
 
                             if(!occluded)
@@ -154,6 +181,9 @@ main(int argc, char** argv)
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
                 *aCloud=*cloud_filtered;
                 pointClouds.push_back(aCloud);
+                pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
+                nnFinder->setInputCloud(aCloud);
+                searchTrees.push_back(nnFinder);
             }
         }
         else
