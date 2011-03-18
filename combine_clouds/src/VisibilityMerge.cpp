@@ -93,10 +93,12 @@ main(int argc, char** argv)
                 {
                     cpoint = cloud_filtered->points[p];
                     int c;
+                        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
+                    if(!transG.isPointVisible(vpoint)) // if this point is not around the centre of it's own cam, ignore it
+                        continue;
                     for (c = 0; c < transformsG.size(); c++)
                     {
                         TransformG ctrans=transformsG[c];
-                        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
                         if((ctrans.isPointVisible(vpoint)))
                             break;
                     }
