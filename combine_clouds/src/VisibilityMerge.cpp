@@ -10,8 +10,8 @@ main(int argc, char** argv)
     rosbag::Bag bag;
     std::cerr << "opening " << argv[1] << std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
-    pcl::PointCloud<PointT>::Ptr final_cloud(new pcl::PointCloud<PointT > ()), cloud_filtered(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
-
+    pcl::PointCloud<PointT>::Ptr  cloud_filtered(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYGRGBCam> ());
 
     int tf_count = 0;
     int pcl_count = 0;
@@ -90,7 +90,7 @@ main(int argc, char** argv)
 
             if (pcl_count == 1)
             {
-                *final_cloud = *cloud_filtered;
+                appendCamIndexAndDistance(cloud_filtered,final_cloud,0,transG.getOrigin());
                 transformsG.push_back(transG);
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
                 *aCloud=*cloud_filtered;
@@ -151,8 +151,9 @@ main(int argc, char** argv)
                             {
                                 VectorG ppcPointV(apc->points[*iter]);
                                 double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
-                                if (distanceLine < (0.003 * 0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                if (distanceLine < (0.004 * 0.004) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
                                 {
+                                    
                                     occluded = true;
                                     break;
                                 }
@@ -170,13 +171,21 @@ main(int argc, char** argv)
                         }
                     }
                     if(c==transformsG.size())
-                        final_cloud->points.push_back(cpoint);
+                    {
+                        pcl::PointXYGRGBCam newPoint;
+                        newPoint.x=cpoint.x;
+                        newPoint.y=cpoint.y;
+                        newPoint.z=cpoint.z;
+                        newPoint.rgb=cpoint.rgb;
+                        newPoint.cameraIndex=transformsG.size();
+                        newPoint.distance=VectorG(cpoint).subtract(transG.getOrigin()).getNorm();
+                        final_cloud->points.push_back(newPoint);
+                    }
                     else
                     {
                         rejectCount++;
                     }
                 }
-                //*final_cloud +=
                 transformsG.push_back(transG);
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
                 *aCloud=*cloud_filtered;
@@ -197,12 +206,12 @@ main(int argc, char** argv)
     while (cloud_blob != cloud_blob_prev);
 
     std::cerr<<"nof rejected points "<<rejectCount;;
-    applyFilters(final_cloud, cloud_filtered);
+ //   applyFilters(final_cloud, cloud_filtered);
 
     bag.close();
     pcl::PCDWriter writer;
 
-    writer.write<PointT > ("/home/aa755/VisibilityMerged.pcd", *cloud_filtered, false);
+    writer.write<pcl::PointXYGRGBCam > ("/home/aa755/VisibilityMerged.pcd", *final_cloud, false);
 
     //  ros::NodeHandle n;
     //Instantiate the kinect image listener

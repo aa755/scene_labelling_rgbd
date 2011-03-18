@@ -60,7 +60,6 @@
 
 
 typedef pcl::PointXYZRGB PointT;
-
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
 {
@@ -349,6 +348,36 @@ getVector3(geometry_msgs::Vector3 v)
 {
     return btVector3(v.x, v.y, v.z);
 
+}
+void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex)
+{
+    out->header=in->header;
+    out->points.resize(in->size());
+    for(int i=0;i<in->size();i++)
+    {
+        out->points[i].x=in->points[i].x;
+        out->points[i].y=in->points[i].y;
+        out->points[i].z=in->points[i].z;
+        out->points[i].rgb=in->points[i].rgb;
+        out->points[i].cameraIndex=camIndex;
+    }
+}
+void appendCamIndexAndDistance(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex,VectorG camOrigin)
+{
+    out->header=in->header;
+    out->points.resize(in->size());
+    for(int i=0;i<in->size();i++)
+    {
+        out->points[i].x=in->points[i].x;
+        out->points[i].y=in->points[i].y;
+        out->points[i].z=in->points[i].z;
+        out->points[i].rgb=in->points[i].rgb;
+        out->points[i].cameraIndex=camIndex;
+        VectorG pt(in->points[i]);
+        VectorG disp=pt.subtract(camOrigin);
+        out->points[i].distance=disp.getNorm();
+
+    }
 }
 
 void

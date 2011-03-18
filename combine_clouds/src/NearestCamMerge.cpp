@@ -4,19 +4,6 @@
 using namespace std;
 
 //template class pcl::ExtractIndices<pcl::PointXYGRGBCam>;
-void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex)
-{
-    out->header=in->header;
-    out->points.resize(in->size());
-    for(int i=0;i<in->size();i++)
-    {
-        out->points[i].x=in->points[i].x;
-        out->points[i].y=in->points[i].y;
-        out->points[i].z=in->points[i].z;
-        out->points[i].rgb=in->points[i].rgb;
-        out->points[i].cameraIndex=camIndex;
-    }
-}
 
 void filterBasedOnCam(pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out, vector<TransformG> & trasforms)
 {
@@ -36,7 +23,7 @@ void filterBasedOnCam(pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr in,pcl::PointClo
         pcl::PointIndices::Ptr outliers (new pcl::PointIndices ());
     for(int i=0;i<in->size();i++)
     {
-        std:cerr<<i<<" of "<<in->size();
+        std::cerr<<i<<" of "<<in->size();
 
         cpoint = in->points[i];
         VectorG vpoint(cpoint.x,cpoint.y,cpoint.z);
