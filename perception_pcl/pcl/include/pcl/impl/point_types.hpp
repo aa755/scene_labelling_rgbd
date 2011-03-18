@@ -63,7 +63,9 @@
   (pcl::BorderDescription)    \
   (pcl::IntensityGradient)    \
   (pcl::Histogram<2>)         \
-  (pcl::PointWithScale)
+  (pcl::PointWithScale)         \
+  (pcl::PointXYGRGBCam)
+
 
 // Define all point types that include XYZ data
 #define PCL_XYZ_POINT_TYPES   \
@@ -77,7 +79,8 @@
   (pcl::PointXYZINormal)      \
   (pcl::PointWithRange)       \
   (pcl::PointWithViewpoint)   \
-  (pcl::PointWithScale)
+  (pcl::PointWithScale)         \
+  (pcl::PointXYGRGBCam)         
 
 // Define all point types that include normal[3] data
 #define PCL_NORMAL_POINT_TYPES  \
@@ -201,14 +204,12 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
 }
     struct PointXYGRGBCam
     {
-       float x;
-       float y;
-       float z;
+        PCL_ADD_POINT4D;
        float rgb;
        uint32_t cameraIndex;
 //       uint32_t label;
     };
-    struct PointXYGRGBDist
+ /*   struct PointXYGRGBDist
     {
        float x;
        float y;
@@ -217,23 +218,7 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
        float dist;
 //       uint32_t label;
     };
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      scene_processing::PointXYGRGBCam,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (uint32_t, cameraIndex, cameraIndex)
-      );
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      scene_processing::PointXYGRGBDist,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (float, dist, dist)
-      );
+*/
 
 
 struct PointXYZRGB

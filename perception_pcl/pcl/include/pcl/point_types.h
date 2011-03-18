@@ -171,6 +171,7 @@ namespace pcl
   
   /** \brief A surfel, that is, a point structure representing Euclidean xyz coordinates, together with normal coordinates, a RGBA color, a radius, a confidence value and the surface curvature estimate. */
   struct PointSurfel;
+  struct PointXYGRGBCam;
   // Members: float x, y, z, normal[3], rgba, radius, confidence, curvature;
 
   // -----Functions on points-----
@@ -200,6 +201,16 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::_PointXYZ,
                                    (float, y, y)
                                    (float, z, z)
 );
+
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+				      pcl::PointXYGRGBCam,
+					        (float, x, x)
+							      (float, y, y)
+								        (float, z, z)
+										      (float, rgb, rgb)
+											        (uint32_t, cameraIndex, cameraIndex)
+													      );
 
 POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::PointXYZ, pcl::_PointXYZ)
 
