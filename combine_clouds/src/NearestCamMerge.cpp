@@ -1,8 +1,10 @@
 #include "CombineUtils.h"
 #include <iostream>
+#include<set>
 using namespace std;
 
-void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr out,int camIndex)
+//template class pcl::ExtractIndices<pcl::PointXYGRGBCam>;
+void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex)
 {
     out->header=in->header;
     out->points.resize(in->size());
@@ -16,12 +18,13 @@ void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<scene_proces
     }
 }
 
-void filterBasedOnCam(pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr in,pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr out, vector<TransformG> & trasforms)
+void filterBasedOnCam(pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out, vector<TransformG> & trasforms)
 {
-   double radius=0.05;
-   scene_processing::PointXYGRGBCam cpoint;
+   double radius=0.1;
+   pcl::PointXYGRGBCam cpoint;
     out->header=in->header;
-  pcl::KdTreeFLANN<scene_processing::PointXYGRGBCam> nnFinder;
+    set<int> indices;
+  pcl::KdTreeFLANN<pcl::PointXYGRGBCam> nnFinder;
   nnFinder.setInputCloud(in);
   std::vector<int> k_indices;
   std::vector<float> k_distances;
@@ -29,10 +32,11 @@ void filterBasedOnCam(pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr in,
   int minDist;
   int minCamIndex;
   float distance;
-        pcl::ExtractIndices<scene_processing::PointXYGRGBCam> extract;
+        pcl::ExtractIndices<pcl::PointXYGRGBCam> extract;
         pcl::PointIndices::Ptr outliers (new pcl::PointIndices ());
     for(int i=0;i<in->size();i++)
     {
+        std:cerr<<i<<" of "<<in->size();
 
         cpoint = in->points[i];
         VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
@@ -51,18 +55,29 @@ void filterBasedOnCam(pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr in,
             }
         }
         if(minCamIndex==-1)
+        {
+            std::cerr<<" point not visible in any cam"<< endl;
             continue;
-        //remove neighbors from all other cams
+        }
         numNeighbors=nnFinder.radiusSearch(i,radius,k_indices,k_distances,20);
+        std::cerr<<" cam: "<< minCamIndex<<","<<numNeighbors<<" neighbors"<<endl;
+        //remove neighbors from all other cams
+        
         for(int nn=0;nn<numNeighbors;nn++)
         {
 
             if(in->points[k_indices[nn]].cameraIndex!=minCamIndex)
-                outliers->indices.push_back(i);          
+                indices.insert(k_indices[nn]);
         }
+        k_indices.clear();
+        k_distances.clear();
 
 
     }
+        set<int>::iterator iter;
+        for(iter=indices.begin();iter!=indices.end();iter++)
+            outliers->indices.push_back(*iter);
+        
     extract.setInputCloud (in);
     extract.setIndices (outliers);
     extract.setNegative (false);
@@ -79,7 +94,7 @@ main(int argc, char** argv)
     std::cerr << "opening " << argv[1] << std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
-    pcl::PointCloud<scene_processing::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ()),cloud_wCamIndices(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ()),final_wCamIndices(new pcl::PointCloud<scene_processing::PointXYGRGBCam > ());
+    pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYGRGBCam > ()),cloud_wCamIndices(new pcl::PointCloud<pcl::PointXYGRGBCam > ()),final_wCamIndices(new pcl::PointCloud<pcl::PointXYGRGBCam > ());
 
     int tf_count = 0;
     int pcl_count = 0;
@@ -178,7 +193,7 @@ main(int argc, char** argv)
     bag.close();
     pcl::PCDWriter writer;
 
-    writer.write<scene_processing::PointXYGRGBCam > ("/home/aa755/VisibilityMerged.pcd", *final_wCamIndices, false);
+    writer.write<pcl::PointXYGRGBCam > ("/home/aa755/VisibilityMerged.pcd", *final_wCamIndices, false);
 
 
 }

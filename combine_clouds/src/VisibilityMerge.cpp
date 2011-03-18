@@ -24,6 +24,7 @@ main(int argc, char** argv)
     sensor_msgs::PointCloud2ConstPtr cloud_blob, cloud_blob_prev;
     pcl::PointCloud<PointT> inp_cloud;
 
+    int rejectCount=0;
     pcl::PassThrough<PointT> pass_;
     do
     {
@@ -101,6 +102,10 @@ main(int argc, char** argv)
                     }
                     if(c==transformsG.size())
                         final_cloud->points.push_back(cpoint);
+                    else
+                    {
+                        rejectCount++;
+                    }
                 }
                 //*final_cloud +=
                 transformsG.push_back(transG);
@@ -116,6 +121,7 @@ main(int argc, char** argv)
     }
     while (cloud_blob != cloud_blob_prev);
 
+    std::cerr<<"nof rejected points "<<rejectCount;;
     applyFilters(final_cloud, cloud_filtered);
 
     bag.close();

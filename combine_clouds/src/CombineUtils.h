@@ -59,44 +59,6 @@
 
 
 
-namespace scene_processing
-{
-    struct PointXYGRGBCam
-    {
-       float x;
-       float y;
-       float z;
-       float rgb;
-       uint32_t cameraIndex;
-//       uint32_t label;
-    };
-    struct PointXYGRGBDist
-    {
-       float x;
-       float y;
-       float z;
-       float rgb;
-       float dist;
-//       uint32_t label;
-    };
-} // namespace scene_processing
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      scene_processing::PointXYGRGBCam,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (uint32_t, cameraIndex, cameraIndex)
-      );
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      scene_processing::PointXYGRGBDist,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (float, dist, dist)
-      );
 
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
@@ -249,6 +211,12 @@ public:
     }
 
     VectorG
+    getYUnitVector()
+    {
+        return getIthColumn(1);
+    }
+
+    VectorG
     getZUnitVector()
     {
         return getIthColumn(2);
@@ -272,9 +240,10 @@ public:
         cam2PointRay.normalize();
         VectorG cam2PointRayUnit=cam2PointRay;
         double xDot=cam2PointRayUnit.dotProduct(getXUnitVector());
+        double yDot=cam2PointRayUnit.dotProduct(getYUnitVector());
         double zDot=cam2PointRayUnit.dotProduct(getZUnitVector());
        // std::cerr<<"dots"<<zDot<<","<<xDot<<","<<xDot/zDot<<std::endl;
-        if(zDot>0 && xDot/zDot<0.5)
+        if(zDot>0 && fabs(xDot/zDot)<0.51 && fabs(yDot/zDot)<0.52)
             return true;
         else
             return false;
