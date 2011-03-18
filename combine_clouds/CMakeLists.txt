@@ -30,5 +30,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(example ${PROJECT_NAME})
 
 #rosbuild_add_executable (run src/main.cpp)
-rosbuild_add_executable (combine src/main.cpp)
+rosbuild_add_executable (combineVisibility src/VisibilityMerge.cpp)
+rosbuild_add_executable (combineNearestCam src/NearestCamMerge.cpp)
 
