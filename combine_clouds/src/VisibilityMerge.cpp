@@ -106,7 +106,6 @@ main(int argc, char** argv)
                         TransformG ctrans=transformsG[c];
                         if((ctrans.isPointVisible(vpoint))) // is it already visibile in a prev camera? then it might be an outlier
                         {
-                            visible=true; // as it is visible in a prev camera, it might be an outlier
                             // is it also not occluded in the same camera in which it is visible? only then it will be an outlier
                             pcl::PointCloud<PointT>::Ptr apc=pointClouds[c];
                             int ppc;
