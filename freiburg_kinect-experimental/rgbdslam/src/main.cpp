@@ -9,16 +9,20 @@
 #include <QApplication>
 #include <QObject>
 #include "qtcv.h"
-
+#include <rosbag/bag.h>
 
 int main(int argc, char** argv)
 {
   QApplication application(argc,argv);
   QtROS qtRos(argc, argv,"rgbdslam"); //Thread object, to run the ros event processing loop in parallel to the qt loop
+  for(int i=0;i<argc;i++)
+      std::cerr<<argv[i]<<endl;
+      std::cerr<<"num params "<<argc<<endl;
+
   //If one thread receives a exit signal from the user, signal the other thread to quit too
   QObject::connect(&application, SIGNAL(aboutToQuit()), &qtRos, SLOT(quitNow()));
   QObject::connect(&qtRos, SIGNAL(rosQuits()), &application, SLOT(quit()));
-
+  //sensor_msgs::
   MainWindow window;
   window.show();
   //Instantiate the kinect image listener
@@ -40,6 +44,10 @@ int main(int argc, char** argv)
 
   // Run main loop.
   qtRos.start();
+  window.pause();
+  rosbag::Bag bag;
+
+  //window.sendAll();
   application.exec();
   //exit(0); // hack to mask something is wrong if return is called on application.exec(). Couldn't find out what's wrong. This was only b/c of qglviewer I think
 }
