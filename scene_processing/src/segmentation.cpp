@@ -62,7 +62,7 @@
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYGRGBCam PointT;
 
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
@@ -76,6 +76,8 @@ namespace my_ns
        float y;
        float z;
        float rgb;
+	   uint32_t cameraIndex;
+	   float distance;
        uint32_t segment;
        uint32_t label;
     };
@@ -87,8 +89,11 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
       (float, y, y)
       (float, z, z)
       (float, rgb, rgb)
+      (uint32_t, cameraIndex, cameraIndex)
+      (float, distance, distance)
       (uint32_t, segment, segment)
-      (uint32_t, label, label));
+      (uint32_t, label, label)
+);
 
 
 
@@ -274,6 +279,7 @@ void extractEuclideanClusters (
   {
     // \note If the tree was created over <cloud, indices>, we guarantee a 1-1 mapping between what the tree returns
     //and indices[i]
+    float adjTolerance = 0;
     if (tree->getInputCloud ()->points.size () != cloud.points.size ())
     {
       ROS_ERROR ("[pcl::extractEuclideanClusters] Tree built for a different point cloud dataset (%zu) than the input cloud (%zu)!", tree->getInputCloud ()->points.size (), cloud.points.size ());
@@ -308,7 +314,9 @@ void extractEuclideanClusters (
          //ROS_INFO ("i = %d, cnt = %d", i , cnt);
 
         // Search for sq_idx
-        if (!tree->radiusSearch (seed_queue[sq_idx], tolerance, nn_indices, nn_distances))
+        adjTolerance = cloud.points[seed_queue[sq_idx]].distance * tolerance;
+        //adjTolerance = tolerance;
+        if (!tree->radiusSearch (seed_queue[sq_idx], adjTolerance, nn_indices, nn_distances))
         {
           sq_idx++;
           continue;
@@ -364,6 +372,7 @@ void extractEuclideanClusters (
       unsigned int min_pts_per_cluster = 1,
       unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
   {
+    float adjTolerance = 0;
     // \note If the tree was created over <cloud, indices>, we guarantee a 1-1 mapping between what the tree returns
     //and indices[i]
     if (tree->getInputCloud ()->points.size () != cloud.points.size ())
@@ -400,7 +409,8 @@ void extractEuclideanClusters (
          //ROS_INFO ("i = %d, cnt = %d", i , cnt);
 
         // Search for sq_idx
-        if (!tree->radiusSearch (seed_queue[sq_idx], tolerance, nn_indices, nn_distances))
+        adjTolerance = cloud.points[seed_queue[sq_idx]].distance * tolerance;
+        if (!tree->radiusSearch (seed_queue[sq_idx], adjTolerance, nn_indices, nn_distances))
         {
           sq_idx++;
           continue;
@@ -488,7 +498,7 @@ int
   int min_pts_per_cluster = 0;
   int max_pts_per_cluster = 3000000;
   int number_neighbours = 50;
-  float radius = 0.025;// 0.01 
+  float radius = 0.01;// 0.025 
   float angle = 0.52;
 
 
@@ -531,7 +541,8 @@ int
     return 0;
   }
   //Step2 : downsample
- 
+
+//  *cloud_filtered = *cloud_ptr; 
   
 
   //Step3: find the normals
