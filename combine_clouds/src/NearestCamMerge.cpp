@@ -39,7 +39,7 @@ void filterBasedOnCam(pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr in,pcl::PointClo
         std:cerr<<i<<" of "<<in->size();
 
         cpoint = in->points[i];
-        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z,true);
+        VectorG vpoint(cpoint.x,cpoint.y,cpoint.z);
         minDist=100000;
         minCamIndex=-1;
         for(int t=0;t<trasforms.size();t++)

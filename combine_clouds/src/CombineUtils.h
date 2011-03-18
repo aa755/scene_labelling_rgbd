@@ -100,16 +100,43 @@ public:
     {
     }
 
-    VectorG(double unitX, double unitY, double unitZ, bool normalize_ = false)
+    VectorG(double unitX, double unitY, double unitZ)
     {
         v[0] = unitX;
         v[1] = unitY;
         v[2] = unitZ;
 
-        if (normalize_)
-        {
-            normalize();
-        }
+
+    }
+
+    /**
+     * compute the distance from the line joining p1 and p2
+     */
+    double computeDistanceSqrFromLine(VectorG p1,VectorG p2)
+    {
+        VectorG t1=p1.subtract(*this);
+
+        VectorG t2=p2.subtract(p1);
+
+        return (t1.getNormSqr()*t2.getNormSqr()-sqrG(t1.dotProduct(t2)))/t2.getNormSqr();
+    }
+
+    /**
+     *true iff it lies in the cylinder of infinite radius defined by p1 and p2
+     * the line segment (p1,p2) is the axis of this cylinder
+     */
+    bool isInsideLineSegment(VectorG p1,VectorG p2)
+    {
+        VectorG lineSeg=p1.subtract(p2);
+        double lengthSqr=lineSeg.getNormSqr();
+        VectorG p1Seg=subtract(p1);
+        VectorG p2Seg=subtract(p2);
+
+        if(p1Seg.getNormSqr()<=lengthSqr&&p2Seg.getNormSqr()<=lengthSqr)
+            return true;
+        else
+            return false;
+
 
     }
 
@@ -124,7 +151,13 @@ public:
     double
     getNorm()
     {
-        return sqrt(sqrG(v[0]) + sqrG(v[1]) + sqrG(v[2]));
+        return sqrt(getNormSqr());
+    }
+
+    double
+    getNormSqr()
+    {
+        return (sqrG(v[0]) + sqrG(v[1]) + sqrG(v[2]));
     }
 
     double
