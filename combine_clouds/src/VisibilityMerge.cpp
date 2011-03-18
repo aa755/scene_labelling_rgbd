@@ -16,6 +16,7 @@ main(int argc, char** argv)
     int tf_count = 0;
     int pcl_count = 0;
     int numOccluded=0;
+    int numOcclRepudiated=0;
 
     std::vector<TransformG> transformsG;
     std::vector<pcl::PointCloud<PointT>::Ptr> pointClouds;
@@ -165,8 +166,50 @@ main(int argc, char** argv)
                             }
                             else
                             {
+                                VectorG cam2point=vpoint.subtract(transG.getOrigin());//change to the cam of test point to check if this occluded point is a duplicate
+                                double distance=cam2point.getNorm();
+                                double radiusCyl=0.05;
+                                cam2point.normalize();
+                                int numPointsInBw=(int)(distance/radiusCyl);
+                                set<int> indices;
+                                indices.clear();
+                                for (lpt = 2; lpt < numPointsInBw; lpt++)
+                                {
+                                    VectorG offset = cam2point.multiply(lpt * radiusCyl);
+                                    VectorG linePt = offset.add(transG.getOrigin());// change origin to current cam
+                                    int numNeighbors = annFinder->radiusSearch(linePt.getAsPoint(), radiusCyl, k_indices, k_distances, 20);
+                                    //apc->
+                                    for (int nn = 0; nn < numNeighbors; nn++)
+                                    {
+                                        indices.insert(k_indices[nn]);
+                                    }
+                                    k_indices.clear();
+                                    k_distances.clear();
+
+                                }
+
+                                set<int>::iterator iter;
+                                occluded = false;
+                                for (iter = indices.begin(); iter != indices.end(); iter++)
+                                {
+                                    VectorG ppcPointV(apc->points[*iter]);
+                                    double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
+                                    if (distanceLine < (0.004 * 0.004) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                    {
+
+                                        occluded = true;
+                                        break;
+                                    }
+                                }
                                 //visible but occluded by some point in same frame
-                                std::cerr<<"occlusion detected "<<numOccluded++ <<" pcl no:"<< pcl_count<<std::endl;
+                                if(occluded)
+                                {
+                                    std::cerr<<"occlusion repudiation detected "<<numOcclRepudiated++ <<" pcl no:"<< pcl_count<<std::endl;
+                                    break;
+                                }
+                                else
+                                    std::cerr<<"occlusion detected "<<numOccluded++ <<" pcl no:"<< pcl_count<<std::endl;
+
                             }
                         }
                     }
