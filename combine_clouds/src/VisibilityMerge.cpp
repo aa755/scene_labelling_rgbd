@@ -13,6 +13,7 @@ main(int argc, char** argv)
 
     int tf_count = 0;
     int pcl_count = 0;
+    int numOccluded=0;
 
     std::vector<TransformG> transformsG;
     std::vector<pcl::PointCloud<PointT>::Ptr> pointClouds;
@@ -93,6 +94,7 @@ main(int argc, char** argv)
             {
                 PointT cpoint;
 
+                std::cerr<<" processing "<<pcl_count<<std::endl;
                 for (int p = 0; p < cloud_filtered->size(); p++)
                 {
                     bool occluded=false;
@@ -116,7 +118,7 @@ main(int argc, char** argv)
                                 PointT ppcPoint=apc->points[ppc];
                                 VectorG ppcPointV(ppcPoint.x,ppcPoint.y,ppcPoint.z);
                                 double distanceLine=ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(),vpoint);
-                                if(distanceLine<(0.005*0.005) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(),vpoint))
+                                if(distanceLine<(0.003*0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(),vpoint))
                                 {
                                     occluded=true;
                                     break;
@@ -136,7 +138,7 @@ main(int argc, char** argv)
                             else
                             {
                                 //visible but occluded by some point in same frame
-                                std::cerr<<"occlusion detected"<<std::endl;
+                                std::cerr<<"occlusion detected "<<numOccluded++ <<" pcl no:"<< pcl_count<<std::endl;
                             }
                         }
                     }
