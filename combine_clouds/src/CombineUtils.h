@@ -353,7 +353,7 @@ void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXY
 {
     out->header=in->header;
     out->points.resize(in->size());
-    for(int i=0;i<in->size();i++)
+    for(unsigned int i=0;i<in->size();i++)
     {
         out->points[i].x=in->points[i].x;
         out->points[i].y=in->points[i].y;
@@ -366,7 +366,7 @@ void appendCamIndexAndDistance(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<p
 {
     out->header=in->header;
     out->points.resize(in->size());
-    for(int i=0;i<in->size();i++)
+    for(unsigned int i=0;i<in->size();i++)
     {
         out->points[i].x=in->points[i].x;
         out->points[i].y=in->points[i].y;

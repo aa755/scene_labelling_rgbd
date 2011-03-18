@@ -101,12 +101,15 @@ main(int argc, char** argv)
                 searchTrees.push_back(nnFinder);
 
             }
-            else if (pcl_count % 5 == 1)
+            else //if (pcl_count 5 == 1)
             {
                 PointT cpoint;
+                pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
+                *aCloud=*cloud_filtered;
+                pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
 
                 std::cerr<<" processing "<<pcl_count<<std::endl;
-                for (int p = 0; p < cloud_filtered->size(); p++)
+                for (unsigned int p = 0; p < cloud_filtered->size(); p++)
                 {
                     bool occluded=false;
                     cpoint = cloud_filtered->points[p];
@@ -173,12 +176,16 @@ main(int argc, char** argv)
                                 int numPointsInBw=(int)(distance/radiusCyl);
                                 set<int> indices;
                                 indices.clear();
-                                for (lpt = 2; lpt < numPointsInBw; lpt++)
+                                int startIndex=numPointsInBw-5;
+                                if(startIndex<1)
+                                    startIndex=1;
+                                for (lpt = startIndex; lpt < numPointsInBw; lpt++)
                                 {
                                     VectorG offset = cam2point.multiply(lpt * radiusCyl);
                                     VectorG linePt = offset.add(transG.getOrigin());// change origin to current cam
                                     int numNeighbors = annFinder->radiusSearch(linePt.getAsPoint(), radiusCyl, k_indices, k_distances, 20);
                                     //apc->
+
                                     for (int nn = 0; nn < numNeighbors; nn++)
                                     {
                                         indices.insert(k_indices[nn]);
@@ -194,8 +201,11 @@ main(int argc, char** argv)
                                 {
                                     VectorG ppcPointV(apc->points[*iter]);
                                     double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
-                                    if (distanceLine < (0.004 * 0.004) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                    if (distanceLine < (0.003 * 0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
                                     {
+
+                                        //occlusion possible
+
 
                                         occluded = true;
                                         break;
@@ -230,11 +240,8 @@ main(int argc, char** argv)
                     }
                 }
                 transformsG.push_back(transG);
-                pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
-                *aCloud=*cloud_filtered;
-                pointClouds.push_back(aCloud);
-                pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
                 nnFinder->setInputCloud(aCloud);
+                pointClouds.push_back(aCloud);
                 searchTrees.push_back(nnFinder);
             }
         }
