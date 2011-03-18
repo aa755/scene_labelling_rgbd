@@ -207,7 +207,7 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
         PCL_ADD_POINT4D;
        float rgb;
        uint32_t cameraIndex;
-//       uint32_t label;
+       float distance;
     };
  /*   struct PointXYGRGBDist
     {

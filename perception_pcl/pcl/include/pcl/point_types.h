@@ -204,13 +204,14 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::_PointXYZ,
 
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
-				      pcl::PointXYGRGBCam,
-					        (float, x, x)
-							      (float, y, y)
-								        (float, z, z)
-										      (float, rgb, rgb)
-											        (uint32_t, cameraIndex, cameraIndex)
-													      );
+        pcl::PointXYGRGBCam,
+        (float, x, x)
+        (float, y, y)
+        (float, z, z)
+        (float, rgb, rgb)
+        (uint32_t, cameraIndex, cameraIndex)
+        (float, distance, distance)
+        );
 
 POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::PointXYZ, pcl::_PointXYZ)
 
