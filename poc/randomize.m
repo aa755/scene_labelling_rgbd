@@ -1,5 +1,6 @@
 
-C = randi([2,5]);
+%C = 4;%randi([2,5]);
+NF=Orig_NF;
 indices = randsample (size(NF,1), int8(size(NF,1)/2) );
 
 Orig_NF = NF;

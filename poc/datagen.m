@@ -144,3 +144,4 @@ for i = 1:size(NFt,1)
         end
     end
 end
+Orig_NF=NF;
