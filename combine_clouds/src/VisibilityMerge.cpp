@@ -10,7 +10,8 @@ main(int argc, char** argv)
     rosbag::Bag bag;
     std::cerr << "opening " << argv[1] << std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
-    pcl::PointCloud<PointT>::Ptr  cloud_filtered(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB> ());// cloud_transformed(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<PointT>::Ptr  cloud_normal(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYGRGBCam> ());
 
     int tf_count = 0;
@@ -21,6 +22,7 @@ main(int argc, char** argv)
     std::vector<TransformG> transformsG;
     std::vector<pcl::PointCloud<PointT>::Ptr> pointClouds;
     std::vector<pcl::KdTreeFLANN<PointT>::Ptr> searchTrees;
+    pcl::PCDWriter writer;
   std::vector<int> k_indices;
   std::vector<float> k_distances;
 
@@ -31,10 +33,10 @@ main(int argc, char** argv)
         return (-1);
     }
     sensor_msgs::PointCloud2ConstPtr cloud_blob, cloud_blob_prev;
-    pcl::PointCloud<PointT> inp_cloud;
+    pcl::PointCloud<pcl::PointXYZRGB> inp_cloud;
 
     int rejectCount=0;
-    pcl::PassThrough<PointT> pass_;
+    pcl::PassThrough<pcl::PointXYZRGB> pass_;
     do
     {
         cloud_blob_prev = cloud_blob;
@@ -80,7 +82,7 @@ main(int argc, char** argv)
         if (tf_count == 1)
         {
             TransformG transG(final_tft);
-            pcl::PointCloud<PointT>::Ptr inp_cloud_ptr(new pcl::PointCloud<PointT > (inp_cloud));
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB > (inp_cloud));
             //  transformPointCloud(transG.transformMat,inp_cloud_ptr,cloud_transformed);
             // applyFilters(inp_cloud_ptr,cloud_filtered);
             std::cerr << "Origin" << inp_cloud.sensor_origin_[0] << "," << inp_cloud.sensor_origin_[1] << "," << inp_cloud.sensor_origin_[2] << "," << inp_cloud.sensor_origin_[3] << std::endl;
@@ -88,31 +90,33 @@ main(int argc, char** argv)
 
             pass_.setInputCloud(inp_cloud_ptr);
             pass_.filter(*cloud_filtered);
+            appendNormals(cloud_filtered,cloud_normal);
+            //app
 
             if (pcl_count == 1)
             {
-                appendCamIndexAndDistance(cloud_filtered,final_cloud,0,transG.getOrigin());
+                appendCamIndexAndDistance(cloud_normal,final_cloud,0,transG.getOrigin());
                 transformsG.push_back(transG);
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
-                *aCloud=*cloud_filtered;
+                *aCloud=*cloud_normal;
                 pointClouds.push_back(aCloud);
                 pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
                 nnFinder->setInputCloud(aCloud);
                 searchTrees.push_back(nnFinder);
 
             }
-            else //if (pcl_count 5 == 1)
+            else if (pcl_count % 5 == 1)
             {
                 PointT cpoint;
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
-                *aCloud=*cloud_filtered;
+                *aCloud=*cloud_normal;
                 pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
 
                 std::cerr<<" processing "<<pcl_count<<std::endl;
-                for (unsigned int p = 0; p < cloud_filtered->size(); p++)
+                for (unsigned int p = 0; p < cloud_normal->size(); p++)
                 {
                     bool occluded=false;
-                    cpoint = cloud_filtered->points[p];
+                    cpoint = cloud_normal->points[p];
                     int c;
                         VectorG vpoint(cpoint.x,cpoint.y,cpoint.z);
                     if(!transG.isPointVisible(vpoint)) // if this point is not around the centre of it's own cam, ignore it
@@ -201,14 +205,17 @@ main(int argc, char** argv)
                                 {
                                     VectorG ppcPointV(apc->points[*iter]);
                                     double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
-                                    if (distanceLine < (0.003 * 0.003) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                    if (distanceLine < (0.003 * 0.003*distance) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
                                     {
+
 
                                         //occlusion possible
 
-
-                                        occluded = true;
-                                        break;
+                                        if(cosNormal(apc->points[*iter],cpoint)>0.92) // more the value, less repudiation => more occlusion =>more points added
+                                        {
+                                            occluded = true;
+                                            break; // =>point wont be added
+                                        }
                                     }
                                 }
                                 //visible but occluded by some point in same frame
@@ -230,6 +237,9 @@ main(int argc, char** argv)
                         newPoint.y=cpoint.y;
                         newPoint.z=cpoint.z;
                         newPoint.rgb=cpoint.rgb;
+                        newPoint.normal_x=cpoint.normal_x;
+                        newPoint.normal_y=cpoint.normal_y;
+                        newPoint.normal_z=cpoint.normal_z;
                         newPoint.cameraIndex=transformsG.size();
                         newPoint.distance=VectorG(cpoint).subtract(transG.getOrigin()).getNorm();
                         final_cloud->points.push_back(newPoint);
@@ -243,6 +253,8 @@ main(int argc, char** argv)
                 nnFinder->setInputCloud(aCloud);
                 pointClouds.push_back(aCloud);
                 searchTrees.push_back(nnFinder);
+            writer.write<pcl::PointXYGRGBCam > ("/home/aa755/VisibilityMerged"+boost::lexical_cast<std::string>(pcl_count)+".pcd", *final_cloud, false);
+
             }
         }
         else
@@ -259,9 +271,7 @@ main(int argc, char** argv)
  //   applyFilters(final_cloud, cloud_filtered);
 
     bag.close();
-    pcl::PCDWriter writer;
 
-    writer.write<pcl::PointXYGRGBCam > ("/home/aa755/VisibilityMerged.pcd", *final_cloud, false);
 
     //  ros::NodeHandle n;
     //Instantiate the kinect image listener

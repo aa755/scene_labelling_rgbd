@@ -59,7 +59,7 @@
 
 
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZRGBNormal PointT;
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
 {
@@ -362,7 +362,7 @@ void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXY
         out->points[i].cameraIndex=camIndex;
     }
 }
-void appendCamIndexAndDistance(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex,VectorG camOrigin)
+void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex,VectorG camOrigin)
 {
     out->header=in->header;
     out->points.resize(in->size());
@@ -372,12 +372,39 @@ void appendCamIndexAndDistance(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<p
         out->points[i].y=in->points[i].y;
         out->points[i].z=in->points[i].z;
         out->points[i].rgb=in->points[i].rgb;
+        out->points[i].normal_x=in->points[i].normal_x;
+        out->points[i].normal_y=in->points[i].normal_y;
+        out->points[i].normal_z=in->points[i].normal_z;
         out->points[i].cameraIndex=camIndex;
         VectorG pt(in->points[i]);
         VectorG disp=pt.subtract(camOrigin);
         out->points[i].distance=disp.getNorm();
 
     }
+}
+
+double cosNormal(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
+{
+//    float ans=c1.squaredError(c2)+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
+    double ans=fabs(p1.normal_x*p2.normal_x+p1.normal_y*p2.normal_y+p1.normal_z*p2.normal_z);
+//    float ans=(c1.squaredError(c2));//+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
+    return ans;
+
+}
+
+void appendNormals(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr out)
+{
+   pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> n3d_;
+     pcl::KdTree<pcl::PointXYZRGB>::Ptr normals_tree_, clusters_tree_;
+  normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<pcl::PointXYZRGB> > ();
+//  clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<Point> > ();
+pcl::PointCloud<pcl::Normal> cloud_normals;
+  // Normal estimation parameters
+  n3d_.setKSearch (50);
+  n3d_.setSearchMethod (normals_tree_);
+   n3d_.setInputCloud (in);
+  n3d_.compute (cloud_normals);
+ pcl::concatenateFields (*in, cloud_normals, *out);
 }
 
 void
