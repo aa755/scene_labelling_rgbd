@@ -8,18 +8,17 @@ For standard pair-wise Markov Network, we have
   P_\Phi (y) = \frac{1}{Z} \prod_{i=1}^{N} \Phi_i(y_i) \prod_{(i,j)\in E} \Phi_{ij}(y_i,y_j)
   \end{equation}
 
-Modeling y as a continuous variable, we can define the log of the node potential as 
-$ log \Phi_i(k) = (y_i -  w_n^k.x_i )^2$  and the log of the edge potential as $ log \Phi_{ij}(l,k) = w_e^{l,k}x_{ij} (P^l y_i - P^k y_j)^2$
-
+Modeling $y_i^k$ as a continuous variable(higher value indicates higher confidence that segment i is of class k), we can define the log of the node potential as 
+$ log \Phi_i(k) = (y_i^k -  w_n^k.x_i )^2$  and the log of the edge potential as $ log \Phi_{ij}(l,k) = w_e^{l,k}x_{ij} ( y_i^l -  y_j^k)^2$
 
 Substituting these potential functions, we can write the log likelihood as: 
 
 \begin{equation}
- \log P_w (y|x) = \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i - w^{k}_{n}.x_{i})^2 + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(P^l y_i - P^k y_j)^2 - \log Z_w(x)
+ \log P_w (y|x) = \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2 - \log Z_w(x,w_e)
 \end{equation}
 
 
-Maximum likelihood approach learning will require the evaluation of the partition function, which is a NP-hard problem. We can use the pseudo-likelihood estimate for approximate parameter learning. 
+Maximum likelihood approach learning will require the evaluation of the partition function. We are trying to compute $Z_w$ analytically. If that is not possible, we can use the pseudo-likelihood estimate for approximate parameter learning. 
 
 
 
@@ -48,7 +47,7 @@ Doing some matrix manipulations(as shown in \cite{taskar2004learning}), we get:
 \begin{equation}
  \log P_w (y|x) = wXy -logZ_w(x)
 \end{equation}
-where $w=[w_n w_e], y=[y_1^1...y_1^K....y_N^1...y_N^K]$ and X is constructed accordingly.
+where $w=[w_n w_e], y_n=[y_1^1...y_1^K....y_N^1...y_N^K],y_{i,j}^{l,k}=y_i^l*y_j^k,y_e=[ .....y_{i,j}^{1,1},y_{i,j}^{1,2}...y_{i,j}^{K,K} ....], y=[y_n,y_e]$ and X is constructed accordingly.
 $w$ is of size $K*|x_i|+K^2*|x_{ij}|$
 
 \section{Training}
@@ -65,7 +64,15 @@ which start by removing all constraints and  iteratively keeps adding most viola
 
 Prediction is an integer programming problem(which is NP complete):
 
-$y^*=\arg \max _y wXy$(subject to appropriate constraints ensuring that y is well formed)
+
+\begin{eqnarray*}
+y^*=\arg \max _y wXy\\
+st: y_{i,j}^{l,k}\le y_i^l\\
+y_{i,j}^{l,k}\le y_j^k\\
+\forall i \sum_{j=1}^{K} y_i^j = 1
+\end{eqnarray*}
+ 
+
 
 We hope we can prove that the LP-relaxation of this problem has provable approximation bounds.
 \bibliographystyle{alpha}
