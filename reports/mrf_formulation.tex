@@ -13,11 +13,14 @@ $ log \Phi_i(k) = (y_i^k -  w_n^k.x_i )^2$  and the log of the edge potential as
 
 Substituting these potential functions, we can write the log likelihood as: 
 
-\begin{equation}
- \log P_w (y|x) = \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2 - \log Z_w(x,w_e)
-\end{equation}
+\begin{eqnarray*}
+P_w (y|x) &=& \frac{1}{Z}exp(-\sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 - \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2), where\\
+Z&=&\int_{-\infty}^{+\infty }{exp \bigg( - \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 - \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2 \bigg) } d^{NK}y\\
+&=&\int_{-\infty}^{+\infty }{exp \bigg(-y^T B y+a^T y\bigg) } d^{NK}y\\
+&=&\frac{(\sqrt{\pi})^n}{\sqrt{det(B)}}exp(\frac{1}{4}y^T B^{-1} y)
+\end{eqnarray*}
 
-
+\subsection{Learning}
 Maximum likelihood approach learning will require the evaluation of the partition function. We are trying to compute $Z_w$ analytically. If that is not possible, we can use the pseudo-likelihood estimate for approximate parameter learning. 
 
 
