@@ -13,14 +13,32 @@ $ log \Phi_i(k) = (y_i^k -  w_n^k.x_i )^2$  and the log of the edge potential as
 
 Substituting these potential functions, we can write the log likelihood as: 
 
-\begin{equation}
- \log P_w (y|x) = \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2 - \log Z_w(x,w_e)
-\end{equation}
+\begin{eqnarray*}
+P_w (y|x) &=& \frac{1}{Z}exp(-\sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 - \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2), where\\
+Z&=&\int_{-\infty}^{+\infty }{exp \bigg( - \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 - \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2 \bigg) } d^{NK}y\\
+&=&\int_{-\infty}^{+\infty }{exp \bigg(-y^T B y+a^T y\bigg) } d^{NK}y\\
+&=&\frac{(\sqrt{\pi})^{NK}}{\sqrt{det(B)}}exp(\frac{1}{4}a^T B^{-1} a)\\
+&=&exp(\frac{1}{4}a^T B^{-1} a+\frac{NK}{2}log(\pi)-\frac{log(det(B))}{2})
+\end{eqnarray*}
 
+\subsection{Learning}
+In learning, we will find the maximum likelihood estimates of $w_n$ and $w_e$.
+\begin{eqnarray*}
+-log P_w (y|x) &=& \sum_{i=1}^{N} \sum_{k=1}^{K} (y_i^k - w^{k}_{n}.x_{i})^2 + \sum_{(i,j)\in E} \sum_{l,k=1}^{K} w_{e}^{l,k}.x_{ij}(y_i^l - y_j^k)^2) +log(Z)\\
+&=& -y^T B y+a^T y +log(Z)\\
+&=&-y^T B y+a^T y +\frac{1}{4}a^T B^{-1} a-\frac{log(det(B))}{2}+\frac{NK}{2}log(\pi)
+\end{eqnarray*}
+Note that B is a function of $w_e$ and a is a function of $w_n$.
 
-Maximum likelihood approach learning will require the evaluation of the partition function. We are trying to compute $Z_w$ analytically. If that is not possible, we can use the pseudo-likelihood estimate for approximate parameter learning. 
+So, we get:
+\begin{eqnarray}
+w=\arg\min_{w}:-y^T B y+a^T y +\frac{1}{4}a^T B^{-1} a-\frac{log(det(B))}{2}
+\end{eqnarray}
 
+This function is convex in a($w_n$)(if inverse of a +ve semidefinite matrix is always semi-definite). It is not obvious whether it is convex in B($w_e$)
 
+\subsection{Training}
+Training boils down to a QP in y.
 
 \section{Model Formulation 2}
 Given labels $\{1,.., K\}$, $y_i^k$ is an indicator variable which is 1 if segment i has label k. 
