@@ -135,10 +135,10 @@ main(int argc, char** argv)
                                 double distance=cam2point.getNorm();
                                 double radiusCyl=0.05;
                                 cam2point.normalize();
-                                int numPointsInBw=(int)(distance/radiusCyl);
+                                int numPointsInBw=(int)(distance/radiusCyl); // floor because we dont wanna consider points very closet to the target
                                 set<int> indices;
                                 indices.clear();
-                            for(lpt=2;lpt<numPointsInBw;lpt++)
+                            for(lpt=2;lpt<numPointsInBw-1;lpt++) // -1 because because we dont wanna consider points very closet to the target ... they could be false occulusions
                             {
                                 VectorG offset=cam2point.multiply(lpt*radiusCyl);
                                 VectorG linePt = offset.add(ctrans.getOrigin());
@@ -169,25 +169,26 @@ main(int argc, char** argv)
 
                             if(!occluded)
                             {
-                                break; // reject this point, must present in prev camera
+                                break; // reject this point, must present in prev camera and not occluded
                             }
                             else
                             {
                                 VectorG cam2point=vpoint.subtract(transG.getOrigin());//change to the cam of test point to check if this occluded point is a duplicate
                                 double distance=cam2point.getNorm();
-                                double radiusCyl=0.05;
+                                double radiusCylFalseOcc=0.1; // more than radiusCyl to ensure more repudiations.. if u change this, also change numPointsToConsider ... the idea is that for repudiation, we only wanna consider points close to the target
+                                int numPointsToConsider=1;
                                 cam2point.normalize();
-                                int numPointsInBw=(int)(distance/radiusCyl);
+                                int numPointsInBw=(int)ceil(distance/radiusCylFalseOcc); // ceil because we dont wanna miss points near the target
                                 set<int> indices;
                                 indices.clear();
-                                int startIndex=numPointsInBw-5;
+                                int startIndex=numPointsInBw-numPointsToConsider;
                                 if(startIndex<1)
                                     startIndex=1;
-                                for (lpt = startIndex; lpt < numPointsInBw; lpt++)
+                                for (lpt = startIndex; lpt <= numPointsInBw; lpt++)
                                 {
-                                    VectorG offset = cam2point.multiply(lpt * radiusCyl);
+                                    VectorG offset = cam2point.multiply(lpt * radiusCylFalseOcc);
                                     VectorG linePt = offset.add(transG.getOrigin());// change origin to current cam
-                                    int numNeighbors = annFinder->radiusSearch(linePt.getAsPoint(), radiusCyl, k_indices, k_distances, 20);
+                                    int numNeighbors = annFinder->radiusSearch(linePt.getAsPoint(), radiusCylFalseOcc, k_indices, k_distances, 20);
                                     //apc->
 
                                     for (int nn = 0; nn < numNeighbors; nn++)
@@ -205,13 +206,13 @@ main(int argc, char** argv)
                                 {
                                     VectorG ppcPointV(apc->points[*iter]);
                                     double distanceLine = ppcPointV.computeDistanceSqrFromLine(ctrans.getOrigin(), vpoint);
-                                    if (distanceLine < (0.003 * 0.003*distance) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint))
+                                    if (distanceLine < (0.003 * 0.003*distance) && ppcPointV.isInsideLineSegment(ctrans.getOrigin(), vpoint)) //0.3 more the value, more repudiation => less points added
                                     {
 
 
                                         //occlusion possible
 
-                                        if(cosNormal(apc->points[*iter],cpoint)>0.92) // more the value, less repudiation => more occlusion =>more points added
+                                        if(cosNormal(apc->points[*iter],cpoint)>0.90) // more the value, less repudiation => more occlusion =>more points added
                                         {
                                             occluded = true;
                                             break; // =>point wont be added

@@ -54,6 +54,15 @@ float sqrG(float y)
     return y*y;
 }
 
+float maxG(float y1, float y2)
+{
+    if(y1>y2)
+        return y1;
+    else
+        return y2;
+
+}
+
 class ColorRGB
 {
     float r;
@@ -65,6 +74,7 @@ public:
     {
         int rgbi=*reinterpret_cast<int*>(&rgb);
         parseColorRGB(rgbi);
+
     }
 
     ColorRGB(int rgbi)
@@ -111,7 +121,7 @@ float weightG(pcl::PointXYZRGBNormal p1,pcl::PointXYZRGBNormal p2)
     ColorRGB c1(p1.rgb);
     ColorRGB c2(p2.rgb);
 //    float ans=c1.squaredError(c2)+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
-    float ans=0.1*c1.squaredError(c2)+(1-sqrG(p1.normal_x*p2.normal_x+p1.normal_y*p2.normal_y+p1.normal_z*p2.normal_z));
+    float ans=maxG(0.3*c1.squaredError(c2),(1-fabs(p1.normal_x*p2.normal_x+p1.normal_y*p2.normal_y+p1.normal_z*p2.normal_z)));
 //    float ans=(c1.squaredError(c2));//+sqrG(p1.normal_x-p2.normal_x)+sqrG(p1.normal_y-p2.normal_y)+sqrG(p1.normal_z-p2.normal_z);
     return ans;
 
@@ -139,11 +149,11 @@ int
     
     float radius=0.01;
   typedef pcl::PointXYZRGB    Point;
-  typedef pcl::KdTree<Point>::Ptr KdTreePtr;    
  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB> ()), cloud_filtered1 (new pcl::PointCloud<pcl::PointXYZRGB> ()),cloud_filtered2 (new pcl::PointCloud<pcl::PointXYZRGB> ());
 pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr final_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
+pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr segmented_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
 
-int stage=1;
+int stage=3;
   // Fill in the cloud data
   pcl::PCDReader reader;
   pcl::PCDWriter writer;
@@ -210,8 +220,8 @@ else
   nnFinder.setInputCloud(final_cloud);
 
 
-  ofstream myfile;
-  myfile.open ("edges.txt");
+//  ofstream myfile;
+//  myfile.open ("edges.txt");
   size_t numNeighbors;
 //  delete cloud;
 //  delete cloud_filtered;
@@ -236,13 +246,13 @@ else
             tedg.a=i;
             tedg.b=nbr;
             tedg.w=weightG(final_cloud->points[i],final_cloud->points[nbr]);
-            myfile<<tedg.a<<","<<tedg.b<<","<<tedg.w<<endl;
+ //           myfile<<tedg.a<<","<<tedg.b<<","<<tedg.w<<endl;
             edges.push_back(tedg);
         }
     }
 
   }
-  myfile.close();
+ // myfile.close();
         std::cerr<<" num_edges: "<<edges.size()<<endl;
 	clock_t end=clock();
   std::cerr << "Time elapsed: " << double(diffclock(end,begin)) << " ms"<< endl;
@@ -275,20 +285,26 @@ else
             segmentIndices.push_back(comp);
             
         }
-        pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+        pcl::ExtractIndices<pcl::PointXYZRGBNormal> extract;
+        pcl::PointIndices::Ptr outliers (new pcl::PointIndices ());
 
 	end=clock();
         std::cerr << "finished generating segmented pcd: " << double(diffclock(end,begin)) << " ms"<< endl;
-      myfile.open ("counts.txt");
-        sort(counts.begin(),counts.end());
         for(size_t i=0;i<numPoints;i++)
         {
-            myfile<<counts[i]<<endl;
+//            std::cerr<<i<<endl;
+            comp=segmentIndices[i];
+            if(counts[comp]<300)
+                outliers->indices.push_back(i);
+
         }
-      myfile.close();
+extract.setInputCloud (final_cloud);
+    extract.setIndices (outliers);
+    extract.setNegative (true);
+    extract.filter (*segmented_cloud);
 
         
-  writer.write<pcl::PointXYZRGBNormal> ("Segmentation.pcd", *final_cloud, false);
+  writer.write<pcl::PointXYZRGBNormal> ("Segmentation.pcd", *segmented_cloud, false);
 
 
   return (0);
