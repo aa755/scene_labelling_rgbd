@@ -587,6 +587,7 @@ bool GraphManager::addEdgeToHogman(AIS::LoadedEdge3D edge, bool largeEdge) {
     std::clock_t starttime=std::clock();
     freshlyOptimized_ = false;
 
+
     AIS::PoseGraph3D::Vertex* v1 = optimizer_->vertex(edge.id1);
     AIS::PoseGraph3D::Vertex* v2 = optimizer_->vertex(edge.id2);
 

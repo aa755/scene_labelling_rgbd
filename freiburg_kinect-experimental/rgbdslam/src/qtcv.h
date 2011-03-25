@@ -35,7 +35,7 @@
      void setTransformation(QString);
      void sendFinished(); ///< Call to display, that sending finished
 
- private slots:
+ public slots:
      void resetCmd();
      void sendAll();
      void pause();
