@@ -86,6 +86,8 @@
  {
      emit reset();
      infoLabel->setText(tr("Graph Reset."));
+     if(pause_on) // if paused resume
+         pause();
  }
 
 
