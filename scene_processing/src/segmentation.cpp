@@ -63,38 +63,10 @@
 #include "pcl/segmentation/sac_segmentation.h"
 
 typedef pcl::PointXYGRGBCam PointT;
+typedef pcl::PointXYZRGBCamSL PointOutT;
 
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
-
-
-namespace my_ns
-{
-    struct MyPoint
-    { 
-       float x;
-       float y;
-       float z;
-       float rgb;
-	   uint32_t cameraIndex;
-	   float distance;
-       uint32_t segment;
-       uint32_t label;
-    };
-} // namespace my_ns
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      my_ns::MyPoint,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (uint32_t, cameraIndex, cameraIndex)
-      (float, distance, distance)
-      (uint32_t, segment, segment)
-      (uint32_t, label, label)
-);
-
 
 
 
@@ -464,8 +436,10 @@ void extractEuclideanClusters (
 
 void getClustersFromPointCloud2 (const pcl::PointCloud<PointT> &cloud_objects,
                 const std::vector<pcl::PointIndices> &clusters2,
-                std::vector<pcl::PointCloud<my_ns::MyPoint> > &clusters,
-                pcl::PointCloud<my_ns::MyPoint> &combined_cloud )
+                //std::vector<pcl::PointCloud<my_ns::MyPoint> > &clusters,
+                std::vector<pcl::PointCloud<PointOutT> > &clusters,
+                //pcl::PointCloud<my_ns::MyPoint> &combined_cloud )
+                pcl::PointCloud<PointOutT> &combined_cloud )
 {
   clusters.resize (clusters2.size ());
   for (size_t i = 0; i < clusters2.size (); ++i)
@@ -479,6 +453,8 @@ void getClustersFromPointCloud2 (const pcl::PointCloud<PointT> &cloud_objects,
       clusters[i].points[j].y = cloud_objects.points[clusters2[i].indices[j]].y;
       clusters[i].points[j].z = cloud_objects.points[clusters2[i].indices[j]].z;
       clusters[i].points[j].rgb = cloud_objects.points[clusters2[i].indices[j]].rgb;
+      clusters[i].points[j].cameraIndex = cloud_objects.points[clusters2[i].indices[j]].cameraIndex;
+      clusters[i].points[j].distance = cloud_objects.points[clusters2[i].indices[j]].distance;
       clusters[i].points[j].segment = i;
       clusters[i].points[j].label = 0;
     }
@@ -500,6 +476,7 @@ int
   int number_neighbours = 50;
   float radius = 0.01;// 0.025 
   float angle = 0.52;
+  float hue_tolerance = 50;
 
 
   sensor_msgs::PointCloud2 cloud_blob;
@@ -573,13 +550,15 @@ int
  // extractEuclideanClusters ( *cloud_filtered, clusters_tree_, tolerance, clusters,  min_pts_per_cluster, max_pts_per_cluster);
  
   if (atoi(argv[2]) == 1)
-   extractEuclideanClusters ( *cloud_filtered,*cloud_normals_ptr,clusters_tree_,radius,clusters,angle ,min_pts_per_cluster, max_pts_per_cluster);
+   extractEuclideanClusters ( *cloud_filtered, *cloud_normals_ptr, clusters_tree_, radius, clusters, angle, min_pts_per_cluster, max_pts_per_cluster);
   else
-   extractEuclideanClusters ( *cloud_filtered,*cloud_normals_ptr,clusters_tree_,radius,50,clusters,angle ,min_pts_per_cluster, max_pts_per_cluster);
+   extractEuclideanClusters ( *cloud_filtered, *cloud_normals_ptr, clusters_tree_, radius, hue_tolerance, clusters,angle, min_pts_per_cluster, max_pts_per_cluster);
   ROS_INFO ("Number of clusters found matching the given constraints: %d.", (int)clusters.size ());
 
-  std::vector<pcl::PointCloud<my_ns::MyPoint> > clusters2;
-  pcl::PointCloud<my_ns::MyPoint> combined_cloud;
+  //std::vector<pcl::PointCloud<my_ns::MyPoint> > clusters2;
+  //pcl::PointCloud<my_ns::MyPoint> combined_cloud;
+  std::vector<pcl::PointCloud<PointOutT> > clusters2;
+  pcl::PointCloud<PointOutT> combined_cloud;
   getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
 /*  for (size_t i = 0; i< clusters2.size(); i++)
   {
