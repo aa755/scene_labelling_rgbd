@@ -9,6 +9,7 @@
  #include <QFont>
 
  #include "qtcv.h"
+#include "ros/node_handle.h"
 
  MainWindow::MainWindow() : pause_on(true)
  {
@@ -67,6 +68,10 @@
      setWindowTitle(tr("RGBD SLAM"));
      setMinimumSize(640, 480);
      resize(850, 700);
+      ros::NodeHandle n;
+//     ros::Timer finishTimer = n.createTimer<MainWindow>(ros::Duration(120.0), &MainWindow::finishTimerCallback,this,true);
+     QTimer::singleShot(240000, this, SLOT(finishTimerCallback()));
+    // ros::spin();
  }
 
  void MainWindow::setNewWidget(QWidget* new_widget){
