@@ -89,7 +89,9 @@
   (pcl::Normal)                 \
   (pcl::PointNormal)            \
   (pcl::PointXYZRGBNormal)      \
-  (pcl::PointXYZINormal)
+  (pcl::PointXYZINormal)        \
+  (pcl::PointXYGRGBCam)
+
 
 namespace pcl
 {
@@ -207,9 +209,12 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
     struct PointXYGRGBCam
     {
         PCL_ADD_POINT4D;
+        PCL_ADD_NORMAL4D;
        float rgb;
        uint32_t cameraIndex;
        float distance;
+             float curvature;
+
     };
 
     struct PointXYZRGBCamSL
