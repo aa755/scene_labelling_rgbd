@@ -24,7 +24,7 @@
                  "the RGBD-images and compute a globally consistent 6D trajectory.</p>"
                  "<b>Usage</b><ul>"
                  "<li><i>File->Pause/Unpause</i> starts/stops processing</li>"
-                 "<li><i>File->Reset</i> to clear the collected information.</li>"
+                 "<li><i>File->Send Model and Reset</i> to clear the collected information.</li>"
                  "<li><i>Help->About RGBD-SLAM</i> displays this text</li></ul>"));
      infoLabel = new QLabel(tr("<i>Kinect Images</i>"));
      infoLabel->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -84,8 +84,9 @@
 
  void MainWindow::resetCmd()
  {
+     sendAll();
      emit reset();
-     infoLabel->setText(tr("Graph Reset."));
+     infoLabel->setText(tr("Model sent and Graph Reset."));
      if(pause_on) // if paused resume
          pause();
  }
