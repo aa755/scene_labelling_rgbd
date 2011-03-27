@@ -64,7 +64,8 @@
   (pcl::IntensityGradient)    \
   (pcl::Histogram<2>)         \
   (pcl::PointWithScale)         \
-  (pcl::PointXYGRGBCam)
+  (pcl::PointXYGRGBCam)		\
+  (pcl::PointXYZRGBCamSL)
 
 
 // Define all point types that include XYZ data
@@ -80,7 +81,8 @@
   (pcl::PointWithRange)       \
   (pcl::PointWithViewpoint)   \
   (pcl::PointWithScale)         \
-  (pcl::PointXYGRGBCam)         
+  (pcl::PointXYGRGBCam)      \ 
+  (pcl::PointXYZRGBCamSL)         
 
 // Define all point types that include normal[3] data
 #define PCL_NORMAL_POINT_TYPES  \
@@ -214,6 +216,18 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
              float curvature;
 
     };
+
+    struct PointXYZRGBCamSL
+    {
+        PCL_ADD_POINT4D;
+       float rgb;
+       uint32_t cameraIndex;
+       float distance;
+       uint32_t segment;
+       uint32_t label;
+    };
+
+
  /*   struct PointXYGRGBDist
     {
        float x;

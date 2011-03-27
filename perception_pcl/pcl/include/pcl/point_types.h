@@ -171,8 +171,13 @@ namespace pcl
   
   /** \brief A surfel, that is, a point structure representing Euclidean xyz coordinates, together with normal coordinates, a RGBA color, a radius, a confidence value and the surface curvature estimate. */
   struct PointSurfel;
-  struct PointXYGRGBCam;
   // Members: float x, y, z, normal[3], rgba, radius, confidence, curvature;
+
+  struct PointXYGRGBCam;
+  // Members: float x, y, z, rgb, cameraIndex, distance;
+
+  struct PointXYZRGBCamSL;
+  // Members: float x, y, z, rgb, segment_id, label;
 
   // -----Functions on points-----
   //! Calculate the euclidean distance between the two given points.
@@ -212,6 +217,20 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
         (uint32_t, cameraIndex, cameraIndex)
         (float, distance, distance)
         );
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+        pcl::PointXYZRGBCamSL,
+        (float, x, x)
+        (float, y, y)
+        (float, z, z)
+        (float, rgb, rgb)
+        (uint32_t, cameraIndex, cameraIndex)
+        (float, distance, distance)
+        (uint32_t, segment, segment)
+        (uint32_t, label, label)
+        );
+
+
 
 POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::PointXYZ, pcl::_PointXYZ)
 
