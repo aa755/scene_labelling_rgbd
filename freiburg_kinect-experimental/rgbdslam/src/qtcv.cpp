@@ -70,7 +70,7 @@
      resize(850, 700);
       ros::NodeHandle n;
 //     ros::Timer finishTimer = n.createTimer<MainWindow>(ros::Duration(120.0), &MainWindow::finishTimerCallback,this,true);
-     QTimer::singleShot(240000, this, SLOT(finishTimerCallback()));
+     QTimer::singleShot(360000, this, SLOT(finishTimerCallback()));
     // ros::spin();
  }
 
