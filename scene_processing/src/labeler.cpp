@@ -71,37 +71,10 @@ typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> Colo
 typedef ColorHandler::Ptr ColorHandlerPtr;
 
 
-namespace my_ns
-{
-    struct MyPoint
-    { 
-       float x;
-       float y;
-       float z;
-       float rgb;
-       uint32_t segment;
-       uint32_t label;
 
-    };
-    
+typedef pcl::PointXYZRGBCamSL PointT;
 
-
-} // namespace my_ns
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-      my_ns::MyPoint,
-      (float, x, x)
-      (float, y, y)
-      (float, z, z)
-      (float, rgb, rgb)
-      (uint32_t, segment, segment)
-      (uint32_t, label, label)
-);
-
-
-
-
-typedef my_ns::MyPoint PointT;
+//typedef my_ns::MyPoint PointT;
 using namespace pcl_visualization;
 
 void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &segmentindices , int size)
@@ -123,7 +96,7 @@ void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &se
      
 }
 
-void apply_segment_filter ( pcl::PointCloud<my_ns::MyPoint> &incloud ,  pcl::PointCloud<my_ns::MyPoint> &outcloud, pcl::PointCloud<my_ns::MyPoint> &segment_cloud , int segment)
+void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud , int segment)
 {
    ROS_INFO ("applying filter");
    outcloud.points.erase(outcloud.points.begin(),outcloud.points.end());
@@ -221,7 +194,8 @@ int
       //getline(cin, input_line);
       cin >> label;
       cout << label << endl;
-      if (strcmp (label, "q") == 0) {break;}
+      //if (strcmp (label, "q") == 0) {break;}
+      if (label[0] =='q') {break;}
       label_mapping[i] = atoi(label);
 //     }
 
@@ -233,8 +207,8 @@ int
 
 
 
-  std::vector<pcl::PointCloud<my_ns::MyPoint> > clusters2;
-  pcl::PointCloud<my_ns::MyPoint> labeled_cloud;
+  std::vector<pcl::PointCloud<PointT> > clusters2;
+  pcl::PointCloud<PointT> labeled_cloud;
   //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
   labeled_cloud.header = cloud.header;
   labeled_cloud.points = cloud.points;
@@ -244,8 +218,8 @@ int
 
   }
   
-  //std::string fn = "labeled_" + argv[1];
-  writer.write ( argv[2],labeled_cloud, false);
+  std::string fn = "labeled_"  + std::string(argv[1]);
+  writer.write ( fn,labeled_cloud, false);
 
 
 
