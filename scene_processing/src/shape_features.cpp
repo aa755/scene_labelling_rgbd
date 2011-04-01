@@ -1,4 +1,6 @@
 #include "float.h"
+#include <iostream>
+#include <fstream>
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
 #include "pcl/filters/passthrough.h"
@@ -72,9 +74,77 @@ void get_avg_feats(vector<vector<float> > &descriptor_results, vector<float> &av
     std::cerr << std::endl;
 }
 
-void concat_feats(vector<vector<float> > &avg_feats, vector<float> &features )
+void get_feat_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result)
 {
-     for (vector<vector<float> >::iterator it = avg_feats.begin(); it < avg_feats.end(); it++) {
+
+  int num_bin = 10;
+  vector<float> min ;
+  vector<float> max ;
+
+  vector<vector<float> >::iterator it = descriptor_results.begin();
+  while(it->size() == 0) it++;
+  max.resize(it->size(),-FLT_MAX);
+  min.resize(it->size(),FLT_MAX);
+  // set size of result vector
+  result.resize(it->size());
+  for (vector<vector<float> >::iterator ires = result.begin(); ires < result.end(); ires++)
+    ires->resize(num_bin);
+  int count=0;
+  // find the bin size by finding the max and min of feature value
+  for (vector<vector<float> >::iterator it = descriptor_results.begin(); it < descriptor_results.end(); it++) {
+     vector<float>::iterator imax = max.begin();
+     vector<float>::iterator imin = min.begin();
+     int c = 0;
+     for (vector<float>::iterator it2 = it->begin(); it2 < it->end(); it2++,imax++, imin++) {
+         c++;
+     //   std::cerr << c << " : " << *it2 << ",\t";
+        if (*imax < *it2) {*imax = *it2;}
+        if (*imin > *it2) {*imin = *it2;}
+     }
+   //  std::cerr << std::endl;
+  }
+
+  
+  // fill the histogram
+  for (vector<vector<float> >::iterator it = descriptor_results.begin(); it < descriptor_results.end(); it++) {
+     vector<float>::iterator imax = max.begin();
+     vector<float>::iterator imin = min.begin();
+     vector<vector<float> >::iterator ires = result.begin();
+
+     if (it->size() > 0) { count++;}
+     for (vector<float>::iterator it2 = it->begin(); it2 < it->end(); it2++,imax++, imin++, ires++) {
+
+       float bin_size = (*imax-*imin)/10;
+       int bin = 0;
+       if(bin_size !=0){bin = (*it2/bin_size);}
+       if(bin > num_bin-1) {bin = num_bin-1; }
+     //   ROS_INFO("%f %d %d",bin_size,bin,(*ires).size());
+       (*ires)[bin] += 1;
+     }
+  }
+
+  // print histogram
+    std::cerr << "historam \n";
+    int c1 = 0,c2 =0;
+    for (vector< vector<float> >::iterator i = result.begin(); i < result.end(); i++) {
+        c1++;
+        std::cerr << "histogram for feature:" << c1 << "\n";
+      for (vector<float>::iterator i2 = i->begin(); i2 < i->end(); i2++){
+        c2++;
+        *i2 = *i2 / count;
+        std::cerr << c2 << " : " << *i2 << ",\t";
+      }
+      std::cerr << std::endl;
+    }
+    std::cerr << std::endl;
+
+}
+
+
+// concat feats (vector-wise) to features vector
+void concat_feats( vector<float> &features, vector<vector<float> > &feats)
+{
+     for (vector<vector<float> >::iterator it = feats.begin(); it < feats.end(); it++) {
 
  //       vector<float>::iterator i = features.end();
         for (vector<float>::iterator it2 = it->begin(); it2 < it->end(); it2++) {
@@ -83,12 +153,24 @@ void concat_feats(vector<vector<float> > &avg_feats, vector<float> &features )
     }
 }
 
+// concat feats vector to features vector
+void concat_feats( vector<float> &features, vector<float> &feats)
+{
+     for (vector<float>::iterator it = feats.begin(); it < feats.end(); it++) {
+        
+        features.push_back(*it);
+      
+    }
+}
+
 int main(int argc, char** argv) {
 
     sensor_msgs::PointCloud2 cloud_blob, cloud_tmp;
     sensor_msgs::PointCloud cloud_blob2;
     pcl::PointCloud<PointT> cloud;
-
+    ofstream labelfile, featfile;
+    labelfile.open ("labels.txt");
+    featfile.open ("feats.txt");
 
     // read the pcd file
 
@@ -142,7 +224,8 @@ int main(int argc, char** argv) {
         extract.setNegative(false);
         extract.filter(*cloud_seg);
         std::cerr << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
-        if (cloud_seg->points.size() > 100) {
+        if (cloud_seg->points[0].label != 0) {
+
             SpectralAnalysis sa(0.05);
             SpinImageNormal spin_image(0.025, 0.025, 5, 4, false, sa);
             ShapeSpectral shape_spectral(sa);
@@ -150,9 +233,10 @@ int main(int argc, char** argv) {
             OrientationTangent o_tangent(0, 0, 1, sa);
             Position position;
             BoundingBoxSpectral bbox_spectral(1.0, sa);
+
+            // histogram feats
             vector<Descriptor3D*> descriptors_3d;
             descriptors_3d.push_back(&shape_spectral);
-            descriptors_3d.push_back(&spin_image);
             descriptors_3d.push_back(&o_normal);
             descriptors_3d.push_back(&o_tangent);
             //descriptors_3d.push_back(&position);
@@ -187,15 +271,32 @@ int main(int argc, char** argv) {
             //     spin_image.compute(cloud_blob2, pt_cloud_kdtree, interest_pts, descriptor_results);
             unsigned int nbr_descriptors = descriptors_3d.size();
             vector<vector<vector<float> > > all_descriptor_results(nbr_descriptors);
-            vector<vector<float> > avg_feats(nbr_descriptors);
+           
+            vector<vector<vector<float> > > hist_feats(nbr_descriptors);
             for (unsigned int i = 0; i < nbr_descriptors; i++) {
+                std::cerr << "hist featnum: " << i << "\n"  ;
                 descriptors_3d[i]->compute(cloud_blob2, pt_cloud_kdtree, interest_pts, all_descriptor_results[i]);
-                
-                std::cerr << "featnum: " << i << "\t"  ;
-                get_avg_feats(all_descriptor_results[i], avg_feats[i]);
+                std::cerr << "feature computed" << "\n"  ;
+                get_feat_histogram(all_descriptor_results[i], hist_feats[i]);
+                concat_feats(features,hist_feats[i]);
             }
 
-            concat_feats(avg_feats,features);
+
+            // average feats
+            vector<Descriptor3D*> descriptors_3d_avg;
+            descriptors_3d_avg.push_back(&spin_image);
+
+            unsigned int nbr_descriptors_avg = descriptors_3d_avg.size();
+            vector<vector<vector<float> > > all_avg_descriptor_results(nbr_descriptors);
+            vector<vector<float> > avg_feats(nbr_descriptors_avg);
+            for (unsigned int i = 0; i < nbr_descriptors_avg; i++) {
+                std::cerr << "avg featnum: " << i << "\n"  ;
+                descriptors_3d_avg[i]->compute(cloud_blob2, pt_cloud_kdtree, interest_pts, all_avg_descriptor_results[i]);
+                get_avg_feats(all_avg_descriptor_results[i], avg_feats[i]);
+                concat_feats(features,avg_feats[i]);
+            }
+           
+
             getMinMax(*cloud_ptr, *segment_indices, min_p, max_p);
             ROS_INFO("minp : %f,%f,%f\t maxp : %f,%f,%f", min_p[0], min_p[1], min_p[2], max_p[0], max_p[1], max_p[2]);
             ROS_INFO("size of all_descriptor_results : %d", all_descriptor_results[1].size());
@@ -205,12 +306,22 @@ int main(int argc, char** argv) {
             features.push_back(max_p[2]-  min_p[2]);
 
 
+            // write label to  file
+             labelfile << cloud_seg->points[0].label <<"\n";
 
-
+            // write features to file
+             for (vector<float>::iterator it = features.begin(); it < features.end(); it++) {
+                 featfile << *it <<"\t";
+             }
+             featfile <<"\n";
         }
     }
-    // for each segment compute features
-    // feature 1 : height
+
+
+    // print out the features to a file
+    
+    labelfile.close();
+    featfile.close();
 
 
 }
