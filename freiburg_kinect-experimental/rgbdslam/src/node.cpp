@@ -183,9 +183,9 @@ int Node::findPairsFlann(Node& other, vector<cv::DMatch>* matches) {
     cv::DMatch match;
     for (int i = 0; i < indices.rows; ++i) {
 
-        if (dists_ptr[2 * i] < 0.6 * dists_ptr[2 * i + 1] ){ 
+        if (dists_ptr[2 * i] < 0.6 * dists_ptr[2 * i + 1]) {
 // && abs(feature_locations_2d_[i].pt.y-other.feature_locations_2d_[indices_ptr[2 * i]].pt.y)<10000000) {
-        std::cerr<<feature_locations_2d_[i].pt.y<<","<<other.feature_locations_2d_[indices_ptr[2 * i]].pt.y <<endl;
+//        std::cerr<<feature_locations_2d_[i].pt.y<<","<<other.feature_locations_2d_[indices_ptr[2 * i]].pt.y <<endl;
             match.queryIdx = i;
             match.trainIdx = indices_ptr[2 * i];
             match.distance = dists_ptr[2 * i];

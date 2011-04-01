@@ -9,6 +9,7 @@
 
  #include <QMainWindow>
  #include <QGridLayout>
+#include "ros/ros.h"
 
  class QAction;
  class QActionGroup;
@@ -35,11 +36,16 @@
      void setTransformation(QString);
      void sendFinished(); ///< Call to display, that sending finished
 
- private slots:
+
+ public slots:
      void resetCmd();
      void sendAll();
      void pause();
      void about();
+    void finishTimerCallback() {
+        sendAll();
+        std::cerr<<"model sent on timer event\n";
+    }
 
  private:
      void createActions();
