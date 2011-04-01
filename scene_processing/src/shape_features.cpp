@@ -64,12 +64,12 @@ void get_avg_feats(vector<vector<float> > &descriptor_results, vector<float> &av
         }
 
     }
-    std::cerr << "average features" << std::endl;
+   // std::cerr << "average features" << std::endl;
     int c = 0;
     for (vector<float>::iterator i = avg_feats.begin(); i < avg_feats.end(); i++) {
         c++;
         *i = *i / count;
-        std::cerr << c << " : " << *i << ",\t";
+   //     std::cerr << c << " : " << *i << ",\t";
     }
     std::cerr << std::endl;
 }
@@ -77,7 +77,7 @@ void get_avg_feats(vector<vector<float> > &descriptor_results, vector<float> &av
 void get_feat_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result)
 {
 
-  int num_bin = 10;
+  int num_bin = 5;
   vector<float> min ;
   vector<float> max ;
 
@@ -124,15 +124,15 @@ void get_feat_histogram(vector<vector<float> > &descriptor_results, vector< vect
   }
 
   // print histogram
-    std::cerr << "historam \n";
+  //  std::cerr << "historam \n";
     int c1 = 0,c2 =0;
     for (vector< vector<float> >::iterator i = result.begin(); i < result.end(); i++) {
         c1++;
-        std::cerr << "histogram for feature:" << c1 << "\n";
+    //    std::cerr << "histogram for feature:" << c1 << "\n";
       for (vector<float>::iterator i2 = i->begin(); i2 < i->end(); i2++){
         c2++;
         *i2 = *i2 / count;
-        std::cerr << c2 << " : " << *i2 << ",\t";
+   //     std::cerr << c2 << " : " << *i2 << ",\t";
       }
       std::cerr << std::endl;
     }
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         extract.setIndices(segment_indices);
         extract.setNegative(false);
         extract.filter(*cloud_seg);
-        std::cerr << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
+       // std::cerr << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
         if (cloud_seg->points[0].label != 0) {
 
             SpectralAnalysis sa(0.05);
@@ -238,9 +238,9 @@ int main(int argc, char** argv) {
             vector<Descriptor3D*> descriptors_3d;
             descriptors_3d.push_back(&shape_spectral);
             descriptors_3d.push_back(&o_normal);
-            descriptors_3d.push_back(&o_tangent);
+            //descriptors_3d.push_back(&o_tangent);
             //descriptors_3d.push_back(&position);
-            descriptors_3d.push_back(&bbox_spectral);
+            //descriptors_3d.push_back(&bbox_spectral);
 
             pcl::toROSMsg(*cloud_seg, cloud_tmp);
             sensor_msgs::convertPointCloud2ToPointCloud(cloud_tmp, cloud_blob2);
@@ -298,8 +298,8 @@ int main(int argc, char** argv) {
            
 
             getMinMax(*cloud_ptr, *segment_indices, min_p, max_p);
-            ROS_INFO("minp : %f,%f,%f\t maxp : %f,%f,%f", min_p[0], min_p[1], min_p[2], max_p[0], max_p[1], max_p[2]);
-            ROS_INFO("size of all_descriptor_results : %d", all_descriptor_results[1].size());
+          //  ROS_INFO("minp : %f,%f,%f\t maxp : %f,%f,%f", min_p[0], min_p[1], min_p[2], max_p[0], max_p[1], max_p[2]);
+          //  ROS_INFO("size of all_descriptor_results : %d", all_descriptor_results[1].size());
             // add bounding box features
             features.push_back(max_p[0]-  min_p[0]);
             features.push_back(max_p[1]-  min_p[1]);
