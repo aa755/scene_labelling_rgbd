@@ -254,7 +254,6 @@ main(int argc, char** argv)
                 nnFinder->setInputCloud(aCloud);
                 pointClouds.push_back(aCloud);
                 searchTrees.push_back(nnFinder);
-            writer.write<pcl::PointXYGRGBCam > ("/home/aa755/VisibilityMerged"+boost::lexical_cast<std::string>(pcl_count)+".pcd", *final_cloud, false);
 
             }
         }
@@ -270,6 +269,8 @@ main(int argc, char** argv)
 
     std::cerr<<"nof rejected points "<<rejectCount;;
  //   applyFilters(final_cloud, cloud_filtered);
+    string filename=string(argv[1]).append(".combined.pcd");
+            writer.write<pcl::PointXYGRGBCam > (filename, *final_cloud, false);
 
     bag.close();
 

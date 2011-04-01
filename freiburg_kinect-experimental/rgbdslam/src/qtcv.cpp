@@ -9,6 +9,7 @@
  #include <QFont>
 
  #include "qtcv.h"
+#include "ros/node_handle.h"
 
  MainWindow::MainWindow() : pause_on(true)
  {
@@ -24,7 +25,7 @@
                  "the RGBD-images and compute a globally consistent 6D trajectory.</p>"
                  "<b>Usage</b><ul>"
                  "<li><i>File->Pause/Unpause</i> starts/stops processing</li>"
-                 "<li><i>File->Reset</i> to clear the collected information.</li>"
+                 "<li><i>File->Send Model and Reset</i> to clear the collected information.</li>"
                  "<li><i>Help->About RGBD-SLAM</i> displays this text</li></ul>"));
      infoLabel = new QLabel(tr("<i>Kinect Images</i>"));
      infoLabel->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -67,6 +68,10 @@
      setWindowTitle(tr("RGBD SLAM"));
      setMinimumSize(640, 480);
      resize(850, 700);
+      ros::NodeHandle n;
+//     ros::Timer finishTimer = n.createTimer<MainWindow>(ros::Duration(120.0), &MainWindow::finishTimerCallback,this,true);
+     QTimer::singleShot(360000, this, SLOT(finishTimerCallback()));
+    // ros::spin();
  }
 
  void MainWindow::setNewWidget(QWidget* new_widget){
@@ -84,8 +89,11 @@
 
  void MainWindow::resetCmd()
  {
+     sendAll();
      emit reset();
-     infoLabel->setText(tr("Graph Reset."));
+     infoLabel->setText(tr("Model sent and Graph Reset."));
+     if(pause_on) // if paused resume
+         pause();
  }
 
 

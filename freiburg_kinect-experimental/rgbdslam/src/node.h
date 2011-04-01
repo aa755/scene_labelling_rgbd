@@ -47,7 +47,7 @@ class Node {
                                      float& rmse,
                                      std::vector<cv::DMatch>& matches,//for visualization?
                                      unsigned int min_inlier_threshold = 15,
-                                     unsigned int max_ransac_iterations = 1000) const;
+                                     unsigned int max_ransac_iterations = 10000) const;
 
     // initial_transformation: optional transformation applied to this->pc before
     // using icp
