@@ -229,11 +229,14 @@ int
       while(label[0]=='8')
       {
           cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,9 to quit):" << endl;
+          if(spintime==1000)
+              spintime=5000;
 //    if(it==segmentIndices.begin())
 //        boost::thread trds(spinThread);
       //getline(cin, input_line);
         viewer.spinOnce(spintime,true);
           cin >> label;
+          
           spintime=spintime*2; //show it for more time if user complains 
 
       }
