@@ -43,6 +43,7 @@
 
 **/
 #include <iostream>
+#include <boost/thread.hpp>
 
 #include <stdint.h>
 //#include <pcl_visualization/cloud_viewer.h>
@@ -66,6 +67,7 @@
 #include "pcl/segmentation/sac_segmentation.h"
 
 //typedef pcl::PointXYZRGB PointT;
+//std::string initLabels[]={"wall","floor","table","shelf","chair","cpu","monitor","clutter"};
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
@@ -121,12 +123,42 @@ void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<
   }
    segment_cloud.points.resize ( outcloud.points.size() );
 }
+
+   pcl_visualization::PCLVisualizer viewer("3D Viewer");
+//   int spin=1;
+void spinThread()
+{
+    std::cerr<<"thread started";
+    while(true)
+        viewer.spinOnce(1000,true);
+}
 /* ---[ */
 int
   main (int argc, char** argv)
 {
+    std::vector<std::string> labels;//(initLabels);
+    std::ifstream labelFile;
+    std::string line;
+    labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
 
-
+    if(labelFile.is_open())
+    {
+        int count=1;
+        while(labelFile.good())
+        {
+            getline(labelFile,line);//each line is a label
+            if(line.size()==0)
+                break;
+            cout<<"adding label "<<line<<" with value:"<<count<<endl;
+            count++;
+            labels.push_back(line);
+        }
+    }
+    else
+    {
+        cout<<"could not open label file...exiting\n";
+        exit(-1);
+    }
   sensor_msgs::PointCloud2 cloud_blob;
   sensor_msgs::PointCloud2 cloud_blob_filtered;
   sensor_msgs::PointCloud2 cloud_blob_colored;
@@ -165,39 +197,84 @@ int
   get_sorted_indices ( *cloud_ptr , segmentIndices , max_segment_num);
 
   // get the 
-  //for (int i = 1 ; i <= max_segment_num ; i++ ){ 
+    int viewport = 0;
+    viewer.createViewPort(0.0,0.0,0.5,1.0,viewport);
+    viewport=1;
+    viewer.createViewPort(0.5,0.0,1.0,1.0,viewport);
+  //for (int i = 1 ; i <= max_segment_num ; i++ ){
+ 
   for ( std::vector<int>::iterator it=segmentIndices.begin() ; it < segmentIndices.end(); it++ ) { 
     int i = *it;
 
    ROS_INFO ("CLuster number %d",i);
-   pcl_visualization::PCLVisualizer viewer("3D Viewer");
 //    viewer.addCoordinateSystem(1.0f);
 
     apply_segment_filter( *cloud_ptr, *cloud_colored , *cloud_filtered, i);
     pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
     pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
 
-    int viewport = 0;
-    viewer.createViewPort(0.0,0.0,0.5,1.0,viewport);
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_colored));
-    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewport);
-    viewer.createViewPort(0.5,0.0,1.0,1.0,viewport);
+    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",0);
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
-    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewport);
+    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",1);
 
   //  while (!viewer.wasStopped())
 
-      viewer.spin();
+ //     viewer.spin();
+      viewer.spinOnce(1000,true);
+
      // usleep(100000);
-      char label[] = "0";
-      cout << "Enter label:" << endl;
+      char label[] = "8";
+      int spintime=500;
+      while(label[0]=='8')
+      {
+          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,9 to quit):" << endl;
+//    if(it==segmentIndices.begin())
+//        boost::thread trds(spinThread);
       //getline(cin, input_line);
-      cin >> label;
-      cout << label << endl;
+        viewer.spinOnce(spintime,true);
+          cin >> label;
+          spintime=spintime*2; //show it for more time if user complains 
+
+      }
       //if (strcmp (label, "q") == 0) {break;}
-      if (label[0] =='q') {break;}
-      label_mapping[i] = atoi(label);
-//     }
+      if (label[0] =='9') {break;}
+      bool done=false;
+      while(!done)
+      {
+         cout <<"selected label:"<< label << endl;
+         std::string labelStr(label);
+         for(int li=0;li<labels.size();li++)
+         {
+             if(labelStr.compare(labels.at(li))==0)
+             {
+                label_mapping[i] = li+1;
+                cout <<"label numerical alias:"<< li+1 << endl;
+
+                done=true;
+                break;
+             }
+         }
+         if(!done)
+         {
+             cout <<"label not found... enter label again or 7 to add this as another label" << endl;
+              cin >> label;
+              if(label[0]=='7')
+              {
+                  cout<<"added new label:"<<labelStr<<endl;
+                  labels.push_back(std::string(label));
+                  //the next iteration will match and exit... no need to set done now
+                  cout<<"new set of labels: \n";
+                 for(int li=0;li<labels.size();li++)
+                 {
+                     cout<<labels.at(li)<<endl;
+                 }
+
+              }
+             
+         }
+      }
+
 
     viewer.removePointCloud("cluster");
     viewer.removePointCloud("cloud");
@@ -219,8 +296,17 @@ int
   }
   
   std::string fn = "labeled_"  + std::string(argv[1]);
+    std::ofstream labelFileOut;
+    labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
+                 for(int li=0;li<labels.size();li++)
+                 {
+                     labelFileOut<<labels.at(li)<<endl;
+                 }
+    labelFileOut.close();
+
   writer.write ( fn,labeled_cloud, false);
 
+  //cout<<"IMPORTANT!!! ... replace the first line after includes in labeler.cpp with:"
 
 
   return (0);

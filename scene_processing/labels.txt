@@ -1,0 +1,8 @@
+wall
+floor
+table
+shelf
+chair
+cpu
+monitor
+clutter
