@@ -284,7 +284,7 @@ void extractEuclideanClusters (
         r.indices.erase (unique (r.indices.begin (), r.indices.end ()), r.indices.end ());
 
         r.header = cloud.header;
-        ROS_INFO ("cluster of size %d data point\n ",r.indices.size());
+        //ROS_INFO ("cluster of size %d data point\n ",r.indices.size());
         clusters.push_back (r);
       }
     }
@@ -382,7 +382,7 @@ void extractEuclideanClusters (
         r.indices.erase (unique (r.indices.begin (), r.indices.end ()), r.indices.end ());
 
         r.header = cloud.header;
-        ROS_INFO ("cluster of size %d data point\n ",r.indices.size());
+        //ROS_INFO ("cluster of size %d data point\n ",r.indices.size());
         clusters.push_back (r);
       }
     }
@@ -458,7 +458,7 @@ int
     ROS_ERROR ("Couldn't read file test_pcd.pcd");
     return (-1);
   }
-  ROS_INFO ("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int)(cloud_blob.width * cloud_blob.height), pcl::getFieldsList (cloud_blob).c_str ());
+  ROS_INFO ("Loaded %d data points from %s  with the following fields: %s", (int)(cloud_blob.width * cloud_blob.height), argv[1], pcl::getFieldsList (cloud_blob).c_str ());
 
   // Convert to the templated message type
    pcl::fromROSMsg (cloud_blob, cloud);
@@ -527,7 +527,7 @@ int
 
   }*/
   std::string fn (argv[1]);
-  fn = fn.substr(0,fn.find('.')-1);
+  fn = fn.substr(0,fn.find('.'));
 
   if (atoi(argv[2]) == 1) {fn = fn + "_segmented_xyzn.pcd";} else { fn = fn + "_segmented_xyzrgbn.pcd";}
   writer.write ( fn,combined_cloud, true);
