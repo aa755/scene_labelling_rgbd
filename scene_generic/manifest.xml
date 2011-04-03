@@ -1,0 +1,17 @@
+<package>
+  <description brief="scene_generic">
+
+     scene_generic
+
+  </description>
+  <author>Hema Koppula</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/scene_generic</url>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+
+
+</package>
+
+

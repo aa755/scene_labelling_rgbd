@@ -75,9 +75,9 @@ void get_feature_average(vector<vector<float> > &descriptor_results, vector<floa
     std::cerr << std::endl;
 }
 
-void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result) {
+void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result, int num_bin) {
 
-    int num_bin = 5;
+    // num_bin = 5;
     vector<float> min;
     vector<float> max;
 
@@ -173,7 +173,7 @@ void concat_feats(vector<float> &features, vector<float> &feats) {
     }
 }
 
-void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features) {
+void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin) {
 
     // histogram and average of hue and intensity
 
@@ -186,7 +186,7 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
         (*it).push_back(c.H);
         (*it).push_back(c.V);
     }
-    get_feature_histogram(color_features, hist_features);
+    get_feature_histogram(color_features, hist_features, num_bin);
     get_feature_average(color_features, avg_features);
 
     concat_feats(features, hist_features);
@@ -194,7 +194,7 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 
 }
 
-void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features ) {
+void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {
 
 
     sensor_msgs::PointCloud cloud_blob2;
@@ -220,16 +220,16 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     sensor_msgs::convertPointCloud2ToPointCloud(cloud_tmp, cloud_blob2);
     cloud_kdtree::KdTreeANN pt_cloud_kdtree(cloud_blob2);
     vector<const geometry_msgs::Point32*> interest_pts;
-    if (cloud.points.size() < 200) {
+    if (cloud.points.size() < 2000) {
         interest_pts.resize(cloud_blob2.points.size());
         for (size_t i = 0; i < cloud_blob2.points.size(); i++) {
             interest_pts[i] = &(cloud_blob2.points[i]);
         }
     } else {
-        interest_pts.resize(100);
+        interest_pts.resize(1000);
         map<int, int> in;
         int count = 0;
-        while (count < 100) {
+        while (count < 1000) {
             int a = rand() % cloud_blob2.points.size();
             if (in.find(a) == in.end()) {
                 in[a] = 1;
@@ -251,7 +251,7 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
         std::cerr << "hist featnum: " << i << "\n";
         descriptors_3d[i]->compute(cloud_blob2, pt_cloud_kdtree, interest_pts, all_descriptor_results[i]);
         std::cerr << "feature computed" << "\n";
-        get_feature_histogram(all_descriptor_results[i], hist_feats[i]);
+        get_feature_histogram(all_descriptor_results[i], hist_feats[i], num_bin);
         concat_feats(features, hist_feats[i]);
     }
 
@@ -274,12 +274,15 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 
 int main(int argc, char** argv) {
 
+    int num_bin_color = atoi (argv[2]);
+    int num_bin_shape = atoi (argv[3]);
+
     sensor_msgs::PointCloud2 cloud_blob;
    
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, featfile;
-    labelfile.open("labels.txt");
-    featfile.open("feats.txt");
+    labelfile.open("data_labels.txt",ios::app);
+    featfile.open("data_feats.txt",ios::app);
 
     // read the pcd file
 
@@ -335,10 +338,10 @@ int main(int argc, char** argv) {
         if (cloud_seg->points[0].label != 0) {
 
             // get color features
-            get_color_features(*cloud_seg, features);
+            get_color_features(*cloud_seg, features, num_bin_color);
 
             // get shape features
-            get_shape_features(*cloud_seg, features);
+            get_shape_features(*cloud_seg, features, num_bin_shape);
 
             // get bounding box features
             getMinMax(*cloud_ptr, *segment_indices, min_p, max_p);
