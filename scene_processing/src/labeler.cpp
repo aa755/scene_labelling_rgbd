@@ -117,6 +117,8 @@ void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<
        segment_cloud.points[j].z = incloud.points[i].z;
        segment_cloud.points[j].rgb = incloud.points[i].rgb;
        segment_cloud.points[j].segment = incloud.points[i].segment;
+       segment_cloud.points[j].label = incloud.points[i].label;
+  //     std::cerr<<segment_cloud.points[j].label<<",";
        outcloud.points[i].rgb = 0.00005 ;
        j++;
      }
@@ -141,6 +143,7 @@ int
     std::string line;
     labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
 
+    std::cerr<<"you can only quit by pressing 9 when the prompt mentions... quitting in other ways will discard any newly added labels\n";
     if(labelFile.is_open())
     {
         int count=1;
@@ -164,7 +167,6 @@ int
   sensor_msgs::PointCloud2 cloud_blob_colored;
 
   pcl::PointCloud<PointT> cloud;
-  pcl::PointCloud<pcl::PointXYZRGB> cloud2;
  //ColorHandlerPtr color_handler;
   pcl::PCDWriter writer;
   ColorHandlerPtr color_handler;
@@ -183,9 +185,9 @@ int
 
   // Convert to the templated message type
    pcl::fromROSMsg (cloud_blob, cloud);
-   pcl::fromROSMsg (cloud_blob, cloud2);
    pcl::PointCloud<PointT>::Ptr cloud_ptr (new pcl::PointCloud<PointT> (cloud));
-  
+
+
   // find the max segment number 
   int max_segment_num = 0;
   for (size_t i = 0; i < cloud.points.size (); ++i)
@@ -197,10 +199,11 @@ int
   get_sorted_indices ( *cloud_ptr , segmentIndices , max_segment_num);
 
   // get the 
-    int viewport = 0;
-    viewer.createViewPort(0.0,0.0,0.5,1.0,viewport);
-    viewport=1;
-    viewer.createViewPort(0.5,0.0,1.0,1.0,viewport);
+    int viewportCloud = 0;
+    int viewportCluster = 0;
+
+    viewer.createViewPort(0.0,0.0,0.5,1.0,viewportCloud);
+    viewer.createViewPort(0.5,0.0,1.0,1.0,viewportCluster);
   //for (int i = 1 ; i <= max_segment_num ; i++ ){
  
   for ( std::vector<int>::iterator it=segmentIndices.begin() ; it < segmentIndices.end(); it++ ) { 
@@ -210,13 +213,29 @@ int
 //    viewer.addCoordinateSystem(1.0f);
 
     apply_segment_filter( *cloud_ptr, *cloud_colored , *cloud_filtered, i);
+/*      for (size_t i = 0; i < cloud_filtered->points.size(); ++i)
+  {
+     std::cerr <<  i << ": " << cloud.points[i].segment << ", " << cloud.points[i].label << std::endl;
+  }
+*/
+    int curLabel=cloud_filtered->points[1].label;
+    if(curLabel==0)
+    {
+        cout<<"not assigned a label yet\n";
+    }
+    else
+    {
+        assert(curLabel>0&&curLabel<=labels.size());
+        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
+    }
+
     pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
     pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
 
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_colored));
-    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",0);
+    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewportCloud);
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
-    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",1);
+    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewportCluster);
 
   //  while (!viewer.wasStopped())
 
@@ -228,7 +247,7 @@ int
       int spintime=500;
       while(label[0]=='8')
       {
-          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,9 to quit):" << endl;
+          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,6 to edit prev pcl's label,9 to quit):" << endl;
           if(spintime==1000)
               spintime=5000;
 //    if(it==segmentIndices.begin())
@@ -241,12 +260,20 @@ int
 
       }
       //if (strcmp (label, "q") == 0) {break;}
+      if (label[0] =='6') {
+          it--;it--;
+
+    viewer.removePointCloud("cluster");
+    viewer.removePointCloud("cloud");
+      continue;
+      }
+      
       if (label[0] =='9') {break;}
       bool done=false;
+         std::string labelStr(label);
       while(!done)
       {
-         cout <<"selected label:"<< label << endl;
-         std::string labelStr(label);
+         cout <<"selected label:"<< labelStr << endl;
          for(int li=0;li<labels.size();li++)
          {
              if(labelStr.compare(labels.at(li))==0)
@@ -260,12 +287,12 @@ int
          }
          if(!done)
          {
-             cout <<"label not found... enter label again or 7 to add this as another label" << endl;
+             cout <<"label not found... enter label again or 7 to add this as another label...in all cases, if you mistyped, enter again:" << endl;
               cin >> label;
               if(label[0]=='7')
               {
                   cout<<"added new label:"<<labelStr<<endl;
-                  labels.push_back(std::string(label));
+                  labels.push_back(labelStr);
                   //the next iteration will match and exit... no need to set done now
                   cout<<"new set of labels: \n";
                  for(int li=0;li<labels.size();li++)
@@ -274,6 +301,8 @@ int
                  }
 
               }
+              else
+                  labelStr=std::string(label);
              
          }
       }
