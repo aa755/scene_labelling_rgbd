@@ -530,7 +530,7 @@ int
   fn = fn.substr(0,fn.find('.')-1);
 
   if (atoi(argv[2]) == 1) {fn = fn + "_segmented_xyzn.pcd";} else { fn = fn + "_segmented_xyzrgbn.pcd";}
-  writer.write ( fn,combined_cloud, false);
+  writer.write ( fn,combined_cloud, true);
 
 cout <<"wrote file "<<fn<<endl;
   return (0);

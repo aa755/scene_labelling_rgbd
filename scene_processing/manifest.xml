@@ -12,7 +12,6 @@
   <depend package="pcl_ros"/>
   <depend package="pcl_visualization"/>
   <depend package="eigen"/>
- <depend package="stereo_msgs"/>
  <depend package="descriptors_3d"/>
  <!-- 
 -  <depend package="tf"/>
