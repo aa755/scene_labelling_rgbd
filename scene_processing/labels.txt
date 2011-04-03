@@ -23,3 +23,8 @@ printer
 sofa
 pillar
 ACVent
+dustbin
+door
+book
+chairLeg
+coffeeMug
