@@ -132,11 +132,11 @@ void get_feat_histogram(vector<vector<float> > &descriptor_results, vector< vect
       for (vector<float>::iterator i2 = i->begin(); i2 < i->end(); i2++){
         c2++;
         *i2 = *i2 / count;
-   //     std::cerr << c2 << " : " << *i2 << ",\t";
+      //  std::cerr << c2 << " : " << *i2 << ",\t";
       }
-      std::cerr << std::endl;
+     // std::cerr << std::endl;
     }
-    std::cerr << std::endl;
+   //std::cerr << std::endl;
 
 }
 
