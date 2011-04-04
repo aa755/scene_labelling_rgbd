@@ -238,11 +238,25 @@ If exhaustive search cannot be done, one heuristic could  be using the solution 
      
    \section{Experiments}
    \subsection{Data}
-     RGB-D point clouds of 30 different office spaces collected on two different days. The RGB-D image sequences will be stitched together
-     into one point cloud in order to obtain full information and cleaner data. The data is collected on different days in order to account for 
-     variability of the objects in the scene. The data is then labeled with object labels and object-object relations.
+    RGB-D image sequences are recorded using Kinect camera sensors and they are stitched together into one point cloud using RGBD-slam.  We segment the data into regions as explained in the previous section. The segments are then then labelled with object labels. The labels which have sufficient number of examples were chosen. These are : \{ wall, floor, table, chair, tableBase, chairBase \}. We obtained stitched point clouds of 11 office scenes and labelled a total of 190 segments. We plan to collect more data for 30 different office spaces, collected on two different days, for our final evaluation. The data will be collected on different days in order to account for variability of the objects in the scene.
 
-
+   \subsection{Results}
+   The table \ref{tab:result_set1} shows the performance of our models with only the node potentials. The first model with only node potentials is equivalent to linear regression and the second model is equivalent to multi-class linear SVM. The first row shows the train and test accuracies for linear regression using all features. It can be seen that learning on all features has the problem of over-fitting the training data. The second row shows the performance of learning using only 9 features which are eigen-values, normal orientation wrt vertical, hue, intensity averaged over all points in a segment and the length, width and hight of the bounding box. The last row corresponds to the baseline which predicts the most frequent label from the train-data as the prediction always and it gives 33.46\% test accuracy. 
+   
+      \begin{table}[!h]
+        \label{tab:result_set1}
+          \begin{center}
+            \begin{tabular}{|c|c|c|} \hline
+               Algorithm  & Train Accuracy & Test Accuracy \\ \hline
+               linear-55f & 96 & 41.67\\  \hline
+               linear-9f & 75.03 &  63.85\\ \hline
+               baseline-max-class  &  & 33.46 \\ \hline
+            \end{tabular}
+         \caption{Performance with only node potentials }
+        \end{center} 
+      \end{table}
+      
+      \newpage
  
  \small
  \bibliographystyle{abbrv}
