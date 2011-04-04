@@ -5,7 +5,7 @@
 \usepackage{ upgreek }
 \usepackage{graphicx}
 \usepackage{url}
-
+\usepackage{verbatim} 
 
 \newenvironment{itemize*}%
   {\begin{itemize}%
@@ -14,19 +14,25 @@
   {\end{itemize}}
 
 
-\title{Semantic Labeling of Indoor Office Spaces using RGB-D Images}
+\title{CS 6758: Semantic Labeling of Indoor Office Spaces using RGB-D Images}
 
 \author{
 Hema Swetha Koppula \\
  \texttt{hsk49@cornell.edu}
 }
+%\author{
+%Abhishek Anand\\
+% \texttt{aa755@cornell.edu}
+% }
 \nipsfinalcopy
 \begin{document}
 \maketitle
 
-%\begin{abstract}
-%\input{abstract}
-%\end{abstract}
+\begin{abstract}
+We aim to use the high quality RGB-D images obtained by kinect cameras to imrpove state of the art of semantic labelling of indoor office spaces.
+To get started, we  collected kinect-videos of 11 office scenes, stiched them to form large point-cloud models and labelled them manually.
+We trained and tested a very simple linear model which acieves 65 \% accuracy in labelling into 6 categories. In addition to this, we formulated 2 MRF models which use context to infer labels and worked out the learning and inference mechanisms. 
+\end{abstract}
 
 \section{Introduction}
 
@@ -38,7 +44,8 @@ Hema Swetha Koppula \\
   image, we would like to label each point in the scene with the semantic label of the object to which the point belongs
   (eg. wall, floor, table, computer, etc). Many state-of-the-art object detectors make use of only features local to the region being 
   considered, but these approaches do not work for cluttered scenes. We plan to model the relations between various objects 
-  in the scene and make use of this contextual information for scene interpretation. 
+  in the scene and make use of this contextual information for scene interpretation. In addition to this, we are doing learning and
+  inference on large stitched 3D models containling multiple views so that we have more context cues.
 
    \subsection{Goal}
      The goal of the project is scene understanding of indoor office spaces. Given an RGB-D image of a office scene, each point in the 
@@ -48,11 +55,7 @@ Hema Swetha Koppula \\
      is performed in a given scene, this information can be used by the robot to perform various tasks like, finding objects and fetching them, 
      or maintaining an inventory of objects in the office building, etc.
 
-   \subsection{Data}
-     RGB-D point clouds of 30 different office spaces collected on two different days. The RGB-D image sequences will be stitched together
-     into one point cloud in order to obtain full information and cleaner data. The data is collected on different days in order to account for 
-     variability of the objects in the scene. The data is then labeled with object labels and object-object relations.
-     
+\begin{comment}
    \subsection{Method}
      The image is first segmented into smaller point clouds based on segmentation using both image and point cloud features. We define a
      MRF structure, where each segment forms a node in the graph and each segment is connected to its k-nearest neighbors via relation links.
@@ -66,8 +69,10 @@ Hema Swetha Koppula \\
      correctly. The test sets will comprise of different types of office spaces: 1. new office spaces which weren't used in the training of the model, 
      2. similar office spaces but new rooms, and 
      3. same office spaces but data collected on a different day. 
-   
-
+     
+ \end{comment}
+     
+     
  \section{Related Work}
  
  
@@ -98,6 +103,22 @@ Hema Swetha Koppula \\
     depth cameras \cite{kinect}, shifted the focus to designing object detection techniques making use of both visual as well as 
     shape features ~\cite{lai:icra11a, lai:icra11b}. Henry et al. ~\cite{deter:rgbd} present a full 3D mapping system
     that utilizes a novel joint optimization algorithm combining visual features and shape-based alignment from RGB-D data.
+
+\section{Our approach}
+We begin 
+The image is first segmented into smaller point clouds based on segmentation using both image and point cloud features. We define a
+     MRF structure, where each segment forms a node in the graph and each segment is connected to its k-nearest neighbors via relation links.
+     The various relations we define between objects are: orthogonal, parallel, adjacent, coplanar, self/same-object, above, below, on-top-of, 
+     in-front-of, beside, in-proximity, etc. The node potentials will depend on local visual and shape features, and the edge potentials will depend 
+     on the contextual relations between the two nodes.
+
+     
+   \section{Experiments}
+   \subsection{Data}
+     RGB-D point clouds of 30 different office spaces collected on two different days. The RGB-D image sequences will be stitched together
+     into one point cloud in order to obtain full information and cleaner data. The data is collected on different days in order to account for 
+     variability of the objects in the scene. The data is then labeled with object labels and object-object relations.
+
 
  
  \small
