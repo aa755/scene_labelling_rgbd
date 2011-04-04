@@ -109,8 +109,9 @@ Consider the log probability formula in original problem (ignoring terms not dep
 \begin{equation}
 Energy(y)= -\log P_w (y|x) = -\sum_{i=1}^{N} \sum_{k=1}^{K} (w^{k}_{n}.x_{i})y_{i}^{k} - \sum_{(i,j)\in E} \sum_{l,k=1}^{K} (w_{e}^{l,k}.x_{ij})y_i^l y_j^k
 \end{equation}
-It is easy to see that this function is regular(submodular) if $w_e^{l,k}x_{ij} \ge 0 \forall i,j,l,k$ . Enforcing this constraint does not seem to cause any loss in generality. For objects that usually co-occur in a configuration ,learning algorithm can set $w_e^{l,k}x_{ij}$ higher so as to minimize energy when they occur together during inference. So, this energy can be minimized {\bf exactly} by using graph-cuts(the regularity constraints make sure that the corresponding graph has no negative edges). The only problem is that the optimal solution might have multiple indicators true for the same segment or none of the indicators true for a segment. We could add terms of the form $\infty y_i^ky_i^l \forall i, j\neq k$ but that breaks regularity. 
- One heuristic could  be using the solution of LP rounding  to break the tie.
+It is easy to see that this function is regular(submodular) if $w_e^{l,k}x_{ij} \ge 0 \forall i,j,l,k$ . Enforcing this constraint does not seem to cause any loss in generality. For objects that usually co-occur in a configuration ,learning algorithm can set $w_e^{l,k}x_{ij}$ higher so as to minimize energy when they occur together during inference. So, this energy can be minimized {\bf exactly} by using graph-cuts(the regularity constraints make sure that the corresponding graph has no negative edges). The only problem is that the optimal solution might have multiple indicators true for the same segment or none of the indicators true for a segment. We could add terms of the form $\infty y_i^ky_i^l \forall i, l\neq k$ but that breaks regularity.
+Hopefully, the number of segments for which this happens is small and hopefully those segments form many disconnected components. In this case, an exhaustive search can be done for labels of only these segments.
+If exhaustive search cannot be done, one heuristic could  be using the solution of LP rounding  to break the tie.
 
 \section*{Appendix}
 It's easy to see that inverse of a +ve semidefinite invertible matrix is semi-definite.
