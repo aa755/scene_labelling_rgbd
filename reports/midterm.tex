@@ -19,10 +19,11 @@
 \author{
 Hema Swetha Koppula \\
  \texttt{hsk49@cornell.edu}
+ \And
+Abhishek Anand\\
+ \texttt{aa755@cornell.edu}
 }
 %\author{
-%Abhishek Anand\\
-% \texttt{aa755@cornell.edu}
 % }
 \nipsfinalcopy
 \begin{document}
@@ -111,7 +112,7 @@ For this, we use the RGBDSLAM package of ROS and post-process it's output remove
 \item histogram of eigen values of scatter matrices
 \item histogram of color values
 \item average spin-image
-\item histogram of dot product with vertical direction
+\item histogram of vertical component of normal
 \end{itemize}
 
 For pairs of nearby segments, we compute the following edge features
@@ -242,9 +243,40 @@ If exhaustive search cannot be done, one heuristic could  be using the solution 
      into one point cloud in order to obtain full information and cleaner data. The data is collected on different days in order to account for 
      variability of the objects in the scene. The data is then labeled with object labels and object-object relations.
 
-
  
  \small
+ \section{Future Work And Timeline}
+ \begin{table}[!h]
+\label{tab:Timeline}
+\begin{center}
+\begin{tabular}{|c|c|} \hline
+Week(date of Monday) & Target  \\ 
+\hline
+April 4th & generate edge features and get\\
+& the first formulation working with edge potentials also,\\ 
+& start work on second model\\ 
+\hline
+April 11th & complete work on second model, compare accuracies, decide next accordingly\\ 
+\hline
+
+\end{tabular}
+\caption{Timeline for near future}
+\end{center} 
+\end{table}
+Table \ref{tab:Timeline} shows a timeline for near future. After that, we would like to fix many issues with out current model. The 
+main problem is that we are using a single set of weights for the entire object.
+This might be true for coherent objects like wall, ground etc. But for most of the realworld objects, it might not work. For example, the handle of a chair and it's backrest look quite different and it is unreasonable to try to fit the same linear model to both. In our dataset, these parts indeed end up as different segments.
+ A part-based model for assembling parts of objects and context for object relationships looks more promising.
+
+\section*{Appendix}
+It's easy to see that inverse of a +ve semidefinite invertible matrix is semi-definite.
+From the diagonalized representation, it is clear that a matrix is +ve semidefinite if and only if all it's eigen-values are positive.
+\begin{eqnarray*}
+Ax=\lambda x\\
+A^{-1}Ax=\lambda A^{-1}x\\
+\frac{1}{\lambda}x=A^{-1}x
+\end{eqnarray*}
+
  \bibliographystyle{abbrv}
 \bibliography{references}
 
