@@ -201,6 +201,7 @@ public:
         assert(isZero(ret.getNorm()-1));
         assert(isZero(ret.dotProduct(*this)));
         assert(isZero(ret.dotProduct(v2g)));
+        return ret;
     }
     
     VectorG
@@ -462,7 +463,8 @@ int
             // Mandatory
             seg.setModelType(pcl::SACMODEL_PLANE);
             seg.setMethodType(pcl::SAC_RANSAC);
-            seg.setDistanceThreshold(0.01);
+            seg.setDistanceThreshold(10);
+            seg.setMaxIterations(100000);
 
             //pcl::PointCloud<pcl::PointXYZ>::Ptr cloudptr(new pcl::PointCloud<pcl::PointXYZ > (cloud));
             seg.setInputCloud(cloud_filtered);
@@ -515,7 +517,7 @@ int
             outMat(1,0)=vx.v[1];
             outMat(2,0)=vx.v[2];
             
-            VectorG vy=vx.crossProduct(vz);
+            VectorG vy=vz.crossProduct(vx);
             
             //set the 2nd column=position of Y axis
             outMat(0,1)=vy.v[0];
@@ -526,7 +528,7 @@ int
             outMat(3,1)=0;
             outMat(3,2)=0;
             
-            
+            //break; 
             
 //The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
 
@@ -592,6 +594,7 @@ int
   std::vector<pcl::PointCloud<PointT> > clusters2;
   pcl::PointCloud<PointT> labeled_cloud;
   pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
+  pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
   //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
   labeled_cloud.header = cloud.header;
   labeled_cloud.points = cloud.points;
@@ -602,6 +605,7 @@ int
   }
   
   std::string fn = "labeled_"  + std::string(argv[1]);
+  std::string fnt = "transformed_"  + std::string(argv[1]);
     std::ofstream labelFileOut;
     labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
                  for(int li=0;li<labels.size();li++)
@@ -611,12 +615,17 @@ int
     labelFileOut.close();
   pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
 
+  for(int i=0;i<4;i++)
+  {
+      for(int j=0;j<4;j++)
+          std::cerr<<outMat(i,j)<<",";
+      std::cerr<<endl;
+  }       
     transformPointCloud(outMat,labeled_cloud_ptr,labeled_transformed_cloud);
   writer.write ( fn,labeled_cloud, true);
   writer.write ( "transformed_"+fn,*labeled_transformed_cloud, true);
-
-  //cout<<"IMPORTANT!!! ... replace the first line after includes in labeler.cpp with:"
-
+    transformPointCloud(outMat,cloud_ptr,transformed_cloud);
+  writer.write ( fnt,*transformed_cloud, true);
 
   return (0);
 }
