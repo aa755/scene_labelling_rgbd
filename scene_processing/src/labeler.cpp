@@ -528,7 +528,7 @@ int
             outMat(3,1)=0;
             outMat(3,2)=0;
             
-            //break; 
+          //  break; 
             
 //The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
 
