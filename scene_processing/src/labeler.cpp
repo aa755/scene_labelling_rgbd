@@ -48,6 +48,7 @@
 #include <stdint.h>
 //#include <pcl_visualization/cloud_viewer.h>
 #include "pcl_visualization/pcl_visualizer.h"
+//#include "../../combine_clouds/src/CombineUtils.h"
 
 
 #include "pcl/ModelCoefficients.h"
@@ -65,6 +66,8 @@
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 //typedef pcl::PointXYZRGB PointT;
 //std::string initLabels[]={"wall","floor","table","shelf","chair","cpu","monitor","clutter"};
@@ -75,9 +78,197 @@ typedef ColorHandler::Ptr ColorHandlerPtr;
 
 
 typedef pcl::PointXYZRGBCamSL PointT;
-
+float
+sqrG(float y)
+{
+    return y*y;
+}
 //typedef my_ns::MyPoint PointT;
 using namespace pcl_visualization;
+class VectorG
+{
+public:
+    double v[3];
+
+    VectorG()
+    {
+    }
+
+    VectorG(double unitX, double unitY, double unitZ)
+    {
+        v[0] = unitX;
+        v[1] = unitY;
+        v[2] = unitZ;
+
+
+    }
+
+    bool isUnitVector()
+    {
+        return (isZero(getNormSqr()-1));
+        
+    }
+    
+    VectorG(PointT p)
+    {
+        v[0] = p.x;
+        v[1] = p.y;
+        v[2] = p.z;
+
+
+    }
+    /**
+     * compute the distance from the line joining p1 and p2
+     */
+    double computeDistanceSqrFromLine(VectorG p1,VectorG p2)
+    {
+        VectorG t1=p1.subtract(*this);
+
+        VectorG t2=p2.subtract(p1);
+
+        return (t1.getNormSqr()*t2.getNormSqr()-sqrG(t1.dotProduct(t2)))/t2.getNormSqr();
+    }
+
+    /**
+     *true iff it lies in the cylinder of infinite radius defined by p1 and p2
+     * the line segment (p1,p2) is the axis of this cylinder
+     */
+    bool isInsideLineSegment(VectorG p1,VectorG p2)
+    {
+        VectorG lineSeg=p1.subtract(p2);
+        double lengthSqr=lineSeg.getNormSqr();
+        VectorG p1Seg=subtract(p1);
+        VectorG p2Seg=subtract(p2);
+
+        if(p1Seg.getNormSqr()<=lengthSqr&&p2Seg.getNormSqr()<=lengthSqr)
+            return true;
+        else
+            return false;
+
+
+    }
+
+    void
+    normalize()
+    {
+        double norm = getNorm();
+        for (int i = 0; i < 3; i++)
+            v[i] = v[i] / norm;
+    }
+
+    PointT getAsPoint()
+    {
+        PointT p;
+        p.x=v[0];
+        p.y=v[1];
+        p.z=v[2];
+        return p;
+    }
+    
+    double
+    getNorm()
+    {
+        return sqrt(getNormSqr());
+    }
+
+    double
+    getNormSqr()
+    {
+        return (sqrG(v[0]) + sqrG(v[1]) + sqrG(v[2]));
+    }
+
+    double
+    dotProduct(VectorG v2g)
+    {
+        double sum = 0;
+        for (int i = 0; i < 3; i++)
+            sum = sum + v[i] * v2g.v[i];
+        return sum;
+    }
+
+    
+    static bool isZero(double d)
+    {
+         std::cerr<<"value is:"<<d<<endl;
+        return (fabs(d)<0.001);
+    }
+    //(a2b3 − a3b2, a3b1 − a1b3, a1b2 − a2b1)
+    VectorG
+    crossProduct(VectorG v2g)
+    {
+         VectorG ret(v[2-1]*v2g.v[3-1]-v[3-1]*v2g.v[2-1],  v[3-1]*v2g.v[1-1]-v[1-1]*v2g.v[3-1],  v[0]*v2g.v[2-1]-v[2-1]*v2g.v[1-1]);
+         std::cerr<<"norm is"<<ret.getNorm()<<endl;
+        assert(isZero(ret.getNorm()-1));
+        assert(isZero(ret.dotProduct(*this)));
+        assert(isZero(ret.dotProduct(v2g)));
+        return ret;
+    }
+    
+    VectorG
+    multiply(double scalar)
+    {
+        VectorG out;
+        for (int i = 0; i < 3; i++)
+            out.v[i] = scalar*v[i];
+        return out;
+    }
+
+    VectorG
+    subtract(VectorG v2g)
+    {
+        VectorG out;
+        for (int i = 0; i < 3; i++)
+            out.v[i] = v[i] - v2g.v[i];
+        return out;
+
+    }
+
+
+    VectorG
+    add(VectorG v2g)
+    {
+        VectorG out;
+        for (int i = 0; i < 3; i++)
+            out.v[i] = v[i] + v2g.v[i];
+        return out;
+
+    }
+
+    float
+    eucliedianDistance(VectorG v2g)
+    {
+        float sum=0;
+        for (int i = 0; i < 3; i++)
+            sum=sum + sqrG(v[i] - v2g.v[i]);
+        return sqrt(sum);
+
+    }
+
+};
+
+void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<PointT>::Ptr in,
+                    pcl::PointCloud<PointT>::Ptr out)
+{
+
+    boost::numeric::ublas::matrix<double> matIn(4, 1);
+    *out = *in;
+
+    for (size_t i = 0; i < in->points.size(); ++i)
+    {
+        double * matrixPtr = matIn.data().begin();
+
+        matrixPtr[0] = in->points[i].x;
+        matrixPtr[1] = in->points[i].y;
+        matrixPtr[2] = in->points[i].z;
+        matrixPtr[3] = 1;
+        boost::numeric::ublas::matrix<double> matOut = prod(transform, matIn);
+        matrixPtr = matOut.data().begin();
+
+        out->points[i].x = matrixPtr[0];
+        out->points[i].y = matrixPtr[1];
+        out->points[i].z = matrixPtr[2];
+    }
+}
 
 void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &segmentindices , int size)
 {
@@ -138,6 +329,7 @@ void spinThread()
 int
   main (int argc, char** argv)
 {
+            boost::numeric::ublas::matrix<double> outMat(4, 4);
     std::vector<std::string> labels;//(initLabels);
     std::ifstream labelFile;
     std::string line;
@@ -236,6 +428,7 @@ int
     viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewportCloud);
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
     viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewportCluster);
+    //viewer.
 
   //  while (!viewer.wasStopped())
 
@@ -247,7 +440,7 @@ int
       int spintime=500;
       while(label[0]=='8')
       {
-          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,6 to edit prev pcl's label,9 to quit):" << endl;
+          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,6 to edit prev pcl's label,5 to align with ground, 9 to quit):" << endl;
           if(spintime==1000)
               spintime=5000;
 //    if(it==segmentIndices.begin())
@@ -258,13 +451,95 @@ int
           
           spintime=spintime*2; //show it for more time if user complains 
 
-      }
+        }
+      
+        if (label[0] == '5') {
+            pcl::ModelCoefficients coefficients;
+            pcl::PointIndices inliers;
+            // Create the segmentation object
+            pcl::SACSegmentation<PointT> seg;
+            // Optional
+            seg.setOptimizeCoefficients(true);
+            // Mandatory
+            seg.setModelType(pcl::SACMODEL_PLANE);
+            seg.setMethodType(pcl::SAC_RANSAC);
+            seg.setDistanceThreshold(10);
+            seg.setMaxIterations(100000);
+
+            //pcl::PointCloud<pcl::PointXYZ>::Ptr cloudptr(new pcl::PointCloud<pcl::PointXYZ > (cloud));
+            seg.setInputCloud(cloud_filtered);
+            seg.segment(inliers, coefficients);
+
+            if (inliers.indices.size() == 0) {
+                ROS_ERROR("Could not estimate a planar model for the given dataset.");
+                return (-1);
+            }
+            std::cerr << "Model coefficients: " << coefficients.values[0] << " " << coefficients.values[1] << " "
+                    << coefficients.values[2] << " " << coefficients.values[3] << std::endl;
+
+            int numPointsInFloor=cloud_filtered->points.size();
+         VectorG sum(0,0,0); 
+            for(int fili=0;fili<numPointsInFloor;++fili)
+            {
+                sum=sum.add(VectorG(cloud_filtered->points[fili].x,cloud_filtered->points[fili].y,cloud_filtered->points[fili].z));
+            }
+            VectorG origin=sum.multiply(1.0/numPointsInFloor);
+            std::cerr<<"origin:"<<origin.v[0]<<","<<origin.v[1]<<","<<origin.v[2]<<endl;
+            origin.v[2]=-(coefficients.values[0]/*a*/*origin.v[0]+coefficients.values[1]/*b*/*origin.v[1]+coefficients.values[3]/*d*/)/coefficients.values[2]/*c*/;
+            
+            double cosTheta=coefficients.values[3];
+            double sinTheta=sqrt(1-cosTheta*cosTheta);
+            double root2=sqrt(2);
+            outMat(3,3)=1;
+            //set the  displacements:
+            outMat(0,3)=-origin.v[0];
+            outMat(1,3)=-origin.v[1];
+            outMat(2,3)=-origin.v[2];
+            VectorG vz(coefficients.values[0],coefficients.values[1],coefficients.values[2]);
+            assert(vz.isUnitVector());
+            assert(VectorG::isZero(vz.dotProduct(origin)+coefficients.values[3]));
+            //set the 3rd column=position of Z axis
+            outMat(0,2)=coefficients.values[0];
+            outMat(1,2)=coefficients.values[1];
+            outMat(2,2)=coefficients.values[2];
+            
+//The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
+            double tx=5;
+            double ty=0;
+            double tz=-(coefficients.values[0]/*a*/*tx+coefficients.values[3]/*d*/)/coefficients.values[2]/*c*/;
+            VectorG vt(tx,ty,tz);
+            VectorG vx=vt.subtract(origin);
+            vx.normalize();
+            assert(VectorG::isZero(vx.dotProduct(vz)));
+            
+            //set the 1st column=position of X axis
+            outMat(0,0)=vx.v[0];
+            outMat(1,0)=vx.v[1];
+            outMat(2,0)=vx.v[2];
+            
+            VectorG vy=vz.crossProduct(vx);
+            
+            //set the 2nd column=position of Y axis
+            outMat(0,1)=vy.v[0];
+            outMat(1,1)=vy.v[1];
+            outMat(2,1)=vy.v[2];
+            
+            outMat(3,0)=0;
+            outMat(3,1)=0;
+            outMat(3,2)=0;
+            
+            //break; 
+            
+//The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
+
+
+        }
+      
       //if (strcmp (label, "q") == 0) {break;}
       if (label[0] =='6') {
           it--;it--;
-
-    viewer.removePointCloud("cluster");
-    viewer.removePointCloud("cloud");
+            viewer.removePointCloud("cluster");
+            viewer.removePointCloud("cloud");
       continue;
       }
       
@@ -318,6 +593,8 @@ int
 
   std::vector<pcl::PointCloud<PointT> > clusters2;
   pcl::PointCloud<PointT> labeled_cloud;
+  pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
+  pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
   //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
   labeled_cloud.header = cloud.header;
   labeled_cloud.points = cloud.points;
@@ -328,6 +605,7 @@ int
   }
   
   std::string fn = "labeled_"  + std::string(argv[1]);
+  std::string fnt = "transformed_"  + std::string(argv[1]);
     std::ofstream labelFileOut;
     labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
                  for(int li=0;li<labels.size();li++)
@@ -335,11 +613,19 @@ int
                      labelFileOut<<labels.at(li)<<endl;
                  }
     labelFileOut.close();
+  pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
 
-  writer.write ( fn,labeled_cloud, false);
-
-  //cout<<"IMPORTANT!!! ... replace the first line after includes in labeler.cpp with:"
-
+  for(int i=0;i<4;i++)
+  {
+      for(int j=0;j<4;j++)
+          std::cerr<<outMat(i,j)<<",";
+      std::cerr<<endl;
+  }       
+    transformPointCloud(outMat,labeled_cloud_ptr,labeled_transformed_cloud);
+  writer.write ( fn,labeled_cloud, true);
+  writer.write ( "transformed_"+fn,*labeled_transformed_cloud, true);
+    transformPointCloud(outMat,cloud_ptr,transformed_cloud);
+  writer.write ( fnt,*transformed_cloud, true);
 
   return (0);
 }
