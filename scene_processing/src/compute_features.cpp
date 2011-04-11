@@ -47,12 +47,23 @@ void getMinMax(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &min_p, Eig
     }
 }
 
+void getCentroid(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &centroid)
+{
+    for (size_t i = 0; i < cloud.points.size(); ++i) {
+        centroid[0] += cloud.points[i].x;
+        centroid[1] += cloud.points[i].y;
+        centroid[2] += cloud.points[i].z;
+    }
+    centroid[0] = centroid[0]/(cloud.points.size()-1) ;
+    centroid[1] = centroid[1]/(cloud.points.size()-1) ;
+    centroid[2] = centroid[2]/(cloud.points.size()-1) ;
+}
+
 void get_feature_average(vector<vector<float> > &descriptor_results, vector<float> &avg_feats) {
 
     vector<vector<float> >::iterator it = descriptor_results.begin();
     while (it->size() == 0) it++;
     avg_feats.resize(it->size());
-
 
     int count = 0;
     for (vector<vector<float> >::iterator it = descriptor_results.begin(); it < descriptor_results.end(); it++) {
@@ -194,6 +205,23 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 
 }
 
+void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features) {
+    
+    Eigen::Vector4f min_p;
+    Eigen::Vector4f max_p;
+    // get bounding box features
+    getMinMax(cloud, min_p, max_p);
+    //  ROS_INFO("minp : %f,%f,%f\t maxp : %f,%f,%f", min_p[0], min_p[1], min_p[2], max_p[0], max_p[1], max_p[2]);
+    //  ROS_INFO("size of all_descriptor_results : %d", all_descriptor_results[1].size());
+    // add bounding box features
+    features.push_back(max_p[0] - min_p[0]);
+    features.push_back(max_p[1] - min_p[1]);
+    features.push_back(max_p[2] - min_p[2]);
+
+    Eigen::Vector4f centroid;
+
+}
+
 void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {
 
 
@@ -247,12 +275,15 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     vector<vector<vector<float> > > all_descriptor_results(nbr_descriptors);
 
     vector<vector<vector<float> > > hist_feats(nbr_descriptors);
+   // vector<vector<float> > avg_feats(nbr_descriptors);
     for (unsigned int i = 0; i < nbr_descriptors; i++) {
         std::cerr << "hist featnum: " << i << "\n";
         descriptors_3d[i]->compute(cloud_blob2, pt_cloud_kdtree, interest_pts, all_descriptor_results[i]);
         std::cerr << "feature computed" << "\n";
         get_feature_histogram(all_descriptor_results[i], hist_feats[i], num_bin);
         concat_feats(features, hist_feats[i]);
+       // get_feature_average(all_descriptor_results[i], avg_feats[i]);
+       // concat_feats(features, avg_feats[i]);
     }
 
 
@@ -318,8 +349,7 @@ int main(int argc, char** argv) {
     ExtractIndices<PointT> extract;
 
 
-    Eigen::Vector4f min_p;
-    Eigen::Vector4f max_p;
+
     for (int seg = 1; seg <= max_segment_num; seg++) {
         vector<float> features;
         int label;
@@ -343,19 +373,11 @@ int main(int argc, char** argv) {
             // get shape features
             get_shape_features(*cloud_seg, features, num_bin_shape);
 
-            // get bounding box features
-            getMinMax(*cloud_ptr, *segment_indices, min_p, max_p);
-            //  ROS_INFO("minp : %f,%f,%f\t maxp : %f,%f,%f", min_p[0], min_p[1], min_p[2], max_p[0], max_p[1], max_p[2]);
-            //  ROS_INFO("size of all_descriptor_results : %d", all_descriptor_results[1].size());
-            // add bounding box features
-            features.push_back(max_p[0] - min_p[0]);
-            features.push_back(max_p[1] - min_p[1]);
-            features.push_back(max_p[2] - min_p[2]);
-
-
+           // get bounding box and centroid point features
+            get_global_features(*cloud_seg, features);
 
             // write label to  file
-            labelfile << cloud_seg->points[0].label << "\n";
+            labelfile << cloud_seg->points[1].label << "\n";
 
             // write features to file
             for (vector<float>::iterator it = features.begin(); it < features.end(); it++) {
