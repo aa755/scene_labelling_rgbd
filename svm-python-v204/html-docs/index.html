@@ -1,0 +1,138 @@
+<html>
+  <head>
+    <title>SVM-python</title>
+    <link href="style.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+
+<h1>SVM<sup><i>python</i></sup></h1>
+
+<ul>
+<li><a href="#overview">Introduction</a></li>
+<li><a href="#download">Download</a></li>
+<li><a href="#building">Building</a></li>
+<li><a href="#using">Using</a></li>
+<li><a href="#developing">Developing</a></li>
+<li><a href="#learning">Overview of <code>svm_python_learn</code>
+<li><a href="#classification">Overview of <code>svm_python_classify</code></a>
+<li><a href="#svmapi-extension">The <code>svmapi</code> Extension Module</a></li>
+<li><a href="#seealso">See Also</a></li>
+<li><a href="#versusv1">Versus v1</a></li>
+</ul>
+
+<a class="bookmark" name="overview"><h2>Introduction</h2></a>
+
+<p>SVM<sup><i>python</i></sup> is a Python embedded version of <a href="http://svmlight.joachims.org/svm_struct.html">SVM<sup><i>struct</i></sup></a>.  One applies SVM<sup><i>struct</i></sup> by modifying the <code>svm_struct_api.c</code> file and recompiling.  SVM<sup><i>python</i></sup> allows one to write these functions in Python instead: one applies SVM<sup><i>python</i></sup> by creating a Python module (commonly just a <code>.py</code> file) with the appropriate methods.  This module is loaded and specific methods called at runtime to support the structural learning algorithm.</p>
+
+<p>One advantage of this Python embedding is this obviates many of the tedious non-learning-related maintenance procedures, allowing one to focus purely on the learning problem.  The two most conspicuous examples are memory management, and reading and writing models to files (accomplished with <a href="http://docs.python.org/lib/module-pickle.html">Pickling</a>).  The primary disadvantage to using SVM<sup><i>python</i></sup> is that it is slower than equivalent C code.</p>
+
+<p>This code has a license.  See <code>LICENSE.txt</code> and <code>LICENSE-SVMPYTHON.txt</code> in the distribution archive you get when downloading the software for more information.</p>
+
+<a class="bookmark" name="download"><h2>Download</h2></a>
+
+The software should be at <a href="http://tfinley.net/software/svmpython2/svm-python-v204.tgz"><code>http://tfinley.net/software/svmpython2/svm-python-v204.tgz</code></a>.
+
+<a class="bookmark" name="building"><h2>Building</h2></a>
+
+To build this, a simple <code>make</code> should work.  (The exception is if the Python interpreter you get when you get <code>python</code> is the Python you wish to build against.  Modify the <code>PYTHON</code> variable in <code>Makefile</code> to use a different Python.)</p>
+
+<p>If successful, the program will produce two executables, <code>svm_python_learn</code> for learning a model and <code>svm_python_classify</code> for classification with a learned model.</p>
+
+<p>I have tried building SVM<sup><i>python</i></sup> with both Python 2.3, 2.4, and 2.5 on OS X and Linux.  Obviously, what Python features you can use in your module depend upon which Python version you build against.</p>
+
+<a class="bookmark" name="using"><h2>Using</h2></a>
+
+<p>Invoking SVM<sup><i>python</i></sup> is like SVM<sup><i>struct</i></sup>: the same basic command line arguments are used in both varieties.  The major difference is how to tell SVM<sup><i>python</i></sup> what Python module to read.</p>
+
+<p>Suppose you've written a Python module in the file <code>foo.py</code> and you want to use SVM<sup><i>python</i></sup> with this <code>foo</code> module.  The learn and classify executables try to determine the module to use with these steps in order:</p>
+<ol>
+<li/>Looking for the module name in command line arguments <code>--m foo</code> (here, <code>foo</code> is the module name).
+<li/>Looking for the module name in the environment variable <code>SVMPYTHON_MODULE</code>.
+<li/>Using the default module <code>svmstruct</code>.  (This default may be changed by changing the <code>DEFAULT_MODULE := svmstruct</code> assignment to something else, and rebuilding.)
+</ol>
+
+<a class="bookmark" name="developing"><h2>Developing</h2></a>
+
+<p>Structural SVM learning is a framework for learning functions with complex structured outputs.  One adapts this framework by providing functions specific to their particular task.  SVM<sup><i>python</i></sup> calls functions from the determined module.  Consequently, developing an SVM<sup><i>python</i></sup> module involves writing a module with functions of the desired behavior.</p>
+
+<p>The file <code>svmstruct.py</code> is a Python module, and also contains documentation on all the functions which the C code may attempt to call.  The <code>multiclass.py</code> file is an example implementation of multiclass classification in Python.</p>
+
+<a class="bookmark" name="learning"><h2>Overview of <code>svm_python_learn</code></h2></a>
+
+<map name="learningmap">
+	<area shape=rect coords="38,361,223,375" href="svmstruct.html#-classify_example">
+	<area shape=rect coords="38,330,223,344" href="svmstruct.html#-find_most_violated_constraint">
+	<area shape=rect coords="133,285,256,313" href="svmstruct.html#-find_most_violated_constraint_slack">
+	<area shape=rect coords="5,285,128,313" href="svmstruct.html#-find_most_violated_constraint_margin">
+	<area shape=rect coords="48,592,214,634" href="svmstruct.html#-print_iteration_stats">
+	<area shape=rect coords="34,211,228,253" href="svmstruct.html#-psi">
+	<area shape=rect coords="299,488,465,530" href="svmstruct.html#-print_learning_stats">
+	<area shape=rect coords="52,484,209,526" href="svmstruct.html#-loss">
+	<area shape=rect coords="30,424,232,466" href="svmstruct.html#-psi">
+	<area shape=rect coords="333,238,430,280" href="svmstruct.html#-init_model">
+	<area shape=rect coords="330,304,433,346" href="svmstruct.html#-init_constraints">
+	<area shape=rect coords="320,554,443,596" href="svmstruct.html#-write_model">
+	<area shape=rect coords="309,172,455,214" href="svmstruct.html#-read_examples">
+	<area shape=rect coords="64,47,198,89" href="svmstruct.html#-print_help">
+	<area shape=rect coords="295,106,468,148" href="svmstruct.html#-parse_parameters">
+</map>
+
+<p align="center"><img src="learning-tree.gif" alt="Flow Chart of the Learning Program" width="473" align="right" height="636" usemap="#learningmap"/></p>
+
+<p>Pictured is a diagram illustrating the flow of execution within <code>svm_python_learn</code>.  (This also describes the SVM<sup><i>struct</i></sup> learning program pretty well.)  Click on any functional box to see more in depth information for that function.</p>
+
+<p>The <font color="red">red boxes</font> indicate important processes in the underlying C code.  Other boxes indicate Python functions implemented in the user's module.  The <font color="blue">blue boxes</font> indicate functions that must be implemented.  The <font color="green">green boxes</font> and <font color="#999900">yellow boxes</font> indicate functions that have some default behavior if they are not implemented, with <font color="green">green</font> indicating that you probably want to implement this and <font color="#999900">yellow</font> indicating functions whose default behavior is probably acceptable.</p>
+
+<p>The <code>svm_python_learn</code> program first checks command line argument correctness, and attempts to load the user's Python module.  If arguments were malformed, <code>print_help</code> is called and the program exits.  Otherwise, learning model parameters are set with <code>parse_parameters</code> pattern-label example pairs are read with <code>read_examples</code>, user defined special constriaint initialized with <code>init_constraints</code>, the learning model initialized with <code>init_model</code>, the cache of all &#x3A8;(<b>x</b><sub>i</sub>,<b>y</b><sub>i</sub>) combined feature vectors created with calls to <code>psi</code>, and then the learning process begins.</p>
+
+<p>This learning process repeatedly iterates over all examples.  For each example, the label associated with the most violated constraint for the pattern is found (using either <code>find_most_violated_constraint_margin</code> or <code>slack</code>, or if not found just <code>find_most_violated_constraint</code>, or if that was not found <code>classify_example</code>).  Then, the feature vector &Psi; describing the relationship between the pattern and the label is computed with <code>psi</code>, and the loss &Delta; is computed with <code>loss</code>.  The program determines from &Psi; and &Delta; whether the constraint is violated enough to add it to the model.  The program moves on to the next example.  At various times (which depend on options set) the program retrains, whereupon <code>print_iteration_stats</code> is called.  In the event that no constraints were added in an iteration, the algorithm either lowers its tolerance or, if minimum tolerance has been reached, ends the learning process.</p>
+
+<p>Once learning has finished, statistics related to learning may be printed out with <code>print_learning_stats</code>, the model is written to a file with <code>write_model</code>, and the program exits.</p>
+
+<a class="bookmark" name="classification"><h2>Overview of <code>svm_python_classify</code></h2></a>
+
+<map name="classificationmap">
+	<area shape=rect coords="13,42,147,84" href="svmstruct.html#-print_help_classify">
+	<area shape=rect coords="237,95,403,137" href="svmstruct.html#-parse_parameters_classify">
+	<area shape=rect coords="239,307,401,349" href="svmstruct.html#-print_testing_stats">
+	<area shape=rect coords="21,228,139,270" href="svmstruct.html#-write_label">
+	<area shape=rect coords="2,339,159,381" href="svmstruct.html#-eval_prediction">
+	<area shape=rect coords="2,283,159,325" href="svmstruct.html#-loss">
+	<area shape=rect coords="5,173,155,215" href="svmstruct.html#-classify_example">
+	<area shape=rect coords="247,215,393,257" href="svmstruct.html#-read_examples">
+	<area shape=rect coords="261,155,379,197" href="svmstruct.html#-read_model">
+</map>
+
+<img src="testing-tree.gif" alt="Flow Chart of the Classification Program" width="405" height="383" align="right" usemap="#classificationmap">
+
+<p>Pictured is a diagram illustrating the flow of execution within <code>svm_python_classify</code>.  The color coding of the boxes is the same as that in the high level description of the <a href="#learning">learning program</a>.</p>
+
+<p>The <code>svm_python_classify</code> program first checks whether the command line arguments are fine and loads the user module.  If the arguments are malformed the program calls <code>print_help_classify</code> and exits.  Otherwise, custom parameters are processed with calls to <code>parse_parameters_classify</code> for each custom parameter.  Then, the learned model is read with <code>read_model</code> and the testing pattern-label example pairs are loaded with <code>read_examples</code>.  Then, it iterates over all the testing examples, classifies each example, writes the label to a file, finding the loss of this example, and then may evaluate the prediction and accumulate statistics, with <code>classify_example</code>, <code>write_label</code>, <code>loss</code>, and <code>eval_prediction</code> respectively.  Once each example is processed, some summary statistics are printed out with <code>print_testing_stats</code> and the program exits.</p>
+
+<a class="bookmark" name="svmapi-extension"><h2>The <code>svmapi</code> Extension Module</h2></a>
+
+<p>SVM<sup><i>python</i></sup> provides an extension <code>svmapi</code> module.  This extension module provides many of the basic types that the user module accepts as inputs (and occassionally provides as outputs).  To gain access to the contents of this module, you must import the module <code>svmapi</code>.  Read <a href="svmapi.html">the documentation for more information</a>.</p>
+
+<p>Critical portions of this module are <code>Sparse</code> objects (sparse vector objects, returned from <code>psi</code>) and <code>StructModel</code> objects (to set the <code>size_psi</code> attribute in <code>init_model</code>, the <code>w</code> attribute for inference when you have a linear model, the <code>classify</code> convenience method, and assigning attributes to be serialized/deserialized when writing the model).</p>
+
+<p>Also included are many functions that have the default behavior.</p>
+
+<a class="bookmark" name="seealso"><h2>See Also</h2></a>
+
+<p>In addition to this documentation, you can see the source code for the <a href="svmstruct_code.html"><code>svmstruct.py</code></a> module and <a href="svmstruct.html">its documentation</a> which contains instances and a basic synopsis of all the functions SVM<sup><i>python</i></sup> calls, a <a href="multiclass_code.html"><code>multiclass.py</code></a> module which implements a multi-class SVM (training and testing inputs contained in <code>multi-example</code> in the SVM<sup><i>python</i></sup> distribution), as well as the <a href="svmapi.html"><code>svmapi</code> extension module documentation</a>.</p>
+
+<a class="bookmark" name="versusv1"><h2>Versus Version 1</h2></a>
+
+<p>There was another version of SVM<sup><i>python</i></sup> that came out in early 2005.  This is SVM<sup><i>python</i></sup> 2, which came out mid 2007.  This is different in many internal respects largely invisible to the user.  Key differences include:</p>
+
+<ul>
+<li>The Python objects corresponding to internal C structures now encapsulate said structures and convert values as needed, rather than being completely separate objects that are synchronized.  Given that 90% of the information synchronized would never be used in a typical case, this improves speed and reliability.
+<li>The extension module is now named <code>svmapi</code> instead of <code>svmlight</code>, and the internal objects and structures differ.
+<li>Functions with <code>struct</code> in their names typically have <code>struct</code> removed, e.g., what was <code>read_struct_examples</code> is now just <code>read_examples</code>.
+<li>The new version of SVM<sup><i>struct</i></sup>, which most notably incorporates combined constraints (see the <code>-w</code> option).
+<li>The linearization (when using linear kernels) and compression (using bzip2) of models is now default behavior to help keep model sizes small.
+</ul>
+
+<hr/>
+Thomas Finley, May 21 2007
+</body></html>

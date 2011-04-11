@@ -1,0 +1,192 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module svmstruct</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>svmstruct</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/thomas/Documents/Work/ra/svm-python-v2/svmstruct.py">/Users/thomas/Documents/Work/ra/svm-python-v2/svmstruct.py</a></font></td></tr></table>
+
+<p><tt>A&nbsp;module&nbsp;that&nbsp;SVM^python&nbsp;interacts&nbsp;with&nbsp;to&nbsp;do&nbsp;its&nbsp;evil&nbsp;bidding.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-classify_example"><strong>classify_example</strong></a>(x, sm, sparm)</dt><dd><tt>Given&nbsp;a&nbsp;pattern&nbsp;x,&nbsp;return&nbsp;the&nbsp;predicted&nbsp;label.</tt></dd></dl>
+ <dl><dt><a name="-eval_prediction"><strong>eval_prediction</strong></a>(exnum, (x, y), ypred, sm, sparm, teststats)</dt><dd><tt>Accumulate&nbsp;statistics&nbsp;about&nbsp;a&nbsp;single&nbsp;training&nbsp;example.<br>
+&nbsp;<br>
+Allows&nbsp;accumulated&nbsp;statistics&nbsp;regarding&nbsp;how&nbsp;well&nbsp;the&nbsp;predicted<br>
+label&nbsp;ypred&nbsp;for&nbsp;pattern&nbsp;x&nbsp;matches&nbsp;the&nbsp;true&nbsp;label&nbsp;y.&nbsp;&nbsp;The&nbsp;first<br>
+time&nbsp;this&nbsp;function&nbsp;is&nbsp;called&nbsp;teststats&nbsp;is&nbsp;None.&nbsp;&nbsp;This&nbsp;function's<br>
+return&nbsp;value&nbsp;will&nbsp;be&nbsp;passed&nbsp;along&nbsp;to&nbsp;the&nbsp;next&nbsp;call&nbsp;to<br>
+eval_prediction.&nbsp;&nbsp;After&nbsp;all&nbsp;test&nbsp;predictions&nbsp;are&nbsp;made,&nbsp;the&nbsp;last<br>
+value&nbsp;returned&nbsp;will&nbsp;be&nbsp;passed&nbsp;along&nbsp;to&nbsp;print_testing_stats.<br>
+&nbsp;<br>
+On&nbsp;the&nbsp;first&nbsp;call,&nbsp;that&nbsp;is,&nbsp;when&nbsp;exnum==0,&nbsp;teststats==None.&nbsp;&nbsp;The<br>
+default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;the&nbsp;function&nbsp;does&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-find_most_violated_constraint"><strong>find_most_violated_constraint</strong></a>(x, y, sm, sparm)</dt><dd><tt>Return&nbsp;ybar&nbsp;associated&nbsp;with&nbsp;x's&nbsp;most&nbsp;violated&nbsp;constraint.<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;label&nbsp;ybar&nbsp;for&nbsp;pattern&nbsp;x&nbsp;corresponding&nbsp;to&nbsp;the&nbsp;most<br>
+violated&nbsp;constraint&nbsp;according&nbsp;to&nbsp;SVM^struct&nbsp;cost&nbsp;function.&nbsp;&nbsp;To<br>
+find&nbsp;which&nbsp;cost&nbsp;function&nbsp;you&nbsp;should&nbsp;use,&nbsp;check&nbsp;sparm.loss_type&nbsp;for<br>
+whether&nbsp;this&nbsp;is&nbsp;slack&nbsp;or&nbsp;margin&nbsp;rescaling&nbsp;(1&nbsp;or&nbsp;2&nbsp;respectively),<br>
+and&nbsp;check&nbsp;sparm.slack_norm&nbsp;for&nbsp;whether&nbsp;the&nbsp;slack&nbsp;vector&nbsp;is&nbsp;in&nbsp;an<br>
+L1-norm&nbsp;or&nbsp;L2-norm&nbsp;in&nbsp;the&nbsp;QP&nbsp;(1&nbsp;or&nbsp;2&nbsp;respectively).<br>
+&nbsp;<br>
+If&nbsp;this&nbsp;function&nbsp;is&nbsp;not&nbsp;implemented,&nbsp;this&nbsp;function&nbsp;is&nbsp;equivalent<br>
+to&nbsp;'classify(x,&nbsp;sm,&nbsp;sparm)'.&nbsp;&nbsp;The&nbsp;optimality&nbsp;guarantees&nbsp;of<br>
+Tsochantaridis&nbsp;et&nbsp;al.&nbsp;no&nbsp;longer&nbsp;hold,&nbsp;since&nbsp;this&nbsp;doesn't&nbsp;take&nbsp;the<br>
+loss&nbsp;into&nbsp;account&nbsp;at&nbsp;all,&nbsp;but&nbsp;it&nbsp;isn't&nbsp;always&nbsp;a&nbsp;terrible<br>
+approximation.&nbsp;&nbsp;One&nbsp;still&nbsp;technically&nbsp;maintains&nbsp;the&nbsp;empirical<br>
+risk&nbsp;bound&nbsp;condition,&nbsp;but&nbsp;without&nbsp;any&nbsp;regularization.</tt></dd></dl>
+ <dl><dt><a name="-find_most_violated_constraint_margin"><strong>find_most_violated_constraint_margin</strong></a>(x, y, sm, sparm)</dt><dd><tt>Return&nbsp;ybar&nbsp;associated&nbsp;with&nbsp;x's&nbsp;most&nbsp;violated&nbsp;constraint.<br>
+&nbsp;<br>
+The&nbsp;find&nbsp;most&nbsp;violated&nbsp;constraint&nbsp;function&nbsp;for&nbsp;margin&nbsp;rescaling.<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;this&nbsp;returns&nbsp;the&nbsp;value&nbsp;from&nbsp;the<br>
+general&nbsp;find_most_violated_constraint&nbsp;function.</tt></dd></dl>
+ <dl><dt><a name="-find_most_violated_constraint_slack"><strong>find_most_violated_constraint_slack</strong></a>(x, y, sm, sparm)</dt><dd><tt>Return&nbsp;ybar&nbsp;associated&nbsp;with&nbsp;x's&nbsp;most&nbsp;violated&nbsp;constraint.<br>
+&nbsp;<br>
+The&nbsp;find&nbsp;most&nbsp;violated&nbsp;constraint&nbsp;function&nbsp;for&nbsp;slack&nbsp;rescaling.<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;this&nbsp;returns&nbsp;the&nbsp;value&nbsp;from&nbsp;the<br>
+general&nbsp;find_most_violated_constraint&nbsp;function.</tt></dd></dl>
+ <dl><dt><a name="-init_constraints"><strong>init_constraints</strong></a>(sample, sm, sparm)</dt><dd><tt>Initializes&nbsp;special&nbsp;constraints.<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;sequence&nbsp;of&nbsp;initial&nbsp;constraints.&nbsp;&nbsp;Each&nbsp;constraint&nbsp;in&nbsp;the<br>
+returned&nbsp;sequence&nbsp;is&nbsp;itself&nbsp;a&nbsp;sequence&nbsp;with&nbsp;two&nbsp;items&nbsp;(the<br>
+intention&nbsp;is&nbsp;to&nbsp;be&nbsp;a&nbsp;tuple).&nbsp;&nbsp;The&nbsp;first&nbsp;item&nbsp;of&nbsp;the&nbsp;tuple&nbsp;is&nbsp;a<br>
+document&nbsp;object.&nbsp;&nbsp;The&nbsp;second&nbsp;item&nbsp;is&nbsp;a&nbsp;number,&nbsp;indicating&nbsp;that&nbsp;the<br>
+inner&nbsp;product&nbsp;of&nbsp;the&nbsp;feature&nbsp;vector&nbsp;of&nbsp;the&nbsp;document&nbsp;object&nbsp;with<br>
+the&nbsp;linear&nbsp;weights&nbsp;must&nbsp;be&nbsp;greater&nbsp;than&nbsp;or&nbsp;equal&nbsp;to&nbsp;the&nbsp;number<br>
+(or,&nbsp;in&nbsp;the&nbsp;nonlinear&nbsp;case,&nbsp;the&nbsp;evaluation&nbsp;of&nbsp;the&nbsp;kernel&nbsp;on&nbsp;the<br>
+feature&nbsp;vector&nbsp;with&nbsp;the&nbsp;current&nbsp;model&nbsp;must&nbsp;be&nbsp;greater).&nbsp;&nbsp;This<br>
+initializes&nbsp;the&nbsp;optimization&nbsp;problem&nbsp;by&nbsp;allowing&nbsp;the&nbsp;introduction<br>
+of&nbsp;special&nbsp;constraints.&nbsp;&nbsp;Typically&nbsp;no&nbsp;special&nbsp;constraints&nbsp;are<br>
+necessary.&nbsp;&nbsp;A&nbsp;typical&nbsp;constraint&nbsp;may&nbsp;be&nbsp;to&nbsp;ensure&nbsp;that&nbsp;all&nbsp;feature<br>
+weights&nbsp;are&nbsp;positive.<br>
+&nbsp;<br>
+Note&nbsp;that&nbsp;the&nbsp;slack&nbsp;id&nbsp;must&nbsp;be&nbsp;set.&nbsp;&nbsp;The&nbsp;slack&nbsp;IDs&nbsp;1&nbsp;through<br>
+len(sample)&nbsp;(or&nbsp;just&nbsp;1&nbsp;in&nbsp;the&nbsp;combined&nbsp;constraint&nbsp;option)&nbsp;are&nbsp;used<br>
+by&nbsp;the&nbsp;training&nbsp;examples&nbsp;in&nbsp;the&nbsp;sample,&nbsp;so&nbsp;do&nbsp;not&nbsp;use&nbsp;these&nbsp;if&nbsp;you<br>
+do&nbsp;not&nbsp;intend&nbsp;to&nbsp;share&nbsp;slack&nbsp;with&nbsp;the&nbsp;constraints&nbsp;inferred&nbsp;from<br>
+the&nbsp;training&nbsp;data.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;equivalent&nbsp;to&nbsp;returning&nbsp;an&nbsp;empty&nbsp;list,<br>
+i.e.,&nbsp;no&nbsp;constraints.</tt></dd></dl>
+ <dl><dt><a name="-init_model"><strong>init_model</strong></a>(sample, sm, sparm)</dt><dd><tt>Initializes&nbsp;the&nbsp;learning&nbsp;model.<br>
+&nbsp;<br>
+Initialize&nbsp;the&nbsp;structure&nbsp;model&nbsp;sm.&nbsp;&nbsp;The&nbsp;sm.size_psi&nbsp;must&nbsp;be&nbsp;set&nbsp;to<br>
+the&nbsp;number&nbsp;of&nbsp;features.&nbsp;&nbsp;The&nbsp;ancillary&nbsp;purpose&nbsp;is&nbsp;to&nbsp;add&nbsp;any<br>
+information&nbsp;to&nbsp;sm&nbsp;that&nbsp;is&nbsp;necessary&nbsp;from&nbsp;the&nbsp;user&nbsp;code<br>
+perspective.&nbsp;&nbsp;This&nbsp;function&nbsp;returns&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-loss"><strong>loss</strong></a>(y, ybar, sparm)</dt><dd><tt>Return&nbsp;the&nbsp;loss&nbsp;of&nbsp;ybar&nbsp;relative&nbsp;to&nbsp;the&nbsp;true&nbsp;labeling&nbsp;y.<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;loss&nbsp;for&nbsp;the&nbsp;correct&nbsp;label&nbsp;y&nbsp;and&nbsp;the&nbsp;predicted&nbsp;label<br>
+ybar.&nbsp;&nbsp;In&nbsp;the&nbsp;event&nbsp;that&nbsp;y&nbsp;and&nbsp;ybar&nbsp;are&nbsp;identical&nbsp;loss&nbsp;must&nbsp;be&nbsp;0.<br>
+Presumably&nbsp;as&nbsp;y&nbsp;and&nbsp;ybar&nbsp;grow&nbsp;more&nbsp;and&nbsp;more&nbsp;dissimilar&nbsp;the<br>
+returned&nbsp;value&nbsp;will&nbsp;increase&nbsp;from&nbsp;that&nbsp;point.&nbsp;&nbsp;sparm.loss_function<br>
+holds&nbsp;the&nbsp;loss&nbsp;function&nbsp;option&nbsp;specified&nbsp;on&nbsp;the&nbsp;command&nbsp;line&nbsp;via<br>
+the&nbsp;-l&nbsp;option.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;to&nbsp;perform&nbsp;0/1&nbsp;loss&nbsp;based&nbsp;on&nbsp;the&nbsp;truth&nbsp;of<br>
+y==ybar.</tt></dd></dl>
+ <dl><dt><a name="-parse_parameters"><strong>parse_parameters</strong></a>(sparm)</dt><dd><tt>Sets&nbsp;attributes&nbsp;of&nbsp;sparm&nbsp;based&nbsp;on&nbsp;command&nbsp;line&nbsp;arguments.<br>
+&nbsp;<br>
+This&nbsp;gives&nbsp;the&nbsp;user&nbsp;code&nbsp;a&nbsp;chance&nbsp;to&nbsp;change&nbsp;sparm&nbsp;based&nbsp;on&nbsp;the<br>
+custom&nbsp;command&nbsp;line&nbsp;arguments.&nbsp;&nbsp;The&nbsp;custom&nbsp;command&nbsp;line&nbsp;arguments<br>
+are&nbsp;stored&nbsp;in&nbsp;sparm.argv&nbsp;as&nbsp;a&nbsp;list&nbsp;of&nbsp;strings.&nbsp;&nbsp;The&nbsp;custom&nbsp;command<br>
+lines&nbsp;are&nbsp;stored&nbsp;in&nbsp;'--option',&nbsp;then&nbsp;'value'&nbsp;sequence.<br>
+&nbsp;<br>
+If&nbsp;this&nbsp;function&nbsp;is&nbsp;not&nbsp;implemented,&nbsp;any&nbsp;custom&nbsp;command&nbsp;line<br>
+arguments&nbsp;are&nbsp;ignored&nbsp;and&nbsp;sparm&nbsp;remains&nbsp;unchanged.</tt></dd></dl>
+ <dl><dt><a name="-parse_parameters_classify"><strong>parse_parameters_classify</strong></a>(attribute, value)</dt><dd><tt>Process&nbsp;a&nbsp;single&nbsp;custom&nbsp;command&nbsp;line&nbsp;argument&nbsp;for&nbsp;the&nbsp;classifier.<br>
+&nbsp;<br>
+This&nbsp;gives&nbsp;the&nbsp;user&nbsp;code&nbsp;a&nbsp;chance&nbsp;to&nbsp;change&nbsp;the&nbsp;state&nbsp;of&nbsp;the<br>
+classifier&nbsp;based&nbsp;on&nbsp;a&nbsp;single&nbsp;custom&nbsp;command&nbsp;line&nbsp;argument,&nbsp;e.g.,<br>
+one&nbsp;that&nbsp;begins&nbsp;with&nbsp;two&nbsp;dashes.&nbsp;&nbsp;This&nbsp;function&nbsp;will&nbsp;be&nbsp;called<br>
+multiple&nbsp;times&nbsp;if&nbsp;there&nbsp;are&nbsp;multiple&nbsp;custom&nbsp;command&nbsp;line<br>
+arguments.<br>
+&nbsp;<br>
+If&nbsp;this&nbsp;function&nbsp;is&nbsp;not&nbsp;implemented,&nbsp;any&nbsp;custom&nbsp;command&nbsp;line<br>
+arguments&nbsp;are&nbsp;ignored.</tt></dd></dl>
+ <dl><dt><a name="-print_help"><strong>print_help</strong></a>()</dt><dd><tt>Help&nbsp;printed&nbsp;for&nbsp;badly&nbsp;formed&nbsp;CL-arguments&nbsp;when&nbsp;learning.<br>
+&nbsp;<br>
+If&nbsp;this&nbsp;function&nbsp;is&nbsp;not&nbsp;implemented,&nbsp;the&nbsp;program&nbsp;prints&nbsp;the<br>
+default&nbsp;SVM^struct&nbsp;help&nbsp;string&nbsp;as&nbsp;well&nbsp;as&nbsp;a&nbsp;note&nbsp;about&nbsp;the&nbsp;use&nbsp;of<br>
+the&nbsp;--m&nbsp;option&nbsp;to&nbsp;load&nbsp;a&nbsp;Python&nbsp;module.</tt></dd></dl>
+ <dl><dt><a name="-print_help_classify"><strong>print_help_classify</strong></a>()</dt><dd><tt>Help&nbsp;printed&nbsp;for&nbsp;badly&nbsp;formed&nbsp;CL-arguments&nbsp;when&nbsp;classifying.<br>
+&nbsp;<br>
+If&nbsp;this&nbsp;function&nbsp;is&nbsp;not&nbsp;implemented,&nbsp;the&nbsp;program&nbsp;prints&nbsp;the<br>
+default&nbsp;SVM^struct&nbsp;help&nbsp;string&nbsp;as&nbsp;well&nbsp;as&nbsp;a&nbsp;note&nbsp;about&nbsp;the&nbsp;use&nbsp;of<br>
+the&nbsp;--m&nbsp;option&nbsp;to&nbsp;load&nbsp;a&nbsp;Python&nbsp;module.</tt></dd></dl>
+ <dl><dt><a name="-print_iteration_stats"><strong>print_iteration_stats</strong></a>(ceps, cached_constraint, sample, sm, cset, alpha, sparm)</dt><dd><tt>Called&nbsp;just&nbsp;before&nbsp;the&nbsp;end&nbsp;of&nbsp;each&nbsp;cutting&nbsp;plane&nbsp;iteration.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;called&nbsp;just&nbsp;before&nbsp;the&nbsp;end&nbsp;of&nbsp;each&nbsp;cutting&nbsp;plane<br>
+iteration,&nbsp;primarily&nbsp;to&nbsp;print&nbsp;statistics.&nbsp;&nbsp;The&nbsp;'ceps'&nbsp;argument&nbsp;is<br>
+how&nbsp;much&nbsp;the&nbsp;most&nbsp;violated&nbsp;constraint&nbsp;was&nbsp;violated&nbsp;by.&nbsp;&nbsp;The<br>
+'cached_constraint'&nbsp;argument&nbsp;is&nbsp;true&nbsp;if&nbsp;this&nbsp;constraint&nbsp;was<br>
+constructed&nbsp;from&nbsp;the&nbsp;cache.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;nothing&nbsp;is&nbsp;printed.</tt></dd></dl>
+ <dl><dt><a name="-print_learning_stats"><strong>print_learning_stats</strong></a>(sample, sm, cset, alpha, sparm)</dt><dd><tt>Print&nbsp;statistics&nbsp;once&nbsp;learning&nbsp;has&nbsp;finished.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;called&nbsp;after&nbsp;training&nbsp;primarily&nbsp;to&nbsp;compute&nbsp;and&nbsp;print&nbsp;any<br>
+statistics&nbsp;regarding&nbsp;the&nbsp;learning&nbsp;(e.g.,&nbsp;training&nbsp;error)&nbsp;of&nbsp;the<br>
+model&nbsp;on&nbsp;the&nbsp;training&nbsp;sample.&nbsp;&nbsp;You&nbsp;may&nbsp;also&nbsp;use&nbsp;it&nbsp;to&nbsp;make&nbsp;final<br>
+changes&nbsp;to&nbsp;sm&nbsp;before&nbsp;it&nbsp;is&nbsp;written&nbsp;out&nbsp;to&nbsp;a&nbsp;file.&nbsp;&nbsp;For&nbsp;example,&nbsp;if<br>
+you&nbsp;defined&nbsp;any&nbsp;non-pickle-able&nbsp;attributes&nbsp;in&nbsp;sm,&nbsp;this&nbsp;is&nbsp;a&nbsp;good<br>
+time&nbsp;to&nbsp;turn&nbsp;them&nbsp;into&nbsp;a&nbsp;pickle-able&nbsp;object&nbsp;before&nbsp;it&nbsp;is&nbsp;written<br>
+out.&nbsp;&nbsp;Also&nbsp;passed&nbsp;in&nbsp;is&nbsp;the&nbsp;set&nbsp;of&nbsp;constraints&nbsp;cset&nbsp;as&nbsp;a&nbsp;sequence<br>
+of&nbsp;(left-hand-side,&nbsp;right-hand-side)&nbsp;two-element&nbsp;tuples,&nbsp;and&nbsp;an<br>
+alpha&nbsp;of&nbsp;the&nbsp;same&nbsp;length&nbsp;holding&nbsp;the&nbsp;Lagrange&nbsp;multipliers&nbsp;for&nbsp;each<br>
+constraint.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;nothing&nbsp;is&nbsp;printed.</tt></dd></dl>
+ <dl><dt><a name="-print_testing_stats"><strong>print_testing_stats</strong></a>(sample, sm, sparm, teststats)</dt><dd><tt>Print&nbsp;statistics&nbsp;once&nbsp;classification&nbsp;has&nbsp;finished.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;called&nbsp;after&nbsp;all&nbsp;test&nbsp;predictions&nbsp;are&nbsp;made&nbsp;to&nbsp;allow&nbsp;the<br>
+display&nbsp;of&nbsp;any&nbsp;summary&nbsp;statistics&nbsp;that&nbsp;have&nbsp;been&nbsp;accumulated&nbsp;in<br>
+the&nbsp;teststats&nbsp;object&nbsp;through&nbsp;use&nbsp;of&nbsp;the&nbsp;eval_prediction&nbsp;function.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;that&nbsp;nothing&nbsp;is&nbsp;printed.</tt></dd></dl>
+ <dl><dt><a name="-psi"><strong>psi</strong></a>(x, y, sm, sparm)</dt><dd><tt>Return&nbsp;a&nbsp;feature&nbsp;vector&nbsp;representing&nbsp;pattern&nbsp;x&nbsp;and&nbsp;label&nbsp;y.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;the&nbsp;combined&nbsp;feature&nbsp;function,&nbsp;which&nbsp;this&nbsp;returns&nbsp;either&nbsp;a<br>
+svmapi.Sparse&nbsp;object,&nbsp;or&nbsp;sequence&nbsp;of&nbsp;svmapi.Sparse&nbsp;objects&nbsp;(useful<br>
+during&nbsp;kernel&nbsp;evaluations,&nbsp;as&nbsp;all&nbsp;components&nbsp;undergo&nbsp;kernel<br>
+evaluation&nbsp;separately).&nbsp;&nbsp;There&nbsp;is&nbsp;no&nbsp;default&nbsp;behavior.</tt></dd></dl>
+ <dl><dt><a name="-read_examples"><strong>read_examples</strong></a>(filename, sparm)</dt><dd><tt>Reads&nbsp;and&nbsp;returns&nbsp;x,y&nbsp;example&nbsp;pairs&nbsp;from&nbsp;a&nbsp;file.<br>
+&nbsp;<br>
+This&nbsp;reads&nbsp;the&nbsp;examples&nbsp;contained&nbsp;at&nbsp;the&nbsp;file&nbsp;at&nbsp;path&nbsp;filename&nbsp;and<br>
+returns&nbsp;them&nbsp;as&nbsp;a&nbsp;sequence.&nbsp;&nbsp;Each&nbsp;element&nbsp;of&nbsp;the&nbsp;sequence&nbsp;should<br>
+be&nbsp;an&nbsp;object&nbsp;'e'&nbsp;where&nbsp;e[0]&nbsp;and&nbsp;e[1]&nbsp;is&nbsp;the&nbsp;pattern&nbsp;(x)&nbsp;and&nbsp;label<br>
+(y)&nbsp;respectively.&nbsp;&nbsp;Specifically,&nbsp;the&nbsp;intention&nbsp;is&nbsp;that&nbsp;the&nbsp;element<br>
+be&nbsp;a&nbsp;two-element&nbsp;tuple&nbsp;containing&nbsp;an&nbsp;x-y&nbsp;pair.</tt></dd></dl>
+ <dl><dt><a name="-read_model"><strong>read_model</strong></a>(filename, sparm)</dt><dd><tt>Load&nbsp;the&nbsp;structure&nbsp;model&nbsp;from&nbsp;a&nbsp;file.<br>
+&nbsp;<br>
+Return&nbsp;the&nbsp;structmodel&nbsp;stored&nbsp;in&nbsp;the&nbsp;file&nbsp;at&nbsp;path&nbsp;filename,&nbsp;or<br>
+None&nbsp;if&nbsp;the&nbsp;file&nbsp;could&nbsp;not&nbsp;be&nbsp;read&nbsp;for&nbsp;some&nbsp;reason.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;equivalent&nbsp;to<br>
+'return&nbsp;cPickle.load(bz2.BZ2File(filename))'.</tt></dd></dl>
+ <dl><dt><a name="-write_label"><strong>write_label</strong></a>(fileptr, y)</dt><dd><tt>Write&nbsp;a&nbsp;predicted&nbsp;label&nbsp;to&nbsp;an&nbsp;open&nbsp;file.<br>
+&nbsp;<br>
+Called&nbsp;during&nbsp;classification,&nbsp;this&nbsp;function&nbsp;is&nbsp;called&nbsp;for&nbsp;every<br>
+example&nbsp;in&nbsp;the&nbsp;input&nbsp;test&nbsp;file.&nbsp;&nbsp;In&nbsp;the&nbsp;default&nbsp;behavior,&nbsp;the<br>
+label&nbsp;is&nbsp;written&nbsp;to&nbsp;the&nbsp;already&nbsp;open&nbsp;fileptr.&nbsp;&nbsp;(Note&nbsp;that&nbsp;this<br>
+object&nbsp;is&nbsp;a&nbsp;file,&nbsp;not&nbsp;a&nbsp;string.&nbsp;&nbsp;Attempts&nbsp;to&nbsp;close&nbsp;the&nbsp;file&nbsp;are<br>
+ignored.)&nbsp;&nbsp;The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;equivalent&nbsp;to<br>
+'print&gt;&gt;fileptr,y'</tt></dd></dl>
+ <dl><dt><a name="-write_model"><strong>write_model</strong></a>(filename, sm, sparm)</dt><dd><tt>Dump&nbsp;the&nbsp;structmodel&nbsp;sm&nbsp;to&nbsp;a&nbsp;file.<br>
+&nbsp;<br>
+Write&nbsp;the&nbsp;structmodel&nbsp;sm&nbsp;to&nbsp;a&nbsp;file&nbsp;at&nbsp;path&nbsp;filename.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;behavior&nbsp;is&nbsp;equivalent&nbsp;to<br>
+'cPickle.dump(sm,bz2.BZ2File(filename,'w'))'.</tt></dd></dl>
+</td></tr></table>
+</body></html>

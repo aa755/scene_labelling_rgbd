@@ -1,0 +1,610 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module svmapi</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>svmapi</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sw/lib/python2.5/site-packages/svmapi.so">/sw/lib/python2.5/site-packages/svmapi.so</a></font></td></tr></table>
+    <p><tt>Structures&nbsp;to&nbsp;support&nbsp;structural&nbsp;SVM&nbsp;learning.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="svmapi.html#Array">Array</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#ArrayIter">ArrayIter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Constraints">Constraints</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#ConstraintsIter">ConstraintsIter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Document">Document</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#DocumentIter">DocumentIter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#KernelParm">KernelParm</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Model">Model</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Sample">Sample</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#SampleIter">SampleIter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Sparm">Sparm</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#Sparse">Sparse</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#SparseIter">SparseIter</a>
+</font></dt><dt><font face="helvetica, arial"><a href="svmapi.html#StructModel">StructModel</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Array">class <strong>Array</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>The&nbsp;array&nbsp;wrapper.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;used&nbsp;by&nbsp;SVM^python&nbsp;for&nbsp;convenient&nbsp;speedy&nbsp;encapsulation&nbsp;of<br>
+arrays&nbsp;of&nbsp;various&nbsp;types,&nbsp;e.g.,&nbsp;doubles,&nbsp;integers&nbsp;and&nbsp;others,&nbsp;that<br>
+occur&nbsp;within&nbsp;various&nbsp;structures.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Array-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="Array-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="Array-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="Array-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="Array-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Array-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Array-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Array-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62e020&gt;<dd><tt>T.<a href="#Array-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="ArrayIter">class <strong>ArrayIter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Array">Array</a>&nbsp;iterator&nbsp;objects&nbsp;to&nbsp;access&nbsp;array&nbsp;contents.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="ArrayIter-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#ArrayIter-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="ArrayIter-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#ArrayIter-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="ArrayIter-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#ArrayIter-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="ArrayIter-next"><strong>next</strong></a>(...)</dt><dd><tt>x.<a href="#ArrayIter-next">next</a>()&nbsp;-&gt;&nbsp;the&nbsp;next&nbsp;value,&nbsp;or&nbsp;raise&nbsp;StopIteration</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Constraints">class <strong>Constraints</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>The&nbsp;constraint&nbsp;set&nbsp;of&nbsp;left-right&nbsp;side&nbsp;pairs.<br>
+&nbsp;<br>
+The&nbsp;idea&nbsp;of&nbsp;the&nbsp;constraint&nbsp;set&nbsp;is&nbsp;that&nbsp;the&nbsp;left-hand-side&nbsp;is&nbsp;a<br>
+document&nbsp;and&nbsp;the&nbsp;right-hand-side&nbsp;is&nbsp;a&nbsp;float,&nbsp;where&nbsp;the&nbsp;inequality<br>
+'lhs*w&nbsp;+&nbsp;slack&nbsp;&gt;=&nbsp;rhs'&nbsp;is&nbsp;maintained.&nbsp;&nbsp;This&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;acts&nbsp;roughly<br>
+like&nbsp;a&nbsp;sequence&nbsp;with&nbsp;regard&nbsp;to&nbsp;constraint&nbsp;access.&nbsp;&nbsp;The&nbsp;user&nbsp;does<br>
+not&nbsp;create&nbsp;these&nbsp;objects.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Constraints-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#Constraints-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="Constraints-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#Constraints-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="Constraints-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#Constraints-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="Constraints-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Constraints-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Constraints-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Constraints-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>m</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;constraints&nbsp;in&nbsp;this&nbsp;example.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62e260&gt;<dd><tt>T.<a href="#Constraints-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="ConstraintsIter">class <strong>ConstraintsIter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Constraints">Constraints</a>&nbsp;iterator&nbsp;objects,&nbsp;to&nbsp;access&nbsp;constraints.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="ConstraintsIter-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#ConstraintsIter-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="ConstraintsIter-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#ConstraintsIter-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="ConstraintsIter-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#ConstraintsIter-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="ConstraintsIter-next"><strong>next</strong></a>(...)</dt><dd><tt>x.<a href="#ConstraintsIter-next">next</a>()&nbsp;-&gt;&nbsp;the&nbsp;next&nbsp;value,&nbsp;or&nbsp;raise&nbsp;StopIteration</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Document">class <strong>Document</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Document">Document</a>(sparses&nbsp;[,docnum,queryid,costfactor,slackid,kernelid])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Construct&nbsp;a&nbsp;single&nbsp;example&nbsp;document.<br>
+&nbsp;<br>
+A&nbsp;document&nbsp;vector&nbsp;contains&nbsp;a&nbsp;sequence&nbsp;of&nbsp;svmapi.<a href="#Sparse">Sparse</a><br>
+vectors&nbsp;representing&nbsp;the&nbsp;contents&nbsp;(accessible&nbsp;through&nbsp;iteration)<br>
+as&nbsp;well&nbsp;as&nbsp;several&nbsp;other&nbsp;data&nbsp;fields.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Document-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#Document-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="Document-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#Document-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="Document-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#Document-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="Document-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Document-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Document-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Document-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Document-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>costfactor</strong></dt>
+<dd><tt>Scales&nbsp;the&nbsp;cost&nbsp;of&nbsp;misclassifying&nbsp;this&nbsp;document&nbsp;by&nbsp;this&nbsp;factor.<br>
+The&nbsp;upper&nbsp;bound&nbsp;of&nbsp;the&nbsp;alpha&nbsp;of&nbsp;this&nbsp;constraint&nbsp;is&nbsp;scaled&nbsp;by<br>
+this&nbsp;factor.</tt></dd>
+</dl>
+<dl><dt><strong>docnum</strong></dt>
+<dd><tt>The&nbsp;position&nbsp;of&nbsp;the&nbsp;document&nbsp;in&nbsp;the&nbsp;training&nbsp;set&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>kernelid</strong></dt>
+<dd><tt>Position&nbsp;in&nbsp;the&nbsp;gram&nbsp;matrix&nbsp;where&nbsp;the&nbsp;kernel&nbsp;value&nbsp;can&nbsp;be&nbsp;found<br>
+when&nbsp;using&nbsp;an&nbsp;explicit&nbsp;gram&nbsp;matrix.</tt></dd>
+</dl>
+<dl><dt><strong>queryid</strong></dt>
+<dd><tt>Constraints&nbsp;are&nbsp;generated&nbsp;for&nbsp;documents&nbsp;with&nbsp;the&nbsp;same&nbsp;query&nbsp;ID.<br>
+Used&nbsp;only&nbsp;when&nbsp;learning&nbsp;rankings.</tt></dd>
+</dl>
+<dl><dt><strong>slackid</strong></dt>
+<dd><tt>Index&nbsp;of&nbsp;the&nbsp;slack&nbsp;variable&nbsp;corresponding&nbsp;to&nbsp;this&nbsp;constraint.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62e4a0&gt;<dd><tt>T.<a href="#Document-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="DocumentIter">class <strong>DocumentIter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Document">Document</a>&nbsp;iterator&nbsp;objects<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="DocumentIter-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#DocumentIter-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="DocumentIter-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#DocumentIter-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="DocumentIter-next"><strong>next</strong></a>(...)</dt><dd><tt>x.<a href="#DocumentIter-next">next</a>()&nbsp;-&gt;&nbsp;the&nbsp;next&nbsp;value,&nbsp;or&nbsp;raise&nbsp;StopIteration</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="KernelParm">class <strong>KernelParm</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Kernel&nbsp;parameter&nbsp;objects.<br>
+&nbsp;<br>
+These&nbsp;encapulate&nbsp;a&nbsp;parameterization&nbsp;of&nbsp;the&nbsp;kernel&nbsp;used&nbsp;in&nbsp;learning.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="KernelParm-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#KernelParm-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="KernelParm-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="KernelParm-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#KernelParm-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="KernelParm-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#KernelParm-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>coef_const</strong></dt>
+<dd><tt>Sigmoid&nbsp;constant&nbsp;coefficient&nbsp;'c'&nbsp;in&nbsp;tanh(s&nbsp;a*b&nbsp;+&nbsp;c).</tt></dd>
+</dl>
+<dl><dt><strong>coef_lin</strong></dt>
+<dd><tt>Sigmoid&nbsp;linear&nbsp;coefficient&nbsp;'s'&nbsp;in&nbsp;tanh(s&nbsp;a*b&nbsp;+&nbsp;c).</tt></dd>
+</dl>
+<dl><dt><strong>custom</strong></dt>
+<dd><tt>String&nbsp;for&nbsp;benefit&nbsp;of&nbsp;the&nbsp;custom&nbsp;kernel.</tt></dd>
+</dl>
+<dl><dt><strong>kernel_type</strong></dt>
+<dd><tt>The&nbsp;type&nbsp;of&nbsp;the&nbsp;kernel.&nbsp;&nbsp;Value&nbsp;values&nbsp;are:<br>
+0&nbsp;-&nbsp;linear<br>
+1&nbsp;-&nbsp;polynomial<br>
+2&nbsp;-&nbsp;rbf<br>
+3&nbsp;-&nbsp;sigmoid<br>
+4&nbsp;-&nbsp;custom<br>
+5&nbsp;-&nbsp;matrix</tt></dd>
+</dl>
+<dl><dt><strong>poly_degree</strong></dt>
+<dd><tt>The&nbsp;degree&nbsp;of&nbsp;the&nbsp;polynomial&nbsp;kernel.</tt></dd>
+</dl>
+<dl><dt><strong>rbf_gamma</strong></dt>
+<dd><tt>Gaussian&nbsp;width&nbsp;parameter&nbsp;for&nbsp;RBF&nbsp;kernel.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62e720&gt;<dd><tt>T.<a href="#KernelParm-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Model">class <strong>Model</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Contains&nbsp;general&nbsp;SVM&nbsp;model&nbsp;parameters.<br>
+&nbsp;<br>
+These&nbsp;objects&nbsp;contain&nbsp;general&nbsp;parameters&nbsp;related&nbsp;to&nbsp;the&nbsp;SVM&nbsp;QP,<br>
+but&nbsp;unrelated&nbsp;to&nbsp;any&nbsp;structural-learning&nbsp;specific&nbsp;data.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Model-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#Model-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="Model-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Model-classify"><strong>classify</strong></a>(...)</dt><dd><tt><a href="#Model-classify">classify</a>(example)<br>
+&nbsp;<br>
+Given&nbsp;an&nbsp;example,&nbsp;which&nbsp;can&nbsp;be&nbsp;either&nbsp;a&nbsp;svmapi.<a href="#Document">Document</a>&nbsp;or&nbsp;a<br>
+svmapi.<a href="#Sparse">Sparse</a>&nbsp;<a href="__builtin__.html#object">object</a>,&nbsp;return&nbsp;the&nbsp;scalar&nbsp;classification&nbsp;of&nbsp;that<br>
+document&nbsp;according&nbsp;to&nbsp;this&nbsp;model.</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>alpha</strong></dt>
+<dd><tt>The&nbsp;alpha&nbsp;multipliers&nbsp;for&nbsp;each&nbsp;support&nbsp;vector.</tt></dd>
+</dl>
+<dl><dt><strong>at_upper_bound</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;support&nbsp;vectors&nbsp;with&nbsp;maxed&nbsp;alpha.</tt></dd>
+</dl>
+<dl><dt><strong>b</strong></dt>
+<dd><tt>The&nbsp;bias&nbsp;term.</tt></dd>
+</dl>
+<dl><dt><strong>kernel_parm</strong></dt>
+<dd><tt>Kernel&nbsp;parameters.</tt></dd>
+</dl>
+<dl><dt><strong>supvec</strong></dt>
+<dd><tt>The&nbsp;support&nbsp;vectors.</tt></dd>
+</dl>
+<dl><dt><strong>sv_num</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;support&nbsp;vectors.</tt></dd>
+</dl>
+<dl><dt><strong>totdoc</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;training&nbsp;documents.</tt></dd>
+</dl>
+<dl><dt><strong>totwords</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;features.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62e8c0&gt;<dd><tt>T.<a href="#Model-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Sample">class <strong>Sample</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>The&nbsp;sample&nbsp;of&nbsp;input-output&nbsp;pairs&nbsp;we&nbsp;either&nbsp;learn&nbsp;or&nbsp;classify.<br>
+&nbsp;<br>
+This&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;is&nbsp;used&nbsp;by&nbsp;SVM^python&nbsp;to&nbsp;provide&nbsp;user&nbsp;code&nbsp;with&nbsp;the<br>
+entire&nbsp;training&nbsp;or&nbsp;classification&nbsp;set.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Sample-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#Sample-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="Sample-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#Sample-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="Sample-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#Sample-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="Sample-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Sample-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Sample-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Sample-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>n</strong></dt>
+<dd><tt>The&nbsp;number&nbsp;of&nbsp;example&nbsp;in&nbsp;the&nbsp;sample.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62ea80&gt;<dd><tt>T.<a href="#Sample-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SampleIter">class <strong>SampleIter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Sample">Sample</a>&nbsp;iterator&nbsp;objects<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="SampleIter-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#SampleIter-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="SampleIter-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#SampleIter-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="SampleIter-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#SampleIter-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="SampleIter-next"><strong>next</strong></a>(...)</dt><dd><tt>x.<a href="#SampleIter-next">next</a>()&nbsp;-&gt;&nbsp;the&nbsp;next&nbsp;value,&nbsp;or&nbsp;raise&nbsp;StopIteration</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Sparm">class <strong>Sparm</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Struct&nbsp;learning&nbsp;parameter&nbsp;objects&nbsp;contrain&nbsp;attributes&nbsp;which&nbsp;control<br>
+how&nbsp;the&nbsp;structural&nbsp;SVM&nbsp;will&nbsp;proceed&nbsp;in&nbsp;its&nbsp;cutting&nbsp;plane<br>
+optimization.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Sparm-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparm-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="Sparm-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Sparm-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparm-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Sparm-__setstate__"><strong>__setstate__</strong></a>(...)</dt><dd><tt>Unpickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Sparm-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparm-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>argv</strong></dt>
+<dd><tt>List&nbsp;of&nbsp;custom&nbsp;command&nbsp;line&nbsp;arguments.</tt></dd>
+</dl>
+<dl><dt><strong>c</strong></dt>
+<dd><tt>Trade-off&nbsp;between&nbsp;margin&nbsp;and&nbsp;loss.</tt></dd>
+</dl>
+<dl><dt><strong>ccache_size</strong></dt>
+<dd><tt>Maximum&nbsp;number&nbsp;of&nbsp;constraints&nbsp;to&nbsp;cache&nbsp;for&nbsp;each&nbsp;example.<br>
+Used&nbsp;in&nbsp;w=4&nbsp;algorithm.&nbsp;&nbsp;Must&nbsp;be&nbsp;&gt;=&nbsp;5.</tt></dd>
+</dl>
+<dl><dt><strong>epsilon</strong></dt>
+<dd><tt>Precision&nbsp;to&nbsp;which&nbsp;to&nbsp;solve&nbsp;the&nbsp;quadratic&nbsp;program.</tt></dd>
+</dl>
+<dl><dt><strong>loss_function</strong></dt>
+<dd><tt>Identifier&nbsp;for&nbsp;different&nbsp;loss&nbsp;functions.</tt></dd>
+</dl>
+<dl><dt><strong>loss_type</strong></dt>
+<dd><tt>Constraint&nbsp;loss&nbsp;type,&nbsp;either&nbsp;slack&nbsp;(1)&nbsp;or&nbsp;margin&nbsp;(2)&nbsp;rescaling.</tt></dd>
+</dl>
+<dl><dt><strong>newconstretrain</strong></dt>
+<dd><tt>Number&nbsp;of&nbsp;new&nbsp;constraints&nbsp;to&nbsp;accumulate&nbsp;before&nbsp;recomputing&nbsp;the&nbsp;QP.<br>
+Used&nbsp;in&nbsp;w=1&nbsp;algorithm.</tt></dd>
+</dl>
+<dl><dt><strong>slack_norm</strong></dt>
+<dd><tt>Norm&nbsp;of&nbsp;the&nbsp;objective&nbsp;function&nbsp;slack&nbsp;term,&nbsp;either&nbsp;1&nbsp;or&nbsp;2.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62ecc0&gt;<dd><tt>T.<a href="#Sparm-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Sparse">class <strong>Sparse</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Sparse">Sparse</a>(words&nbsp;[,&nbsp;userdefined,&nbsp;factor,&nbsp;kernel_id])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;single&nbsp;sparse&nbsp;vector&nbsp;with&nbsp;the&nbsp;indicated&nbsp;contents.<br>
+&nbsp;<br>
+This&nbsp;class&nbsp;is&nbsp;used&nbsp;by&nbsp;both&nbsp;the&nbsp;user&nbsp;to&nbsp;define&nbsp;new&nbsp;sparse&nbsp;vectors,<br>
+and&nbsp;by&nbsp;SVM^python&nbsp;to&nbsp;pass&nbsp;around&nbsp;sparse&nbsp;vectors&nbsp;with&nbsp;the&nbsp;indicated<br>
+contents.&nbsp;&nbsp;The&nbsp;'words'&nbsp;entry&nbsp;is&nbsp;a&nbsp;vector&nbsp;of&nbsp;either&nbsp;(index,value)<br>
+pairs&nbsp;indicating&nbsp;that&nbsp;'index'&nbsp;has&nbsp;value&nbsp;'value',&nbsp;or&nbsp;just&nbsp;a&nbsp;'value'<br>
+number&nbsp;which&nbsp;is&nbsp;implicitly&nbsp;equivalent&nbsp;to&nbsp;'(index+1,value)',&nbsp;where<br>
+'index'&nbsp;was&nbsp;the&nbsp;index&nbsp;of&nbsp;the&nbsp;last&nbsp;element.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Sparse-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="Sparse-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#Sparse-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>factor</strong></dt>
+<dd><tt>Factor&nbsp;by&nbsp;which&nbsp;this&nbsp;feature&nbsp;vector&nbsp;is&nbsp;multiplied&nbsp;when&nbsp;summed.</tt></dd>
+</dl>
+<dl><dt><strong>kernel_id</strong></dt>
+<dd><tt>The&nbsp;kernel&nbsp;ID.&nbsp;&nbsp;Feature&nbsp;vectors&nbsp;with&nbsp;different&nbsp;K-IDs&nbsp;are<br>
+considered&nbsp;orthogonal&nbsp;for&nbsp;the&nbsp;purpose&nbsp;of&nbsp;kernel&nbsp;evaluation.</tt></dd>
+</dl>
+<dl><dt><strong>twonorm_sq</strong></dt>
+<dd><tt>The&nbsp;squared&nbsp;euclidian&nbsp;length&nbsp;of&nbsp;the&nbsp;vector.</tt></dd>
+</dl>
+<dl><dt><strong>userdefined</strong></dt>
+<dd><tt>A&nbsp;string&nbsp;holding&nbsp;additional&nbsp;information,&nbsp;or&nbsp;None&nbsp;if&nbsp;unset.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62eee0&gt;<dd><tt>T.<a href="#Sparse-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SparseIter">class <strong>SparseIter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Sparse">Sparse</a>&nbsp;iterator&nbsp;objects,&nbsp;for&nbsp;accessing&nbsp;index-value&nbsp;pairs.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="SparseIter-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#SparseIter-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="SparseIter-__iter__"><strong>__iter__</strong></a>(...)</dt><dd><tt>x.<a href="#SparseIter-__iter__">__iter__</a>()&nbsp;&lt;==&gt;&nbsp;iter(x)</tt></dd></dl>
+
+<dl><dt><a name="SparseIter-next"><strong>next</strong></a>(...)</dt><dd><tt>x.<a href="#SparseIter-next">next</a>()&nbsp;-&gt;&nbsp;the&nbsp;next&nbsp;value,&nbsp;or&nbsp;raise&nbsp;StopIteration</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="StructModel">class <strong>StructModel</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Parameterization&nbsp;for&nbsp;the&nbsp;learned&nbsp;structural&nbsp;model.<br>
+&nbsp;<br>
+Structure&nbsp;model&nbsp;objects&nbsp;which&nbsp;contain&nbsp;parameterizations&nbsp;for<br>
+learned&nbsp;models.&nbsp;&nbsp;Aside&nbsp;from&nbsp;basic&nbsp;members&nbsp;including&nbsp;a&nbsp;pointer<br>
+to&nbsp;the&nbsp;underlying&nbsp;SVM&nbsp;QP&nbsp;model,&nbsp;a&nbsp;user&nbsp;may&nbsp;define&nbsp;their&nbsp;own<br>
+values&nbsp;by&nbsp;assigning&nbsp;values&nbsp;to&nbsp;this&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;&nbsp;These&nbsp;assignments<br>
+are&nbsp;retained&nbsp;throughout&nbsp;training,&nbsp;written&nbsp;with&nbsp;the&nbsp;model&nbsp;(if<br>
+they&nbsp;are&nbsp;Picklable),&nbsp;and&nbsp;reloaded&nbsp;during&nbsp;classification&nbsp;using<br>
+this&nbsp;model.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="StructModel-__init__"><strong>__init__</strong></a>(...)</dt><dd><tt>x.<a href="#StructModel-__init__">__init__</a>(...)&nbsp;initializes&nbsp;x;&nbsp;see&nbsp;x.__class__.__doc__&nbsp;for&nbsp;signature</tt></dd></dl>
+
+<dl><dt><a name="StructModel-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>Pickling&nbsp;support.</tt></dd></dl>
+
+<dl><dt><a name="StructModel-__setstate__"><strong>__setstate__</strong></a>(...)</dt><dd><tt>Unpickling&nbsp;support.</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>Dictionary&nbsp;of&nbsp;instance&nbsp;variables.</tt></dd>
+</dl>
+<dl><dt><strong>lin_reduce</strong></dt>
+<dd><tt>Whether&nbsp;or&nbsp;not&nbsp;to&nbsp;reduce&nbsp;this&nbsp;model&nbsp;to&nbsp;a&nbsp;single&nbsp;support&nbsp;vector.<br>
+If&nbsp;true,&nbsp;and&nbsp;there&nbsp;is&nbsp;an&nbsp;existing&nbsp;'w'&nbsp;weight&nbsp;vector&nbsp;(which&nbsp;happens<br>
+for&nbsp;linear&nbsp;kernels&nbsp;only),&nbsp;the&nbsp;support&nbsp;vectors&nbsp;in&nbsp;the&nbsp;SVM&nbsp;model<br>
+will&nbsp;be&nbsp;replaced&nbsp;with&nbsp;a&nbsp;single&nbsp;support&nbsp;vector.&nbsp;&nbsp;If&nbsp;false,&nbsp;no<br>
+pre-serialization&nbsp;processing&nbsp;will&nbsp;occur.</tt></dd>
+</dl>
+<dl><dt><strong>size_psi</strong></dt>
+<dd><tt>Length&nbsp;of&nbsp;the&nbsp;linear&nbsp;feature&nbsp;vector.</tt></dd>
+</dl>
+<dl><dt><strong>svm_model</strong></dt>
+<dd><tt>The&nbsp;SVM&nbsp;model.</tt></dd>
+</dl>
+<dl><dt><strong>w</strong></dt>
+<dd><tt>The&nbsp;linear&nbsp;learned&nbsp;weights.</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x62f180&gt;<dd><tt>T.<a href="#StructModel-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-eval_prediction"><strong>eval_prediction</strong></a>(...)</dt><dd><tt><a href="#-eval_prediction">eval_prediction</a>(exnum,&nbsp;(x,&nbsp;y),&nbsp;ypred,&nbsp;sm,&nbsp;sparm,&nbsp;teststats)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;does&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-find_most_violated_constraint"><strong>find_most_violated_constraint</strong></a>(...)</dt></dl>
+ <dl><dt><a name="-find_most_violated_constraint_margin"><strong>find_most_violated_constraint_margin</strong></a>(...)</dt><dd><tt><a href="#-find_most_violated_constraint_margin">find_most_violated_constraint_margin</a>(x,&nbsp;y,&nbsp;sm,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;calls&nbsp;the&nbsp;user's&nbsp;implementation&nbsp;of<br>
+the&nbsp;more&nbsp;general&nbsp;<a href="#-find_most_violated_constraint">find_most_violated_constraint</a>(x,&nbsp;y,&nbsp;sm,&nbsp;sparm).</tt></dd></dl>
+ <dl><dt><a name="-find_most_violated_constraint_slack"><strong>find_most_violated_constraint_slack</strong></a>(...)</dt><dd><tt><a href="#-find_most_violated_constraint_slack">find_most_violated_constraint_slack</a>(x,&nbsp;y,&nbsp;sm,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;calls&nbsp;the&nbsp;user's&nbsp;implementation&nbsp;of<br>
+the&nbsp;more&nbsp;general&nbsp;<a href="#-find_most_violated_constraint">find_most_violated_constraint</a>(x,&nbsp;y,&nbsp;sm,&nbsp;sparm).</tt></dd></dl>
+ <dl><dt><a name="-init_constraints"><strong>init_constraints</strong></a>(...)</dt><dd><tt><a href="#-init_constraints">init_constraints</a>(sample,&nbsp;sm,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;does&nbsp;nothing&nbsp;and&nbsp;returns&nbsp;None,<br>
+equivalent&nbsp;to&nbsp;no&nbsp;special&nbsp;constraints&nbsp;being&nbsp;declared.</tt></dd></dl>
+ <dl><dt><a name="-loss"><strong>loss</strong></a>(...)</dt><dd><tt><a href="#-loss">loss</a>(y,&nbsp;ybar,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;returns&nbsp;zero-one&nbsp;loss&nbsp;based&nbsp;on&nbsp;the<br>
+comparison&nbsp;y==ybar,&nbsp;equivalent&nbsp;to&nbsp;1-(y==ybar).</tt></dd></dl>
+ <dl><dt><a name="-parse_parameters"><strong>parse_parameters</strong></a>(...)</dt><dd><tt><a href="#-parse_parameters">parse_parameters</a>(sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;does&nbsp;nothing&nbsp;and&nbsp;returns&nbsp;None.</tt></dd></dl>
+ <dl><dt><a name="-parse_parameters_classify"><strong>parse_parameters_classify</strong></a>(...)</dt><dd><tt><a href="#-parse_parameters_classify">parse_parameters_classify</a>(attribute,&nbsp;value)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;does&nbsp;nothing&nbsp;and&nbsp;returns&nbsp;None.</tt></dd></dl>
+ <dl><dt><a name="-print_help"><strong>print_help</strong></a>(...)</dt><dd><tt><a href="#-print_help">print_help</a>()<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;the&nbsp;default&nbsp;help&nbsp;string&nbsp;for<br>
+SVM^python,&nbsp;contained&nbsp;in&nbsp;svmapi.default_help&nbsp;.</tt></dd></dl>
+ <dl><dt><a name="-print_help_classify"><strong>print_help_classify</strong></a>(...)</dt><dd><tt><a href="#-print_help_classify">print_help_classify</a>()<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;the&nbsp;default&nbsp;help&nbsp;string&nbsp;for<br>
+SVM^python,&nbsp;contained&nbsp;in&nbsp;svmapi.default_help&nbsp;.</tt></dd></dl>
+ <dl><dt><a name="-print_iteration_stats"><strong>print_iteration_stats</strong></a>(...)</dt><dd><tt><a href="#-print_iteration_stats">print_iteration_stats</a>(ceps,&nbsp;cached_constraint,&nbsp;sample,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sm,&nbsp;cset,&nbsp;alpha,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-print_learning_stats"><strong>print_learning_stats</strong></a>(...)</dt><dd><tt><a href="#-print_learning_stats">print_learning_stats</a>(sample,&nbsp;sm,&nbsp;cset,&nbsp;alpha,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-print_testing_stats"><strong>print_testing_stats</strong></a>(...)</dt><dd><tt><a href="#-print_testing_stats">print_testing_stats</a>(sample,&nbsp;sm,&nbsp;sparm,&nbsp;teststats)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;nothing.</tt></dd></dl>
+ <dl><dt><a name="-read_model"><strong>read_model</strong></a>(...)</dt><dd><tt><a href="#-read_model">read_model</a>(filename,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;decompresses&nbsp;and&nbsp;depickles&nbsp;a&nbsp;model<br>
+in&nbsp;a&nbsp;file,&nbsp;and&nbsp;returns&nbsp;it.&nbsp;&nbsp;The&nbsp;equivalent&nbsp;code&nbsp;is<br>
+return&nbsp;cPickle.load(bz2.BZ2File(filename))</tt></dd></dl>
+ <dl><dt><a name="-write_label"><strong>write_label</strong></a>(...)</dt><dd><tt><a href="#-write_label">write_label</a>(fileptr,&nbsp;y)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;prints&nbsp;the&nbsp;label&nbsp;to&nbsp;the&nbsp;file.<br>
+Equivalent&nbsp;code&nbsp;is&nbsp;print&gt;&gt;fileptr,&nbsp;y&nbsp;.</tt></dd></dl>
+ <dl><dt><a name="-write_model"><strong>write_model</strong></a>(...)</dt><dd><tt><a href="#-write_model">write_model</a>(filename,&nbsp;sm,&nbsp;sparm)<br>
+&nbsp;<br>
+This&nbsp;default&nbsp;implementation&nbsp;pickles&nbsp;the&nbsp;model&nbsp;and&nbsp;dumps&nbsp;it&nbsp;into<br>
+a&nbsp;BZ2&nbsp;archive.&nbsp;&nbsp;The&nbsp;equivalent&nbsp;code&nbsp;is<br>
+cPickle.dump(sm,&nbsp;bz2.BZ2File(filename,'w'))</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>default_help</strong> = '         --* string  -&gt; Custom parameters that c...                      SVM^python user API module.'</td></tr></table>
+</body></html>
