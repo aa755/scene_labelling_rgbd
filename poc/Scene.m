@@ -58,7 +58,7 @@ classdef Scene < handle
             %WE = ones(K,size(edgeFeatures,2),K);
             
             K=obj.numLabels;
-            M = sparse( K*K*E,N*K);
+            M = zeros( K*K*E,N*K);
             
             r=0;
             for i = 1:E
@@ -78,7 +78,7 @@ classdef Scene < handle
                 end
             end
             
-            I = speye(N*K,N*K);
+            I = eye(N*K,N*K);
             
             H =2*( I + M'*M);
             
