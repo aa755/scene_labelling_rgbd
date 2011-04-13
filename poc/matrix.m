@@ -1,5 +1,5 @@
 %NF ,NL, EF,EL
-
+function getQPCoeffs()
 
 
 
@@ -8,7 +8,7 @@ N = length (NL);% number of nodes
 E = size (EN,1); % number of edges
 
 
-W = ones(K,size(EF,2),K);
+WE = ones(K,size(EF,2),K);
 
 
 M = sparse( K*K*E,N*K);
@@ -22,7 +22,7 @@ for i = 1:E
  %          r = (i-1)*K*K + j*k;
            r=r+1;
           % EF(i,:)
-           w = W(l,:,k)* edgeR{l,k}'; %EF(i,:)';
+           w = WE(l,:,k)* edgeR{l,k}'; %EF(i,:)';
            M(r,(n1-1)*K+l) = w;
            M(r,(n2-1)*K+k) = -w;
         end
@@ -45,3 +45,4 @@ end
 
 
 
+end

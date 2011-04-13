@@ -1,4 +1,4 @@
-function [Scenes theta numLabels]= parseScenes(nodeMat,edgeMat,minExamples)
+function [Scenes nodeFeats NL numLabels ]= parseScenes(nodeMat,edgeMat,minExamples)
 
     numScenes=max(nodeMat(:,1));
     Scenes=cell(numScenes,1);
@@ -55,6 +55,5 @@ edgeMat=edgeMat_new;
             for i=1:numNodes
                 NL(i,nodeMat(i,3))=1;
             end
-theta = inv(nodeFeats'*nodeFeats) * nodeFeats'*NL;
             
 end

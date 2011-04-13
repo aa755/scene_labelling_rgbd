@@ -3,7 +3,7 @@ classdef Scene < handle
     %   A machine learning algorithm. Can be trained and then used to make
     %   predictions
     
-    properties (GetAccess=public, SetAccess=protected)
+    properties (GetAccess=public, SetAccess=public)
         nodeFeats;
         nodeLabels;
         nodeLabelIndicators;
@@ -16,7 +16,8 @@ classdef Scene < handle
         numNodes;
         numEdges;
         numLabels;
-        K;
+        WN;
+        WE;
     end
     
     methods
@@ -47,7 +48,7 @@ classdef Scene < handle
         
         %nodeFeats ,NL, edgeFeatures,EL
         function [H f]=getQPCoeffs(obj,WN,WE)
-            
+%            obj.WN=WN;
             
             
             N = obj.numNodes;% number of nodes
@@ -57,7 +58,7 @@ classdef Scene < handle
             %WE = ones(K,size(edgeFeatures,2),K);
             
             K=obj.numLabels;
-            M = sparse( K*K*E,N*K);
+            M = zeros( K*K*E,N*K);
             
             r=0;
             for i = 1:E
@@ -77,7 +78,7 @@ classdef Scene < handle
                 end
             end
             
-            I = speye(N*K,N*K);
+            I = eye(N*K,N*K);
             
             H =2*( I + M'*M);
             
@@ -92,9 +93,40 @@ classdef Scene < handle
             end
             
             
-            
+
         end
         
-
+        function [yIndicatorsHat]=doInference(obj,WE)
+           obj.WE=WE; 
+           [H f]=obj.getQPCoeffs(obj.WN,obj.WE);
+           yIndicatorsHat=quadprog(H,f);
+        end
+        
+        function [norm2,percentCorrect, confMatrix]=evaluate(obj,yIndicatorsHat)
+            y=yIndicatorsHat;
+            norm2=norm(yIndicatorsHat-obj.nodeLableIndicatorVector);
+            K=obj.numLabels;
+            for i = 1:length(y)/K
+                m = y((i-1)*K+1:i*K);
+                t = max(m) ;%* ones(K,1);
+                a = find(t==m);
+                if(~isempty(a))
+                    l(i) = a(randi([1,length(a)]));%a(1);%
+                    % fprintf(1,'a = %d\n',length(a));
+                    % fprintf (1,'%d\n',l(i));
+                end
+                orig(i) = obj.nodeLabels(i);
+            end
+            
+            
+            percentCorrect = sum(l == orig)*100/sum(orig<=K);
+            
+            M = zeros(K,K);
+            for i = 1:length(l)
+                M(l(i),orig(i)) = M(l(i),orig(i)) + 1;
+            end
+            confMatrix=M;
+        end
+        
     end
 end

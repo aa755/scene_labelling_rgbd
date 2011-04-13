@@ -14,7 +14,7 @@
   <depend package="pcl"/>
   <depend package="rospy"/>
   <depend package="roscpp"/>
-  <depend package="eigen"/>
+  <!--depend package="eigen"/-->
   <depend package="pcl_ros"/>
   <!--depend package="opencv2"/-->
   <!--depend package="cv_bridge"/-->
