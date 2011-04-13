@@ -382,7 +382,7 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);
 
         // difference of angles
-        edge_features[seg2_id].push_back(abs(features[segment_id][normal_angle_index] - features[seg2_id][normal_angle_index]));
+        edge_features[seg2_id].push_back(abs(acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
     }
 
 }
@@ -390,12 +390,12 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
 int main(int argc, char** argv) {
 
+    int scene_num = atoi(argv[2]);
     sensor_msgs::PointCloud2 cloud_blob;
-   
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, nfeatfile, efeatfile;
 
-    labelfile.open("data_labels.txt",ios::app);
+    //labelfile.open("data_labels.txt",ios::app);
     nfeatfile.open("data_nodefeats.txt",ios::app);
     efeatfile.open("data_edgefeats.txt",ios::app);
 
@@ -481,7 +481,7 @@ int main(int argc, char** argv) {
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         
         cerr << (*it).first << ":\t";
-        labelfile << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\n";
+        nfeatfile <<  scene_num << "\t" << (*it).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t";
         for (vector<float>::iterator it2 = (*it).second.begin(); it2 != (*it).second.end(); it2++) {
            cerr << *it2 << "\t";
            nfeatfile <<  *it2 << "\t";
@@ -499,10 +499,10 @@ int main(int argc, char** argv) {
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
             cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
-            efeatfile <<  segment_clouds[segment_num_index_map[(*it).first]].points[1].label << " " << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label ;
+            efeatfile << scene_num << "\t" << (*it).first << "\t" << (*it2).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t" << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label ;
             for (vector<float>::iterator it3 = (*it2).second.begin(); it3 != (*it2).second.end(); it3++) {
                 cerr << *it3 << "\t";
-                efeatfile << " " <<*it3 ;
+                efeatfile << "\t" <<*it3 ;
             }
             cerr << endl;
             efeatfile << endl;
@@ -518,7 +518,7 @@ int main(int argc, char** argv) {
     }
     outfile << "\n";
  */
-    labelfile.close();
+    //labelfile.close();
     nfeatfile.close();
     efeatfile.close();
 

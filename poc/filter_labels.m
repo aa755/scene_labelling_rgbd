@@ -10,7 +10,7 @@ X_new = [];
 Y_new = [];
 
 final_labels = find(count>n)
-
+%find(max(count) == count)
 
 for i = 1:length(Y)
     if(count(Y(i)) > n)

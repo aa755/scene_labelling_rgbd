@@ -33,7 +33,7 @@ end
  Y_new = sparse(length(Y),max(Y));
  for i = 1:length(Y) ; Y_new(i,Y(i)) = 1; end
  
- Y_test_new = sparse(length(Y_test),max(Y_test));
+ Y_test_new = sparse(length(Y_test),max(Y));
  for i = 1:length(Y_test) ; Y_test_new(i,Y_test(i)) = 1; end
 
 end

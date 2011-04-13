@@ -1,0 +1,128 @@
+BODY {
+	#margin-left : 105px;
+
+	background-color : white;
+	#background-image : url(sidebar.jpg);
+	#background-repeat: repeat-y;
+	color : black;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+
+A {
+	#text-decoration : none;
+	color : #000055;
+}
+:active { color : #AAAAAA }
+.title {
+	text-decoration : underline;
+	font-size : 110%;
+	font-weight : bold;
+	color : #000055;
+}
+.mid {
+	text-decoration : none;
+	color : #000055;
+}
+.bookmark { color : black }
+
+H1 {text-decoration : none; font-size : 200%;}
+
+H2 {text-decoration : none; font-size : 180%;}
+
+H3 {text-decoration : none; font-size : 120%;}
+
+H4.borderheader {
+	font-size : 120%;
+	margin-top : 0pt;
+	margin-left : -0.5em;
+}
+
+H5 {
+	font-size : 100%;
+}
+
+DIV.normal {
+	margin-left : 1em;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+.bottom {
+	font-size : 91%;
+	font-family : Arial, Helvetica, Application;
+	text-decoration : none;
+}
+.indent {
+	margin-left : 20px;
+	font-family : Arial, Helvetica, Application;
+	text-decoration : none;
+}
+.border {
+	border-color: gray;
+	padding: 0.5em;
+	border-width: thin;
+	border-top-style: solid;
+	border-left-style: solid;
+	margin-top: 1em;
+	margin-bottom: 0em;
+	padding-left: 1em;
+}
+.papers {
+	font-size : 91%;
+	margin-left : 1em;
+}
+
+FONT.desc {
+	margin-left : 1em;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+.booktitle {
+	font-size : 145%;
+	font-weight : bold;
+}
+.bookauthor {
+	font-size : 91%;
+}
+.bigindent {
+	margin-left : 180;
+}
+.indent {
+	margin-left : 15;
+}
+.usher {
+	margin-left : 100;
+}
+.date {
+	font-size : 80%;
+}
+.warning {
+	color : #440000;
+}
+.cstring {
+	color : #008800;
+}
+.creserved {
+	color : #AA0000;
+}
+.ccomment {
+	color : #0000AA;
+}
+
+TD {
+	color : #000000;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+
+DT {
+	margin-top : 1em;
+}
+
+DD {
+	margin-left : 1em;
+}

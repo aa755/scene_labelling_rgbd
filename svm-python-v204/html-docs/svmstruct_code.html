@@ -1,0 +1,301 @@
+<html><head>
+<title>Code for svmstruct</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+</head><body>
+<h1>Code for <code>svmstruct</code></h1>
+<pre>
+<font class="cstring">"""A module that SVM^python interacts with to do its evil bidding."""</font>
+
+<font class="creserved">def</font> parse_parameters(sparm):
+    <font class="cstring">"""Sets attributes of sparm based on command line arguments.
+    
+    This gives the user code a chance to change sparm based on the
+    custom command line arguments.  The custom command line arguments
+    are stored in sparm.argv as a list of strings.  The custom command
+    lines are stored in '--option', then 'value' sequence.
+    
+    If this function is not implemented, any custom command line
+    arguments are ignored and sparm remains unchanged."""</font>
+    sparm.arbitrary_parameter = <font class="cstring">'I am an arbitrary parameter!'</font>
+
+<font class="creserved">def</font> parse_parameters_classify(attribute, value):
+    <font class="cstring">"""Process a single custom command line argument for the classifier.
+
+    This gives the user code a chance to change the state of the
+    classifier based on a single custom command line argument, e.g.,
+    one that begins with two dashes.  This function will be called
+    multiple times if there are multiple custom command line
+    arguments.
+
+    If this function is not implemented, any custom command line
+    arguments are ignored."""</font>
+    <font class="creserved">print</font> <font class="cstring">'Got a custom command line argument %s %s'</font> % (attribute, value)
+
+<font class="creserved">def</font> read_examples(filename, sparm):
+    <font class="cstring">"""Reads and returns x,y example pairs from a file.
+    
+    This reads the examples contained at the file at path filename and
+    returns them as a sequence.  Each element of the sequence should
+    be an object 'e' where e[0] and e[1] is the pattern (x) and label
+    (y) respectively.  Specifically, the intention is that the element
+    be a two-element tuple containing an x-y pair."""</font>
+    <font class="ccomment"># We're not actually reading a file in this sample binary</font>
+    <font class="ccomment"># classification task, but rather just returning a contrived</font>
+    <font class="ccomment"># problem for learning.  The correct hypothesis would obviously</font>
+    <font class="ccomment"># tend to have a positive weight for the first feature, and a</font>
+    <font class="ccomment"># negative weight for the 4th feature.</font>
+    <font class="creserved">return</font> [([<font class="cnumber">1</font>,<font class="cnumber">1</font>,<font class="cnumber">0</font>,<font class="cnumber">0</font>], <font class="cnumber">1</font>), ([<font class="cnumber">1</font>,<font class="cnumber">0</font>,<font class="cnumber">1</font>,<font class="cnumber">0</font>], <font class="cnumber">1</font>), ([<font class="cnumber">0</font>,<font class="cnumber">1</font>,<font class="cnumber">0</font>,<font class="cnumber">1</font>],-<font class="cnumber">1</font>),
+            ([<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">1</font>,<font class="cnumber">1</font>],-<font class="cnumber">1</font>), ([<font class="cnumber">1</font>,<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">0</font>], <font class="cnumber">1</font>), ([<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">1</font>],-<font class="cnumber">1</font>)]
+
+<font class="creserved">def</font> init_model(sample, sm, sparm):
+    <font class="cstring">"""Initializes the learning model.
+    
+    Initialize the structure model sm.  The sm.size_psi must be set to
+    the number of features.  The ancillary purpose is to add any
+    information to sm that is necessary from the user code
+    perspective.  This function returns nothing."""</font>
+    <font class="ccomment"># In our binary classification task, we've encoded a pattern as a</font>
+    <font class="ccomment"># list of four features.  We just want a linear rule, so we have a</font>
+    <font class="ccomment"># weight corresponding to each feature.  We also add one to allow</font>
+    <font class="ccomment"># for a last "bias" feature.</font>
+    sm.size_psi = len(sample[<font class="cnumber">0</font>][<font class="cnumber">0</font>])+<font class="cnumber">1</font>
+
+<font class="creserved">def</font> init_constraints(sample, sm, sparm):
+    <font class="cstring">"""Initializes special constraints.
+
+    Returns a sequence of initial constraints.  Each constraint in the
+    returned sequence is itself a sequence with two items (the
+    intention is to be a tuple).  The first item of the tuple is a
+    document object.  The second item is a number, indicating that the
+    inner product of the feature vector of the document object with
+    the linear weights must be greater than or equal to the number
+    (or, in the nonlinear case, the evaluation of the kernel on the
+    feature vector with the current model must be greater).  This
+    initializes the optimization problem by allowing the introduction
+    of special constraints.  Typically no special constraints are
+    necessary.  A typical constraint may be to ensure that all feature
+    weights are positive.
+
+    Note that the slack id must be set.  The slack IDs 1 through
+    len(sample) (or just 1 in the combined constraint option) are used
+    by the training examples in the sample, so do not use these if you
+    do not intend to share slack with the constraints inferred from
+    the training data.
+
+    The default behavior is equivalent to returning an empty list,
+    i.e., no constraints."""</font>
+    <font class="creserved">import</font> svmapi
+
+    <font class="creserved">if</font> True: <font class="creserved">return</font> None
+
+    <font class="creserved">if</font> True:
+        <font class="ccomment"># Just some example cosntraints.</font>
+        c, d = svmapi.Sparse, svmapi.Document
+        <font class="ccomment"># Return some really goofy constraints!  Normally, if the SVM</font>
+        <font class="ccomment"># is allowed to converge normally, the second and fourth</font>
+        <font class="ccomment"># features are 0 and -1 respectively for sufficiently high C.</font>
+        <font class="ccomment"># Let's make them be greater than 1 and 0.2 respectively!!</font>
+        <font class="ccomment"># Both forms of a feature vector (sparse and then full) are</font>
+        <font class="ccomment"># shown.</font>
+        <font class="creserved">return</font> [(d([c([(<font class="cnumber">1</font>,<font class="cnumber">1</font>)])],slackid=len(sample)+<font class="cnumber">1</font>),   <font class="cnumber">1</font>),
+                (d([c([<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">0</font>,<font class="cnumber">1</font>])],slackid=len(sample)+<font class="cnumber">1</font>),<font class="cnumber">.2</font>)]
+    <font class="ccomment"># Encode positivity constraints.  Note that this constraint is</font>
+    <font class="ccomment"># satisfied subject to slack constraints.</font>
+    constraints = []
+    <font class="creserved">for</font> i <font class="creserved">in</font> xrange(sm.size_psi):
+        <font class="ccomment"># Create a sparse vector which selects out a single feature.</font>
+        sparse = svmapi.Sparse([(i,<font class="cnumber">1</font>)])
+        <font class="ccomment"># The left hand side of the inequality is a document.</font>
+        lhs = svmapi.Document([sparse], costfactor=<font class="cnumber">1</font>, slackid=i+<font class="cnumber">1</font>+len(sample))
+        <font class="ccomment"># Append the lhs and the rhs (in this case 0).</font>
+        constraints.append((lhs, <font class="cnumber">0</font>))
+    <font class="creserved">return</font> constraints
+
+
+<font class="creserved">def</font> classify_example(x, sm, sparm):
+    <font class="cstring">"""Given a pattern x, return the predicted label."""</font>
+    <font class="ccomment"># Believe it or not, this is a dot product.  The last element of</font>
+    <font class="ccomment"># sm.w is assumed to be the weight associated with the bias</font>
+    <font class="ccomment"># feature as explained earlier.</font>
+    <font class="creserved">return</font> sum([i*j <font class="creserved">for</font> i,j <font class="creserved">in</font> zip(x,sm.w[:-<font class="cnumber">1</font>])]) + sm.w[-<font class="cnumber">1</font>]
+
+<font class="creserved">def</font> find_most_violated_constraint(x, y, sm, sparm):
+    <font class="cstring">"""Return ybar associated with x's most violated constraint.
+
+    Returns the label ybar for pattern x corresponding to the most
+    violated constraint according to SVM^struct cost function.  To
+    find which cost function you should use, check sparm.loss_type for
+    whether this is slack or margin rescaling (1 or 2 respectively),
+    and check sparm.slack_norm for whether the slack vector is in an
+    L1-norm or L2-norm in the QP (1 or 2 respectively).
+
+    If this function is not implemented, this function is equivalent
+    to 'classify(x, sm, sparm)'.  The optimality guarantees of
+    Tsochantaridis et al. no longer hold, since this doesn't take the
+    loss into account at all, but it isn't always a terrible
+    approximation.  One still technically maintains the empirical
+    risk bound condition, but without any regularization."""</font>
+    score = classify_example(x,sm,sparm)
+    discy, discny = y*score, -y*score + <font class="cnumber">1</font>
+    <font class="creserved">if</font> discy > discny: <font class="creserved">return</font> y
+    <font class="creserved">return</font> -y
+
+<font class="creserved">def</font> find_most_violated_constraint_slack(x, y, sm, sparm):
+    <font class="cstring">"""Return ybar associated with x's most violated constraint.
+
+    The find most violated constraint function for slack rescaling.
+    The default behavior is that this returns the value from the
+    general find_most_violated_constraint function."""</font>
+    <font class="creserved">return</font> find_most_violated_constraint(x, y, sm, sparm)
+
+<font class="creserved">def</font> find_most_violated_constraint_margin(x, y, sm, sparm):
+    <font class="cstring">"""Return ybar associated with x's most violated constraint.
+
+    The find most violated constraint function for margin rescaling.
+    The default behavior is that this returns the value from the
+    general find_most_violated_constraint function."""</font>
+    <font class="creserved">return</font> find_most_violated_constraint(x, y, sm, sparm)
+
+<font class="creserved">def</font> psi(x, y, sm, sparm):
+    <font class="cstring">"""Return a feature vector representing pattern x and label y.
+
+    This is the combined feature function, which this returns either a
+    svmapi.Sparse object, or sequence of svmapi.Sparse objects (useful
+    during kernel evaluations, as all components undergo kernel
+    evaluation separately).  There is no default behavior."""</font>
+    <font class="ccomment"># In the case of binary classification, psi is just the class (+1</font>
+    <font class="ccomment"># or -1) times the feature vector for x, including that special</font>
+    <font class="ccomment"># constant bias feature we pretend that we have.</font>
+    <font class="creserved">import</font> svmapi
+    thePsi = [<font class="cnumber">0.5</font>*y*i <font class="creserved">for</font> i <font class="creserved">in</font> x]
+    thePsi.append(<font class="cnumber">0.5</font>*y) <font class="ccomment"># Pretend as though x had an 1 at the end.</font>
+    <font class="creserved">return</font> svmapi.Sparse(thePsi)
+
+<font class="creserved">def</font> loss(y, ybar, sparm):
+    <font class="cstring">"""Return the loss of ybar relative to the true labeling y.
+    
+    Returns the loss for the correct label y and the predicted label
+    ybar.  In the event that y and ybar are identical loss must be 0.
+    Presumably as y and ybar grow more and more dissimilar the
+    returned value will increase from that point.  sparm.loss_function
+    holds the loss function option specified on the command line via
+    the -l option.
+
+    The default behavior is to perform 0/1 loss based on the truth of
+    y==ybar."""</font>
+    <font class="ccomment"># If they're the same sign, then the loss should be 0.</font>
+    <font class="creserved">if</font> y*ybar > <font class="cnumber">0</font>: <font class="creserved">return</font> <font class="cnumber">0</font>
+    <font class="creserved">return</font> <font class="cnumber">1</font>
+
+<font class="creserved">def</font> print_iteration_stats(ceps, cached_constraint, sample, sm,
+                          cset, alpha, sparm):
+    <font class="cstring">"""Called just before the end of each cutting plane iteration.
+
+    This is called just before the end of each cutting plane
+    iteration, primarily to print statistics.  The 'ceps' argument is
+    how much the most violated constraint was violated by.  The
+    'cached_constraint' argument is true if this constraint was
+    constructed from the cache.
+    
+    The default behavior is that nothing is printed."""</font>
+    <font class="creserved">print</font>
+
+<font class="creserved">def</font> print_learning_stats(sample, sm, cset, alpha, sparm):
+    <font class="cstring">"""Print statistics once learning has finished.
+    
+    This is called after training primarily to compute and print any
+    statistics regarding the learning (e.g., training error) of the
+    model on the training sample.  You may also use it to make final
+    changes to sm before it is written out to a file.  For example, if
+    you defined any non-pickle-able attributes in sm, this is a good
+    time to turn them into a pickle-able object before it is written
+    out.  Also passed in is the set of constraints cset as a sequence
+    of (left-hand-side, right-hand-side) two-element tuples, and an
+    alpha of the same length holding the Lagrange multipliers for each
+    constraint.
+
+    The default behavior is that nothing is printed."""</font>
+    <font class="creserved">print</font> <font class="cstring">'Model learned:'</font>,
+    <font class="creserved">print</font> <font class="cstring">'['</font>,<font class="cstring">', '</font>.join([<font class="cstring">'%g'</font>%i <font class="creserved">for</font> i <font class="creserved">in</font> sm.w]),<font class="cstring">']'</font>
+    <font class="creserved">print</font> <font class="cstring">'Losses:'</font>,
+    <font class="creserved">print</font> [loss(y, classify_example(x, sm, sparm), sparm) <font class="creserved">for</font> x,y <font class="creserved">in</font> sample]
+
+<font class="creserved">def</font> print_testing_stats(sample, sm, sparm, teststats):
+    <font class="cstring">"""Print statistics once classification has finished.
+    
+    This is called after all test predictions are made to allow the
+    display of any summary statistics that have been accumulated in
+    the teststats object through use of the eval_prediction function.
+
+    The default behavior is that nothing is printed."""</font>
+    <font class="creserved">print</font> teststats
+
+<font class="creserved">def</font> eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
+    <font class="cstring">"""Accumulate statistics about a single training example.
+    
+    Allows accumulated statistics regarding how well the predicted
+    label ypred for pattern x matches the true label y.  The first
+    time this function is called teststats is None.  This function's
+    return value will be passed along to the next call to
+    eval_prediction.  After all test predictions are made, the last
+    value returned will be passed along to print_testing_stats.
+
+    On the first call, that is, when exnum==0, teststats==None.  The
+    default behavior is that the function does nothing."""</font>
+    <font class="creserved">if</font> exnum==<font class="cnumber">0</font>: teststats = []
+    <font class="creserved">print</font> <font class="cstring">'on example'</font>,exnum,<font class="cstring">'predicted'</font>,ypred,<font class="cstring">'where correct is'</font>,y
+    teststats.append(loss(y, ypred, sparm))
+    <font class="creserved">return</font> teststats
+
+<font class="creserved">def</font> write_model(filename, sm, sparm):
+    <font class="cstring">"""Dump the structmodel sm to a file.
+    
+    Write the structmodel sm to a file at path filename.
+
+    The default behavior is equivalent to
+    'cPickle.dump(sm,bz2.BZ2File(filename,'w'))'."""</font>
+    <font class="creserved">import</font> cPickle, bz2
+    f = bz2.BZ2File(filename, <font class="cstring">'w'</font>)
+    cPickle.dump(sm, f)
+    f.close()
+
+<font class="creserved">def</font> read_model(filename, sparm):
+    <font class="cstring">"""Load the structure model from a file.
+    
+    Return the structmodel stored in the file at path filename, or
+    None if the file could not be read for some reason.
+
+    The default behavior is equivalent to
+    'return cPickle.load(bz2.BZ2File(filename))'."""</font>
+    <font class="creserved">import</font> cPickle, bz2
+    <font class="creserved">return</font> cPickle.load(bz2.BZ2File(filename))
+
+<font class="creserved">def</font> write_label(fileptr, y):
+    <font class="cstring">"""Write a predicted label to an open file.
+
+    Called during classification, this function is called for every
+    example in the input test file.  In the default behavior, the
+    label is written to the already open fileptr.  (Note that this
+    object is a file, not a string.  Attempts to close the file are
+    ignored.)  The default behavior is equivalent to
+    'print>>fileptr,y'"""</font>
+    <font class="creserved">print</font>>>fileptr,y
+
+<font class="creserved">def</font> print_help():
+    <font class="cstring">"""Help printed for badly formed CL-arguments when learning.
+
+    If this function is not implemented, the program prints the
+    default SVM^struct help string as well as a note about the use of
+    the --m option to load a Python module."""</font>
+    <font class="creserved">import</font> svmapi
+    <font class="creserved">print</font> svmapi.default_help
+    <font class="creserved">print</font> <font class="cstring">"This is a help string for the learner!"</font>
+
+<font class="creserved">def</font> print_help_classify():
+    <font class="cstring">"""Help printed for badly formed CL-arguments when classifying.
+
+    If this function is not implemented, the program prints the
+    default SVM^struct help string as well as a note about the use of
+    the --m option to load a Python module."""</font>
+    <font class="creserved">print</font> <font class="cstring">"This is a help string for the classifer!"</font>
+</pre>

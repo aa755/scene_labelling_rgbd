@@ -1,0 +1,69 @@
+<html><head>
+<title>Code for multiclass</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+</head><body>
+<h1>Code for <code>multiclass</code></h1>
+<pre>
+<font class="cstring">"""A module for SVM^python for multiclass learning."""</font>
+
+<font class="creserved">import</font> svmapi
+
+<font class="creserved">def</font> read_examples(filename, sparm):
+    <font class="cstring">"""Parses an input file into an example sequence."""</font>
+    <font class="ccomment"># This reads example files of the type read by SVM^multiclass.</font>
+    examples = []
+    <font class="ccomment"># Open the file and read each example.</font>
+    <font class="creserved">for</font> line <font class="creserved">in</font> file(filename):
+        <font class="ccomment"># Get rid of comments.</font>
+        <font class="creserved">if</font> line.find(<font class="cstring">'#'</font>): line = line[:line.find(<font class="cstring">'#'</font>)]
+        tokens = line.split()
+        <font class="ccomment"># If the line is empty, who cares?</font>
+        <font class="creserved">if</font> <font class="creserved">not</font> tokens: <font class="creserved">continue</font>
+        <font class="ccomment"># Get the target.</font>
+        target = int(tokens[<font class="cnumber">0</font>])
+        <font class="ccomment"># Get the features.</font>
+        tokens = [tuple(t.split(<font class="cstring">':'</font>)) <font class="creserved">for</font> t <font class="creserved">in</font> tokens[<font class="cnumber">1</font>:]]
+        features = [(<font class="cnumber">0</font>,<font class="cnumber">1</font>)]+[(int(k),float(v)) <font class="creserved">for</font> k,v <font class="creserved">in</font> tokens]
+        <font class="ccomment"># Add the example to the list</font>
+        examples.append((svmapi.Sparse(features), target))
+    <font class="ccomment"># Print out some very useful statistics.</font>
+    <font class="creserved">print</font> len(examples),<font class="cstring">'examples read'</font>
+    <font class="creserved">return</font> examples
+
+<font class="creserved">def</font> init_model(sample, sm, sparm):
+    <font class="cstring">"""Store the number of features and classes in the model."""</font>
+    <font class="ccomment"># Note that these features will be stored in the model and written</font>
+    <font class="ccomment"># when it comes time to write the model to a file, and restored in</font>
+    <font class="ccomment"># the classifier when reading the model from the file.</font>
+    sm.num_features = max(max(x) <font class="creserved">for</font> x,y <font class="creserved">in</font> sample)[<font class="cnumber">0</font>]+<font class="cnumber">1</font>
+    sm.num_classes = max(y <font class="creserved">for</font> x,y <font class="creserved">in</font> sample)
+    sm.size_psi = sm.num_features * sm.num_classes
+    <font class="creserved">print</font> <font class="cstring">'size_psi set to'</font>,sm.size_psi
+
+<font class="creserved">def</font> classification_score(x,y,sm,sparm):
+    <font class="cstring">"""Return an example, label pair discriminant score."""</font>
+    <font class="ccomment"># Utilize the svmapi.Model convenience method 'classify'.</font>
+    <font class="creserved">return</font> sm.svm_model.classify(psi(x,y,sm,sparm))
+
+<font class="creserved">def</font> classify_example(x, sm, sparm):
+    <font class="cstring">"""Returns the classification of an example 'x'."""</font>
+    <font class="ccomment"># Construct the discriminant-label pairs.</font>
+    scores = [(classification_score(x,c,sm,sparm), c)
+              <font class="creserved">for</font> c <font class="creserved">in</font> xrange(<font class="cnumber">1</font>,sm.num_classes+<font class="cnumber">1</font>)]
+    <font class="ccomment"># Return the label with the max discriminant value.</font>
+    <font class="creserved">return</font> max(scores)[<font class="cnumber">1</font>]
+
+<font class="creserved">def</font> find_most_violated_constraint(x, y, sm, sparm):
+    <font class="cstring">"""Returns the most violated constraint for example (x,y)."""</font>
+    <font class="ccomment"># Similar, but include the loss.</font>
+    scores = [(classification_score(x,c,sm,sparm)+loss(y,c,sparm), c)
+              <font class="creserved">for</font> c <font class="creserved">in</font> xrange(<font class="cnumber">1</font>,sm.num_classes+<font class="cnumber">1</font>)]
+    <font class="creserved">return</font> max(scores)[<font class="cnumber">1</font>]
+
+<font class="creserved">def</font> psi(x, y, sm, sparm):
+    <font class="cstring">"""Returns the combined feature vector Psi(x,y)."""</font>
+    <font class="ccomment"># Just increment the feature index to the appropriate stack position.</font>
+    offset = sm.num_features * (y-<font class="cnumber">1</font>)
+    pvec = svmapi.Sparse([(k+offset,v) <font class="creserved">for</font> k,v <font class="creserved">in</font> x], kernel_id=y)
+    <font class="creserved">return</font> pvec
+</pre>
