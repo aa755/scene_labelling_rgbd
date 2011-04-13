@@ -39,3 +39,5 @@ rosbuild_add_executable (merge_frames src/merge_frames.cpp)
 #rosbuild_add_executable (mls src/mls.cpp)
 #target_link_libraries ( pcl_kdtree pcl_surface)
 
+rosbuild_add_executable (combineVisibility src/VisibilityMerge.cpp)
+#rosbuild_add_executable (combineNearestCam src/NearestCamMerge.cpp)
