@@ -12,14 +12,14 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include <image_geometry/pinhole_camera_model.h>
+//#include <image_geometry/pinhole_camera_model.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <Eigen/Core>
-#include <tf/transform_listener.h>
+//#include <opencv2/core/core.hpp>
+//#include <opencv2/features2d/features2d.hpp>
+//#include <Eigen/Core>
+//#include <tf/transform_listener.h>
 
 
 namespace s = sensor_msgs;
@@ -64,7 +64,7 @@ class OpenNIListener  {
     ros::Publisher pub_cloud_;
     ros::Publisher pub_transf_cloud_;
     ros::Publisher pub_ref_cloud_;
-    tf::TransformListener  listener; 
+   // tf::TransformListener  listener; 
    //ros::Publisher pc_pub; 
     unsigned int callback_counter_;
     unsigned int step_;
@@ -77,14 +77,14 @@ class OpenNIListener  {
 
 //QVector<float>* transformPointCloud (const Eigen::Matrix4f transform, const s::PointCloud2 &in);
 //Copied from pcl_tf/transform.cpp
-void transformPointCloud (const Eigen::Matrix4f &transform, 
-                          const sensor_msgs::PointCloud2 &in,
-                          sensor_msgs::PointCloud2 &out);
+//void transformPointCloud (const Eigen::Matrix4f &transform, 
+  //                        const sensor_msgs::PointCloud2 &in,
+    //                      sensor_msgs::PointCloud2 &out);
 
 
 ///Return the macro string for the cv::Mat type integer
-std::string openCVCode2String(unsigned int code);
+//std::string openCVCode2String(unsigned int code);
 
 ///Print Type and size of image
-void printMatrixInfo(cv::Mat& image);
+//void printMatrixInfo(cv::Mat& image);
 #endif

@@ -1,15 +1,15 @@
 //Documentation see header file
 #include "pcl/ros/conversions.h"
 #include <pcl/io/io.h>
-#include "pcl/common/transform.h"
-#include "pcl_ros/transforms.h"
+//#include "pcl/common/transform.h"
+//#include "pcl_ros/transforms.h"
 #include "openni_listener.h"
-#include <cv_bridge/CvBridge.h>
-#include <opencv2/imgproc/imgproc.hpp>
+//#include <cv_bridge/CvBridge.h>
+//#include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cv.h>
+//#include <cv.h>
 #include <ctime>
 #include <sensor_msgs/PointCloud2.h>
 
@@ -72,7 +72,6 @@ void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_im
 
 }
 
-using namespace cv;
 
 void transformPointCloud (const Eigen::Matrix4f &transform, const sensor_msgs::PointCloud2 &in,
                           sensor_msgs::PointCloud2 &out)
@@ -164,38 +163,3 @@ void transformPointCloud (const Eigen::Matrix4f &transform, const sensor_msgs::P
   }
 }
 
-void depthToCV8UC1(const cv::Mat& float_img, cv::Mat& mono8_img){
-  //Process images
-  if(mono8_img.rows != float_img.rows || mono8_img.cols != float_img.cols){
-    mono8_img = cv::Mat(float_img.size(), CV_8UC1);}
-  //The following doesn't work due to NaNs
-  //double minVal, maxVal; 
-  //minMaxLoc(float_img, &minVal, &maxVal);
-  //ROS_DEBUG("Minimum/Maximum Depth in current image: %f/%f", minVal, maxVal);
-  //mono8_img = cv::Scalar(0);
-  //cv::line( mono8_img, cv::Point2i(10,10),cv::Point2i(200,100), cv::Scalar(255), 3, 8);
-  cv::convertScaleAbs(float_img, mono8_img, 100, 0.0);
-}
-
-//Little debugging helper functions
-std::string openCVCode2String(unsigned int code){
-  switch(code){
-    case 0 : return std::string("CV_8UC1" );
-    case 8 : return std::string("CV_8UC2" );
-    case 16: return std::string("CV_8UC3" );
-    case 24: return std::string("CV_8UC4" );
-    case 2 : return std::string("CV_16UC1");
-    case 10: return std::string("CV_16UC2");
-    case 18: return std::string("CV_16UC3");
-    case 26: return std::string("CV_16UC4");
-    case 5 : return std::string("CV_32FC1");
-    case 13: return std::string("CV_32FC2");
-    case 21: return std::string("CV_32FC3");
-    case 29: return std::string("CV_32FC4");
-  }
-  return std::string("Unknown");
-}
-
-void printMatrixInfo(cv::Mat& image){
-  ROS_DEBUG_STREAM("Matrix Type:" << openCVCode2String(image.type()) <<  " rows: " <<  image.rows  <<  " cols: " <<  image.cols);
-}

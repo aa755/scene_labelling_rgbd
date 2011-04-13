@@ -99,7 +99,11 @@ int
   pcl::PassThrough<PointT> pass_;
 
   pcl_ros::BAGReader reader;
-  if (!reader.open (argv[1], argv[2]))
+  char *topic="/rgbdslam/my_clouds";
+  if(argc>2)
+	topic=argv[2];
+std::cerr<<topic<<std::endl;
+  if (!reader.open (argv[1], topic))
   {
     ROS_ERROR ("Couldn't read file ");
     return (-1);
