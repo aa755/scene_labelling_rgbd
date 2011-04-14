@@ -329,6 +329,7 @@ void spinThread()
 int
   main (int argc, char** argv)
 {
+    bool groundSelected=false;
             boost::numeric::ublas::matrix<double> outMat(4, 4);
     std::vector<std::string> labels;//(initLabels);
     std::ifstream labelFile;
@@ -419,6 +420,7 @@ int
     {
         assert(curLabel>0&&curLabel<=labels.size());
         label_mapping[i] = curLabel;
+        cout<<"segment "<<i<<" had label :"<<labels.at(curLabel-1)<<"to change , change code(do note down segment number)"<<endl;
         continue;
 //        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
     }
@@ -476,6 +478,7 @@ int
                 ROS_ERROR("Could not estimate a planar model for the given dataset.");
                 return (-1);
             }
+            groundSelected=true;
             std::cerr << "Model coefficients: " << coefficients.values[0] << " " << coefficients.values[1] << " "
                     << coefficients.values[2] << " " << coefficients.values[3] << std::endl;
 
@@ -625,10 +628,12 @@ int
   }       
     transformPointCloud(outMat,labeled_cloud_ptr,labeled_transformed_cloud);
   writer.write ( fn,labeled_cloud, true);
+  if(groundSelected)
+  {
   writer.write ( "transformed_"+fn,*labeled_transformed_cloud, true);
     transformPointCloud(outMat,cloud_ptr,transformed_cloud);
   writer.write ( fnt,*transformed_cloud, true);
-
+  }
   return (0);
 }
 /* ]--- */
