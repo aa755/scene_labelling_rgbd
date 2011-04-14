@@ -38,3 +38,9 @@ box
 fileRack
 partition
 delete
+bag
+roller
+waterBottles
+laptop
+laptopScreen
+bookStand
