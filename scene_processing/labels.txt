@@ -30,3 +30,4 @@ chairLeg
 coffeeMug
 window_blind
 whiteboard
+window
