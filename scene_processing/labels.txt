@@ -28,3 +28,5 @@ door
 book
 chairLeg
 coffeeMug
+window_blind
+whiteboard
