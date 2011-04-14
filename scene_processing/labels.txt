@@ -36,3 +36,4 @@ gadget
 cpuSide
 box
 fileRack
+partition
