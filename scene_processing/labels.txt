@@ -34,3 +34,4 @@ window
 cpuTop
 gadget
 cpuSide
+box
