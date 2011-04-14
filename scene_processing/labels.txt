@@ -37,3 +37,4 @@ cpuSide
 box
 fileRack
 partition
+delete
