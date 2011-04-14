@@ -1,18 +1,42 @@
 #include "CombineUtils.h"
 #include<set>
+#include "pcl_visualization/pcl_visualizer.h"
 using namespace std;
+typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 
 int
 main(int argc, char** argv)
 {
+          sensor_msgs::PointCloud2 cloud_final_msg;
+  sensor_msgs::PointCloud2 cloud_merged_all_points_msg;
     //  ros::init(argc, argv,"hi");
+    pcl_visualization::PCLVisualizer *viewerPtr;
+    bool interactive=false;
+   int viewportCloud;
+    int viewportCluster;
+    int lastAcceptedIndex;
+          ColorHandler::Ptr color_handler;
 
+    if(argc>2&& argv[2][0]=='-'&& argv[2][1]=='i')
+    {
+        interactive=true;
+        pcl_visualization::PCLVisualizer viewer("3D Viewer");
+        viewer.createViewPort(0.0,0.0,0.5,1.0,viewportCloud);
+        viewer.createViewPort(0.5,0.0,1.0,1.0,viewportCluster);
+
+        viewerPtr=&viewer;
+        std::cerr<<"starting in interactive mode" <<std::endl;
+    }
+
+    
     rosbag::Bag bag;
     std::cerr << "opening " << argv[1] << std::endl;
     bag.open(argv[1], rosbag::bagmode::Read);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB> ());// cloud_transformed(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr  cloud_normal(new pcl::PointCloud<PointT > ());// cloud_transformed(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYGRGBCam> ());
+    pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr final_cloud_backup(new pcl::PointCloud<pcl::PointXYGRGBCam> ());
+    pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYGRGBCam> ());
 
     int tf_count = 0;
     int pcl_count = 0;
@@ -95,6 +119,7 @@ main(int argc, char** argv)
 
             if (pcl_count == 1)
             {
+                lastAcceptedIndex=1;
                 appendCamIndexAndDistance(cloud_normal,final_cloud,0,transG.getOrigin());
                 transformsG.push_back(transG);
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
@@ -105,8 +130,9 @@ main(int argc, char** argv)
                 searchTrees.push_back(nnFinder);
 
             }
-            else if (pcl_count % 5 == 1)
+            else if (pcl_count -lastAcceptedIndex>=5)
             {
+                *final_cloud_backup=*final_cloud;
                 PointT cpoint;
                 pcl::PointCloud<PointT>::Ptr aCloud(new pcl::PointCloud<PointT > ());
                 *aCloud=*cloud_normal;
@@ -250,6 +276,23 @@ main(int argc, char** argv)
                         rejectCount++;
                     }
                 }
+                if (interactive) 
+                {
+                    *temp_cloud=*final_cloud_backup;//+*cloud_normal;
+                    pcl::toROSMsg(*final_cloud, cloud_final_msg);
+                    pcl::toROSMsg(*temp_cloud, cloud_merged_all_points_msg);
+
+                    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_final_msg));
+                    viewerPtr->addPointCloud(*final_cloud, color_handler, "cloud", viewportCloud);
+                    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_merged_all_points_msg));
+                    viewerPtr->addPointCloud(*temp_cloud, color_handler, "cluster", viewportCluster);
+                    viewerPtr->spin();
+
+                }
+                else
+                {
+                    lastAcceptedIndex=pcl_count;
+                }
                 transformsG.push_back(transG);
                 nnFinder->setInputCloud(aCloud);
                 pointClouds.push_back(aCloud);
@@ -270,7 +313,7 @@ main(int argc, char** argv)
     std::cerr<<"nof rejected points "<<rejectCount;;
  //   applyFilters(final_cloud, cloud_filtered);
     string filename=string(argv[1]).append(".combined.pcd");
-            writer.write<pcl::PointXYGRGBCam > (filename, *final_cloud, false);
+            writer.write<pcl::PointXYGRGBCam > (filename, *final_cloud, true);
 
     bag.close();
 

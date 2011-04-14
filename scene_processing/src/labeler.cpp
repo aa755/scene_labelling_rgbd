@@ -418,7 +418,9 @@ int
     else
     {
         assert(curLabel>0&&curLabel<=labels.size());
-        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
+        label_mapping[i] = curLabel;
+        continue;
+//        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
     }
 
     pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
