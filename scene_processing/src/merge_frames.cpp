@@ -168,7 +168,7 @@ std::cerr<<topic<<std::endl;
   }
   while (cloud_blob != cloud_blob_prev);
   
-  pcl::io::savePCDFile ("combined.pcd", *combined_cloud_ptr, false);
+  pcl::io::savePCDFile ("combined.pcd", *combined_cloud_ptr, true);
   ROS_INFO ("Saved %d data points to file.", (int)combined_cloud_ptr->points.size ());
 
   ROS_INFO ("Total number of PointCloud messages processed: %d", cnt);
