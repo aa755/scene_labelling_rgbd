@@ -33,3 +33,4 @@ whiteboard
 window
 cpuTop
 gadget
+cpuSide
