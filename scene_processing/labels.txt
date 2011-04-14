@@ -32,3 +32,4 @@ window_blind
 whiteboard
 window
 cpuTop
+gadget
