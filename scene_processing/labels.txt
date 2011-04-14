@@ -35,3 +35,4 @@ cpuTop
 gadget
 cpuSide
 box
+fileRack
