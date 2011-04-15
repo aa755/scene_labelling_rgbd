@@ -330,6 +330,14 @@ int
   main (int argc, char** argv)
 {
     bool groundSelected=false;
+    bool editLabel=false;
+    int targetLabel;
+    if(argc>2)
+    {
+        editLabel=true;
+        targetLabel=atoi(argv[2]);
+    }
+        
             boost::numeric::ublas::matrix<double> outMat(4, 4);
     std::vector<std::string> labels;//(initLabels);
     std::ifstream labelFile;
@@ -420,8 +428,9 @@ int
     {
         assert(curLabel>0&&curLabel<=labels.size());
         label_mapping[i] = curLabel;
-        cout<<"segment "<<i<<" had label :"<<labels.at(curLabel-1)<<"to change , change code(do note down segment number)"<<endl;
-        continue;
+        cout<<"segment "<<i<<" had label :"<<labels.at(curLabel-1)<<"to change , rerun this program later with argv[2]=target label number "<<endl;
+        if(!editLabel || curLabel!=targetLabel)
+            continue;
 //        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
     }
 
