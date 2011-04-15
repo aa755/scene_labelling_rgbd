@@ -12,14 +12,58 @@
 #include <point_cloud_mapping/kdtree/kdtree_ann.h>
 #include "sensor_msgs/point_cloud_conversion.h"
 #include "color.cpp"
+#include "pcl/kdtree/kdtree.h"
+#include "pcl/kdtree/tree_types.h"
+
 //typedef pcl::PointXYGRGBCam PointT;
 typedef pcl::PointXYZRGBCamSL PointT;
+
+typedef  pcl::KdTree<PointT> KdTree;
+typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
+
 
 using namespace pcl;
 
 float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::PointCloud<PointT> &cloud2)
 {
   float min_distance = FLT_MAX;
+  pcl::PointCloud<PointT>::Ptr small_cloud;
+  pcl::PointCloud<PointT>::Ptr big_cloud;
+  if (cloud1.points.size() > cloud2.points.size()){
+    pcl::PointCloud<PointT>::Ptr cloud_ptr1(new pcl::PointCloud<PointT > (cloud1));
+    pcl::PointCloud<PointT>::Ptr cloud_ptr2(new pcl::PointCloud<PointT > (cloud2));
+    small_cloud = cloud_ptr2;
+    big_cloud = cloud_ptr1;
+  }else {
+    pcl::PointCloud<PointT>::Ptr cloud_ptr1(new pcl::PointCloud<PointT > (cloud1));
+    pcl::PointCloud<PointT>::Ptr cloud_ptr2(new pcl::PointCloud<PointT > (cloud2));
+    small_cloud = cloud_ptr1;
+    big_cloud = cloud_ptr2;
+  }
+
+  KdTreePtr tree = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
+  initTree (0, tree);
+  tree->setInputCloud (big_cloud );// ,indicesp);
+  std::vector<int> nn_indices;
+  std::vector<float> nn_distances;
+  float tolerance = 0.3;
+  
+  for (size_t i = 0; i < (*small_cloud).points.size (); ++i)
+  {
+  
+	if (!tree->radiusSearch ((*small_cloud).points[i], tolerance, nn_indices, nn_distances))
+  	{
+	    for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
+      	{
+			
+      		//float distance = pow(cloud1.points[i].x - cloud2.points[j].x,2) + pow(cloud1.points[i].y - cloud2.points[j].y,2) + pow(cloud1.points[i].z - cloud2.points[j].z,2);
+     		// cerr<< "i,j = " << i << "," << j<< " dist = " <<distance << endl;
+      		if (min_distance > nn_distances[j]) min_distance = nn_distances[j];
+		}
+  	}
+  }
+
+/*
   for (size_t i = 0; i < cloud1.points.size (); ++i)
   { 
    for (size_t j = 0; j < cloud2.points.size (); ++j)
@@ -29,13 +73,14 @@ float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::Poin
       if (min_distance > distance) min_distance = distance;
    }
   }
+*/
   return sqrt(min_distance) ;
 }
 
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-
+   float tolerance =0.3;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -50,7 +95,7 @@ void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds
 // get neighbour map
     for ( map< pair <int,int> , float >::iterator it=distance_matrix.begin() ; it != distance_matrix.end(); it++ )
     {   
-      if((*it).second < 0.1)  neighbor_map[(*it).first.first].push_back((*it).first.second);
+      if((*it).second < tolerance)  neighbor_map[(*it).first.first].push_back((*it).first.second);
  //     cout << (*it).first.first << "," << (*it).first.second <<" => " << (*it).second << endl;
     }
 /*
@@ -99,10 +144,15 @@ void getMinMax(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &min_p, Eig
 
 void getCentroid(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &centroid)
 {
+    centroid[0]=0;
+    centroid[1]=0;
+    centroid[2]=0;
     for (size_t i = 0; i < cloud.points.size(); ++i) {
+			assert(cloud.points[i].z>=0);
         centroid[0] += cloud.points[i].x;
         centroid[1] += cloud.points[i].y;
         centroid[2] += cloud.points[i].z;
+			assert(centroid[2]>=0);
     }
     centroid[0] = centroid[0]/(cloud.points.size()-1) ;
     centroid[1] = centroid[1]/(cloud.points.size()-1) ;
@@ -472,6 +522,7 @@ int main(int argc, char** argv) {
         int label;
         segment_indices->indices.clear();
         for (size_t i = 0; i < cloud.points.size(); ++i) {
+			assert(cloud.points[i].z>=0);
             if (cloud.points[i].segment == seg) {
                 segment_indices->indices.push_back(i);
                 label = cloud.points[i].label;
