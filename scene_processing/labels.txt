@@ -44,3 +44,4 @@ waterBottles
 laptop
 laptopScreen
 bookStand
+pillow
