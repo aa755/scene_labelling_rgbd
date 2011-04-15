@@ -41,26 +41,28 @@ float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::Poin
     big_cloud = cloud_ptr2;
   }
 
-  KdTreePtr tree = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
-  initTree (0, tree);
+  pcl::KdTreeFLANN<PointT>::Ptr tree (new pcl::KdTreeFLANN<PointT>);//= boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
+  //initTree (0, tree);
   tree->setInputCloud (big_cloud );// ,indicesp);
   std::vector<int> nn_indices;
+  nn_indices.resize(2);
   std::vector<float> nn_distances;
+  nn_distances.resize(2);
   float tolerance = 0.3;
   
-  for (size_t i = 0; i < (*small_cloud).points.size (); ++i)
+  for (size_t i = 0; i < small_cloud->points.size (); ++i)
   {
   
-	if (!tree->radiusSearch ((*small_cloud).points[i], tolerance, nn_indices, nn_distances))
-  	{
-	    for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
+	//if (!tree->radiusSearch ((*small_cloud).points[i], tolerance, nn_indices, nn_distances))
+	tree->nearestKSearch (small_cloud->points[i], 2 , nn_indices, nn_distances);
+  	
+	    for (size_t j = 0; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
       	{
 			
       		//float distance = pow(cloud1.points[i].x - cloud2.points[j].x,2) + pow(cloud1.points[i].y - cloud2.points[j].y,2) + pow(cloud1.points[i].z - cloud2.points[j].z,2);
      		// cerr<< "i,j = " << i << "," << j<< " dist = " <<distance << endl;
       		if (min_distance > nn_distances[j]) min_distance = nn_distances[j];
 		}
-  	}
   }
 
 /*
