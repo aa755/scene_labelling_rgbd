@@ -2,8 +2,6 @@
 
 # Thomas Finley, tfinley@gmail.com
 
-from pipes import clone
-from turtle import Shape
 import svmapi, array
 from numpy import *
 import scipy as Sci
@@ -37,8 +35,6 @@ def read_examples(filename,sparm):
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
-
-
 
         # find the max class and number of node features -- will work for sparse representation
         for i in xrange(0,N):
@@ -116,8 +112,8 @@ def read_examples(filename,sparm):
         b = concatenate ((mat(zeros((Xe.shape[0],Xn.shape[1]))),Xe),1)
         X = concatenate ((a,b))
         Y = concatenate ((Yn,Ye))
-        X_s = lil_matrix(X)
-        Y_s = lil_matrix(Y)
+        X_s = X#lil_matrix(X)
+        Y_s = Y#lil_matrix(Y)
 
         # Add the example to the list
         examples.append(((X_s, edges, N), Y_s))
@@ -145,7 +141,123 @@ def init_model(sample, sm, sparm):
 
 thecount = 0
 
-def lp(X,K,w):
+
+def lp_training(X,y,K,w):
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+    lp = glpk.LPX()        # Create empty problem instance
+    lp.name = 'inference'     # Assign symbolic name to problem
+    lp.obj.maximize = True # Set this as a maximization problem
+    lp.cols.add(X[0].shape[1]+N*K)         # Append three columns to this instance
+    for c in lp.cols:      # Iterate over all columns
+        if (c.index < N*K) :
+            c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
+            #print c.name
+        elif (c.index < X[0].shape[1]):
+            index = c.index - N*K
+            c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
+            #print c.name
+        else:
+            index = c.index -  X[0].shape[1]
+            c.name = 'e_%d_%d' % ( index/K , (index%K)+1)
+
+        c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
+
+    x = (X[0])#.todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+    w_mat = asmatrix(array(w_list))
+    print w_list
+    #print (asarray(w*x)[0]).tolist()
+    loss_coeff = [float(1/float(N*K)) for i in xrange(0,N*K)]
+    coeff = (asarray(w_mat*x)[0]).tolist()
+    coeff.extend(loss_coeff)
+    lp.obj[:] = coeff
+    #print lp.obj[:]
+
+    lp.rows.add(3*E*K*K+2*N*K)
+    for r in lp.rows:      # Iterate over all rows
+        r.name = 'p%d' %  r.index # Name them
+
+    for i in xrange(0,2*E*K*K):
+        lp.rows[i].bounds = 0, None
+    for i in xrange(2*E*K*K,3*E*K*K):
+        lp.rows[i].bounds = None,1
+    for i in xrange(3*E*K*K,3*E*K*K+N*K):
+        lp.rows[i].bounds = None,y[i-3*E*K*K]
+    for i in xrange(3*E*K*K+N*K,3*E*K*K+2*N*K):
+        lp.rows[i].bounds = y[i-3*E*K*K+N*K], None
+ 
+
+    t = []
+    for e in xrange(0,edge.shape[0]):
+        u = edge[e,0]
+        v = edge[e,1]
+        n = -1
+        for i in xrange(0,K):
+            for j in xrange(0,K):
+                n += 1
+                a = int(u*K + i)
+                b = int(v*K + j)
+                c = N*K + e*K*K + i*K + j
+                ec = e*K*K + n
+                t.append((ec,a,1))
+                t.append((ec,c,-1))
+                ec += E*K*K
+                t.append((ec,b,1))
+                t.append((ec,c,-1))
+                ec += E*K*K
+                t.append((ec,a,1))
+                t.append((ec,b,1))
+                t.append((ec,c,-1))
+    for n in xrange(0,N*K):
+        ec= 3*E*K*K+n
+        a= n 
+        b =  n+ N*K + E*K*K
+        t.append((ec,a,1))
+        t.append((ec,b,-1))
+
+    for n in xrange(0,N*K):
+       ec = 3*E*K*K+N*K+n
+       a = n
+       b = n+ N*K + E*K*K
+       t.append((ec,a,1))
+       t.append((ec,b,1))
+
+
+
+    print len(t)
+    lp.matrix = t
+    lp.simplex()
+  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
+   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # Print struct variable names and primal val
+    l = []
+    for c in lp.cols:
+      if(c.index< N*K+E*K*K):
+         l.append(c.primal)
+    labeling = asmatrix(array(l))
+    
+    c1 = 0
+    c0= 0
+    ch =0
+    cr = 0
+    for c in lp.cols:
+        if (c.primal == 1):
+            c1 += 1
+        elif(c.primal ==0):
+            c0 += 1
+        elif (c.primal == 0.5):
+            ch += 1
+        else:
+            cr +=1
+    print 'number of 1s: %d' % c1
+    print 'number of 0s: %d' % c0
+    print 'number of 0.5s: %d' % ch
+    print 'number of 0s: %d' % cr
+    return labeling.T
+
+def lp_inference(X,K,w):
     edge = X[1]
     E = edge.shape[0]
     N = X[2]
@@ -163,7 +275,7 @@ def lp(X,K,w):
             #print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
-    x = (X[0]).todense()
+    x = (X[0])#.todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = asmatrix(array(w_list))
     print w_list
@@ -205,10 +317,11 @@ def lp(X,K,w):
     print len(t)
     lp.matrix = t
     lp.simplex()
-    print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-    print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
+   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # Print struct variable names and primal val
-    labeling = [c.primal for c in lp.cols]
+    labeling = asmatrix(array([c.primal for c in lp.cols]))
+
     c1 = 0
     c0= 0
     ch =0
@@ -222,11 +335,11 @@ def lp(X,K,w):
             ch += 1
         else:
             cr +=1
-    print c1
-    print c0
-    print ch
-    print cr
-    return labeling
+    print 'number of 1s: %d' % c1
+    print 'number of 0s: %d' % c0
+    print 'number of 0.5s: %d' % ch
+    print 'number of 0s: %d' % cr
+    return labeling.T
 
 def classification_score(x,y,sm,sparm):
     """Return an example, label pair discriminant score."""
@@ -240,22 +353,89 @@ def classification_score(x,y,sm,sparm):
 
 def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
-    l = lp(x,sm.num_classes,sm.w)
+    l = lp_inference(x,sm.num_classes,sm.w)
     return l
 
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp(x,sm.num_classes,sm.w)
+    l = lp_training(x,y,sm.num_classes,sm.w)
+    #print l.T
     return l
 
 def psi(x, y, sm, sparm):
     """Returns the combined feature vector Psi(x,y)."""
     # Return the product of x and y
-    
+    #print x[0].shape[0]
+    #print x[0].shape[1]
+    #print y.shape[0]
+    #print y.shape[1]
     return svmapi.Sparse((x[0]*y))
 
 def loss(y, ybar, sparm):
     """Loss is 1 if the labels are different, 0 if they are the same."""
-    assert 1==2
-    return 100.0*int(y != ybar)
+    yDiff=y- ybar;
+    sum=0.0;
+    size=y.shape[0]
+    for index in xrange(0,size):
+        if yDiff[index]>0:
+            sum+=yDiff[index,0]
+        else:
+            sum-=yDiff[index,0]
+            
+    return sum/size;
+
+def evaluation_loss(y, ybar, K, N ,sparm):
+    """Loss is 1 if the labels are different, 0 if they are the same."""
+
+    sim = 0.0
+    for node in xrange(0,N):
+        moda = 0.0
+        modb = 0.0
+        num= 0.0 #multiply(y[node*K:node*K+K],ybar[node*K:node*K+K])
+        for label in xrange(0,K):
+            moda += y[node*K+label,0]*y[node*K+label,0]
+            modb += ybar[node*K+label,0]*ybar[node*K+label,0]
+            num += y[node*K+label,0]*ybar[node*K+label,0]
+        denom = sqrt(moda)*sqrt(modb)
+        if(denom > 0):
+            sim += num/(sqrt(moda)*sqrt(modb))
+        else:
+            sim = 0;
+    
+    #print "similarity is", sim/N
+    return 1-(sim/N);
+
+def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
+    """Accumulate statistics about a single training example.
+
+    Allows accumulated statistics regarding how well the predicted
+    label ypred for pattern x matches the true label y.  The first
+    time this function is called teststats is None.  This function's
+    return value will be passed along to the next call to
+    eval_prediction.  After all test predictions are made, the last
+    value returned will be passed along to print_testing_stats.
+
+    On the first call, that is, when exnum==0, teststats==None.  The
+    default behavior is that the function does nothing."""
+    if exnum==0: teststats = []
+    print 'on example',exnum,'predicted',ypred.T,'where correct is',y.T
+    print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
+    teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
+    return teststats
+
+
+def print_testing_stats(sample, sm, sparm, teststats):
+    """Print statistics once classification has finished.
+
+    This is called after all test predictions are made to allow the
+    display of any summary statistics that have been accumulated in
+    the teststats object through use of the eval_prediction function.
+
+    The default behavior is that nothing is printed."""
+    avg = 0
+    for v in teststats:
+        avg += v
+    avg = avg/len(teststats)
+    print "Average Error is: " , avg
+    print "Error per Test example: ", teststats
