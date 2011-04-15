@@ -42,9 +42,10 @@
 @b segmentation_plane exemplifies how to run a Sample Consensus segmentation for planar models.
 
  **/
+#include <boost/math/constants/constants.hpp>
 #include <iostream>
 #include <boost/thread.hpp>
-
+#include <float.h>
 #include <stdint.h>
 //#include <pcl_visualization/cloud_viewer.h>
 #include "pcl_visualization/pcl_visualizer.h"
@@ -157,7 +158,7 @@ GeoHandlerPtr geo_handler;
   //for (int i = 1 ; i <= max_segment_num ; i++ ){
 
  // color_handlerX.reset (new pcl_visualization::PointCloudColorHandl<sensor_msgs::PointCloud2 > (cloud_blob,"x"));
-  color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+  color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob,"z"));
   viewer.addPointCloud (cloud, color_handler, "cloud");
   //viewer.
 
@@ -177,6 +178,7 @@ GeoHandlerPtr geo_handler;
       cin >> ans;
       char d=ans[0];
       double angle=atof(ans+1);
+      angle=angle*boost::math::constants::pi<double>()/180.0;
       std::cerr<<angle<<endl;
       if (d == 'x')
         {
@@ -245,6 +247,7 @@ GeoHandlerPtr geo_handler;
 
     viewer.removePointCloud ();
   //color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+  color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob,"z"));
   viewer.addPointCloud (*cloudT_ptr, color_handler, "cloud");
   viewer.removeCoordinateSystem ();
   viewer.addCoordinateSystem (1);
@@ -273,7 +276,21 @@ GeoHandlerPtr geo_handler;
 
 
 
+          //make z(ground)=0
+          float minZ=FLT_MAX;
+          float z;
+          for(int i=1;i<cloud_ptr->size ();i++)
+            {
+              z=cloud_ptr->points[i].z;
+              if(z<minZ)
+                minZ=z;
+            }
 
+          for(int i=0;i<cloud_ptr->size ();i++)
+            {
+              cloud_ptr->points[i].z-=minZ;
+            }
+          std::cerr<<"minZ was "<<minZ<<endl;
 
   std::string fn (argv[1]);
       writer.write ("transformed_" + fn, *cloud_ptr, true);
