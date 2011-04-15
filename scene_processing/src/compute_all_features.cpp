@@ -7,6 +7,7 @@
 #include "pcl/filters/passthrough.h"
 #include "pcl/filters/extract_indices.h"
 #include "pcl/features/intensity_spin.h"
+#include "pcl/features/normal_3d.h"
 #include "descriptors_3d/all_descriptors.h"
 #include <point_cloud_mapping/kdtree/kdtree_ann.h>
 #include "sensor_msgs/point_cloud_conversion.h"
@@ -356,8 +357,38 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 */
 }
 
+void get_avg_normals(vector<pcl::PointCloud<PointT> > &segment_clouds, vector<pcl::Normal> &normalsOut )
+{
+ 
+	pcl::KdTreeFLANN<PointT>::Ptr tree (new pcl::KdTreeFLANN<PointT> ());
+	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal> ());
+	pcl::NormalEstimation<PointT, pcl::Normal> ne;
+	ne.setSearchMethod (tree);
+  	ne.setKSearch (50);
+    for (size_t i = 0; i< segment_clouds.size(); i++)
+    {
+ 
+    	pcl::Normal avgNormal;
+		pcl::PointCloud<PointT>::Ptr cloudptr (new pcl::PointCloud<PointT> (segment_clouds[i]));
+  		ne.setInputCloud (cloudptr);
+  		ne.compute (*cloud_normals);
+		for (size_t i = 0; i < (*cloud_normals).points.size(); ++i)
+		{
+			avgNormal.normal[0] += (*cloud_normals).points[i].normal[0];
+        	avgNormal.normal[1] += (*cloud_normals).points[i].normal[1];
+			avgNormal.normal[2] += (*cloud_normals).points[i].normal[2]; 
+		}
+		avgNormal.normal[0] = avgNormal.normal[0]/(*cloud_normals).points.size();
+    	avgNormal.normal[1] = avgNormal.normal[1]/(*cloud_normals).points.size();
+		avgNormal.normal[2] = avgNormal.normal[2]/(*cloud_normals).points.size();
+		normalsOut.push_back(avgNormal);
+	}
+}
+
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
+						std::map<int,int>  &segment_num_index_map,
+						vector<pcl::Normal> &cloud_normals,
                         map <int, vector<float> >&features,
                         map < int, vector<float> > &edge_features) {
 
@@ -383,6 +414,9 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         // difference of angles
         edge_features[seg2_id].push_back(abs(acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
+		
+		// dot product of normals
+		edge_features[seg2_id].push_back( cloud_normals[segment_num_index_map[segment_id]].normal[0]*cloud_normals[segment_num_index_map[seg2_id]].normal[0] + cloud_normals[segment_num_index_map[segment_id]].normal[1]*cloud_normals[segment_num_index_map[seg2_id]].normal[1]  + cloud_normals[segment_num_index_map[segment_id]].normal[2]*cloud_normals[segment_num_index_map[seg2_id]].normal[2] );
     }
 
 }
@@ -477,6 +511,8 @@ int main(int argc, char** argv) {
         get_global_features(segment_clouds[i], features[seg_id]);
 
     }
+    vector<pcl::Normal> cloud_normals;
+    get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         
@@ -495,7 +531,7 @@ int main(int argc, char** argv) {
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
-        get_pair_features((*it).first, (*it).second, distance_matrix, features, edge_features);
+        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , cloud_normals, features, edge_features);
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
             cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
