@@ -7,7 +7,7 @@ function [Scenes nodeFeats NL numLabels ]= parseScenes(nodeMat,edgeMat,minExampl
 numLabels=max(nodeMat(:,3))
 count = zeros(numLabels,1);
 for i = 1:size(nodeMat,1)
-    if (nodeMat(i,3) ~= 8 && nodeMat(i,3) ~= 17 && nodeMat(i,3) ~= 19)
+    if (nodeMat(i,3) ~= 8 && nodeMat(i,3) ~= 17 && nodeMat(i,3) ~= 19 && nodeMat(i,3) ~= 40&& nodeMat(i,3) ~= 15)
         count(nodeMat(i,3)) = count(nodeMat(i,3)) + 1;
     end
 end

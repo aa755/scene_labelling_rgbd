@@ -42,6 +42,7 @@
 @b segmentation_plane exemplifies how to run a Sample Consensus segmentation for planar models.
 
  **/
+#include <pcl/filters/passthrough.h>
 #include <boost/math/constants/constants.hpp>
 #include <iostream>
 #include <boost/thread.hpp>
@@ -127,10 +128,10 @@ main (int argc, char** argv)
   //ColorHandlerPtr color_handler;
   pcl::PCDWriter writer;
   ColorHandlerPtr color_handler;
-//  ColorHandlerPtr color_handlerX;
-//  ColorHandlerPtr color_handlerY;
-//  ColorHandlerPtr color_handlerY;
-GeoHandlerPtr geo_handler;
+  //  ColorHandlerPtr color_handlerX;
+  //  ColorHandlerPtr color_handlerY;
+  //  ColorHandlerPtr color_handlerY;
+  GeoHandlerPtr geo_handler;
 
 
 
@@ -157,8 +158,8 @@ GeoHandlerPtr geo_handler;
   // viewer.createViewPort(0.0,0.0,0.5,1.0,viewportCloud);
   //for (int i = 1 ; i <= max_segment_num ; i++ ){
 
- // color_handlerX.reset (new pcl_visualization::PointCloudColorHandl<sensor_msgs::PointCloud2 > (cloud_blob,"x"));
-  color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob,"z"));
+  // color_handlerX.reset (new pcl_visualization::PointCloudColorHandl<sensor_msgs::PointCloud2 > (cloud_blob,"x"));
+  color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob, "z"));
   viewer.addPointCloud (cloud, color_handler, "cloud");
   //viewer.
 
@@ -167,26 +168,26 @@ GeoHandlerPtr geo_handler;
   //     viewer.spin();
   viewer.addCoordinateSystem (1);
   char ans[20];
-          outMat (3, 0) = 0;
-          outMat (3, 1) = 0;
-          outMat (3, 2) = 0;
-          outMat(3,3)=1;
+  outMat (3, 0) = 0;
+  outMat (3, 1) = 0;
+  outMat (3, 2) = 0;
+  outMat (3, 3) = 1;
   while (true)
     {
       viewer.spinOnce (5000, true);
       viewer.resetCamera ();
       cin >> ans;
-      char d=ans[0];
-      double angle=atof(ans+1);
-      angle=angle*boost::math::constants::pi<double>()/180.0;
-      std::cerr<<angle<<endl;
+      char d = ans[0];
+      double angle = atof (ans + 1);
+      angle = angle * boost::math::constants::pi<double>() / 180.0;
+      std::cerr << angle << endl;
       if (d == 'x')
         {
 
           outMat (0, 3) = 0;
           outMat (1, 3) = 0;
           outMat (2, 3) = 0;
-          
+
           //set the 1st column=position of X axis
           outMat (0, 0) = 1;
           outMat (1, 0) = 0;
@@ -194,27 +195,27 @@ GeoHandlerPtr geo_handler;
 
           //set the 3rd column=position of Z axis
           outMat (0, 2) = 0;
-          outMat (1, 2) = -sin(angle);
-          outMat (2, 2) = cos(angle);
+          outMat (1, 2) = -sin (angle);
+          outMat (2, 2) = cos (angle);
 
 
 
 
           //set the 2nd column=position of Y axis
           outMat (0, 1) = 0;
-          outMat (1, 1) = cos(angle);
-          outMat (2, 1) = sin(angle);
+          outMat (1, 1) = cos (angle);
+          outMat (2, 1) = sin (angle);
         }
-      else if(d=='y')
+      else if (d == 'y')
         {
           outMat (0, 3) = 0;
           outMat (1, 3) = 0;
           outMat (2, 3) = 0;
-          
+
           //set the 1st column=position of X axis
-          outMat (0, 0) = cos(angle);
+          outMat (0, 0) = cos (angle);
           outMat (1, 0) = 0;
-          outMat (2, 0) = sin(angle);
+          outMat (2, 0) = sin (angle);
 
           //set the 2nd column=position of Y axis
           outMat (0, 1) = 0;
@@ -222,39 +223,84 @@ GeoHandlerPtr geo_handler;
           outMat (2, 1) = 0;
 
           //set the 3rd column=position of Z axis
-          outMat (0, 2) = -sin(angle);
+          outMat (0, 2) = -sin (angle);
           outMat (1, 2) = 0;
-          outMat (2, 2) = cos(angle);
+          outMat (2, 2) = cos (angle);
 
 
         }
-      else if(d=='s')
+      else if (d == 's')
         {
           break;
         }
+      else if (d == 'z')
+        {
+          pcl::toROSMsg (*cloud_ptr, cloud_blob);
+          viewer.removePointCloud ();
+          color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob, "z"));
+          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
+          viewer.removeCoordinateSystem ();
+          viewer.addCoordinateSystem (1);
+          viewer.resetCamera ();
+          continue;
+
+        }
+      else if (d == 'c')
+        {
+          pcl::toROSMsg (*cloud_ptr, cloud_blob);
+          viewer.removePointCloud ();
+          color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
+          viewer.removeCoordinateSystem ();
+          viewer.addCoordinateSystem (1);
+          viewer.resetCamera ();
+          continue;
+        }
+      else if (d == 'r')
+        {
+          float minZ = angle / boost::math::constants::pi<double>()*180.0;
+          pcl::PassThrough<PointT> pass;
+          pass.setInputCloud (cloud_ptr);
+          pass.setFilterFieldName ("z");
+          pass.setFilterLimits (minZ, 10);
+          pass.filter (*cloudT_ptr);
+      pcl::toROSMsg (*cloudT_ptr, cloud_blob);
+
+      viewer.removePointCloud ();
+      //color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+      color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob, "z"));
+      viewer.addPointCloud (*cloudT_ptr, color_handler, "cloud");
+      viewer.removeCoordinateSystem ();
+      viewer.addCoordinateSystem (1);
+      viewer.resetCamera ();
+      *cloud_ptr = *cloudT_ptr;
+      std::cerr<<"clipped pointcou dbelow "<<minZ<<endl;
+      continue;
+        }
       else
         continue;
-          
- /* for(int i=0;i<4;i++)
-  {
-      for(int j=0;j<4;j++)
-          std::cerr<<outMat(i,j)<<",";
-      std::cerr<<endl;
-  }       
-*/
+
+      /* for(int i=0;i<4;i++)
+       {
+           for(int j=0;j<4;j++)
+               std::cerr<<outMat(i,j)<<",";
+           std::cerr<<endl;
+       }       
+       */
       transformPointCloud (outMat, cloud_ptr, cloudT_ptr);
-          pcl::toROSMsg (*cloudT_ptr,cloud_blob);
+      pcl::toROSMsg (*cloudT_ptr, cloud_blob);
 
-    viewer.removePointCloud ();
-  //color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
-  color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob,"z"));
-  viewer.addPointCloud (*cloudT_ptr, color_handler, "cloud");
-  viewer.removeCoordinateSystem ();
-  viewer.addCoordinateSystem (1);
-  viewer.resetCamera ();
-  *cloud_ptr=*cloudT_ptr;
+      viewer.removePointCloud ();
+      //color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+      color_handler.reset (new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2 > (cloud_blob, "z"));
+      viewer.addPointCloud (*cloudT_ptr, color_handler, "cloud");
+      viewer.removeCoordinateSystem ();
+      viewer.addCoordinateSystem (1);
+      viewer.resetCamera ();
+      *cloud_ptr = *cloudT_ptr;
 
-        
+
+
       // viewer.
       //                viewer.getPointCloudRenderingProperties (pcl_visualization::RenderingProperties)
       //viewer.
@@ -276,23 +322,23 @@ GeoHandlerPtr geo_handler;
 
 
 
-          //make z(ground)=0
-          float minZ=FLT_MAX;
-          float z;
-          for(int i=1;i<cloud_ptr->size ();i++)
-            {
-              z=cloud_ptr->points[i].z;
-              if(z<minZ)
-                minZ=z;
-            }
+  //make z(ground)=0
+  float minZ = FLT_MAX;
+  float z;
+  for (int i = 1; i < cloud_ptr->size (); i++)
+    {
+      z = cloud_ptr->points[i].z;
+      if (z < minZ)
+        minZ = z;
+    }
 
-          for(int i=0;i<cloud_ptr->size ();i++)
-            {
-              cloud_ptr->points[i].z-=minZ;
-            }
-          std::cerr<<"minZ was "<<minZ<<endl;
+  for (int i = 0; i < cloud_ptr->size (); i++)
+    {
+      cloud_ptr->points[i].z -= minZ;
+    }
+  std::cerr << "minZ was " << minZ << endl;
 
   std::string fn (argv[1]);
-      writer.write ("transformed_" + fn, *cloud_ptr, true);
+  writer.write ("transformed_" + fn, *cloud_ptr, true);
 }
 /* ]--- */

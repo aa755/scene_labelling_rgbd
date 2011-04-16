@@ -2,7 +2,9 @@ function [s,M] = my_eval (y,NL,K,L)
 
 for i = 1:length(y)/K
     m = y((i-1)*K+1:i*K);
-    t = max(m) * ones(K,1);
+    t = max(m);% * ones(K,1);
+  %  size(m)
+  %  size(t)
     a = find(t==m);
     if(~isempty(a))
       l(i) = a(randi([1,length(a)]));%a(1);% 

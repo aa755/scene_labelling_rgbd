@@ -4,7 +4,7 @@ num_bins_shape=5
 cd $file
 
 num=0
-for file in `ls *_binary.pcd`
+for file in `ls *.pcd`
 do
   num=`expr $num + 1`
   echo $file
