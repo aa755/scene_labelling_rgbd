@@ -51,9 +51,9 @@ def read_examples(filename,sparm):
                 if(num_edge_feats<int(k)):
                     num_edge_feats=int(k)
 
-    print max_target
-    print num_node_feats
-    print num_edge_feats
+    print 'number of classes: ', max_target
+    print 'number of node features: ', num_node_feats
+    print 'number of edge features: ',num_edge_feats
 
     for input_file in file(filename):
         input = [line.split() for line in line_reader(file(input_file.strip()))]
@@ -106,8 +106,8 @@ def read_examples(filename,sparm):
                 #print X[j*9:(j+1)*9,j];
                 Xe[j*num_edge_feats:(j+1)*num_edge_feats,(i-N)*max_target*max_target+j] = f.copy();
 
-        print Xe.shape[0]
-        print Xe.shape[1]
+        #print Xe.shape[0]
+        #print Xe.shape[1]
         a = concatenate ((Xn, mat(zeros((Xn.shape[0],Xe.shape[1])))),1)
         b = concatenate ((mat(zeros((Xe.shape[0],Xn.shape[1]))),Xe),1)
         X = concatenate ((a,b))
@@ -135,14 +135,16 @@ def init_model(sample, sm, sparm):
     global NUM_CLASSES
     sm.num_features = sample[0][0][0].shape[0]
     sm.num_classes = NUM_CLASSES
-    print 'num of classes', sm.num_classes
+    print 'num of classes: ', sm.num_classes
     sm.size_psi = sm.num_features
-    print 'size_psi set to',sm.size_psi
+    print 'size_psi set to: ',sm.size_psi
 
 thecount = 0
 
 
-def lp_training(X,y,K,w):
+def lp_training(X,y,sm,sparm):
+    K = sm.num_classes
+    w = sm.w
     edge = X[1]
     E = edge.shape[0]
     N = X[2]
@@ -167,7 +169,7 @@ def lp_training(X,y,K,w):
     x = (X[0])#.todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = asmatrix(array(w_list))
-    print w_list
+    #print w_list
     #print (asarray(w*x)[0]).tolist()
     loss_coeff = [float(1/float(N*K)) for i in xrange(0,N*K)]
     coeff = (asarray(w_mat*x)[0]).tolist()
@@ -226,23 +228,25 @@ def lp_training(X,y,K,w):
 
 
 
-    print len(t)
+    #print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+    # print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
+    # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                      # Print struct variable names and primal val
+    print "objective value = ", lp.obj.value 
     l = []
     for c in lp.cols:
       if(c.index< N*K+E*K*K):
          l.append(c.primal)
     labeling = asmatrix(array(l))
-    
+        
     c1 = 0
     c0= 0
     ch =0
     cr = 0
     for c in lp.cols:
+      if (c.index<N*K+E*K*K):
         if (c.primal == 1):
             c1 += 1
         elif(c.primal ==0):
@@ -255,6 +259,12 @@ def lp_training(X,y,K,w):
     print 'number of 0s: %d' % c0
     print 'number of 0.5s: %d' % ch
     print 'number of 0s: %d' % cr
+    score = asarray(w_mat*x*labeling.T)[0][0];
+    score2 = sm.svm_model.classify(psi(x,labeling.T,sm,sparm))
+    print '\n score : ' , score, ' score2: ',score2;
+    print 'loss: ',loss(y,labeling.T,sparm)
+    if(lp.obj.value  > 1.1):
+      assert (lp.obj.value ==  score +  loss(y,labeling.T,sparm)) #(sm.svm_model.classify(psi(x,labeling.T,sm,sparm)) + loss(y,labeling.T,sparm)) )
     return labeling.T
 
 def lp_inference(X,K,w):
@@ -278,7 +288,7 @@ def lp_inference(X,K,w):
     x = (X[0])#.todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = asmatrix(array(w_list))
-    print w_list
+    #print w_list
     #print (asarray(w*x)[0]).tolist()
     lp.obj[:] = (asarray(w_mat*x)[0]).tolist()
     #print lp.obj[:]
@@ -314,7 +324,7 @@ def lp_inference(X,K,w):
                 t.append((ec,b,1))
                 t.append((ec,c,-1))
 
-    print len(t)
+    #print len(t)
     lp.matrix = t
     lp.simplex()
   #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
@@ -359,7 +369,8 @@ def classify_example(x, sm, sparm):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp_training(x,y,sm.num_classes,sm.w)
+    l = lp_training(x,y,sm,sparm)
+     
     #print l.T
     return l
 
@@ -405,6 +416,7 @@ def evaluation_loss(y, ybar, K, N ,sparm):
     
     #print "similarity is", sim/N
     return 1-(sim/N);
+
 
 def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     """Accumulate statistics about a single training example.
