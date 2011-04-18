@@ -371,8 +371,8 @@ def lp_training(X,Y,sm,sparm):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
 
-def lp_inference(X,Y,sm,sparm):
-    y = Y[0]
+def lp_inference(X,sm,sparm):
+    
     K = sm.num_classes
     w = sm.w
     edge = X[1]
@@ -461,7 +461,6 @@ def lp_inference(X,Y,sm,sparm):
     score2 = sm.svm_model.classify(psi(x,ymax,sm,sparm))
     print "objective value = ", round(lp.obj.value,2) 
     print '\n score : ' , round(score,2), ' score2: ',score2;
-    print 'loss: ',loss(Y,ymax,sparm)
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value,2) ==  round(score,2))
     return ymax
@@ -480,7 +479,7 @@ def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,y,sm,sparm)
-    #l = lp_inference(x,sm,sparm)
+    l = lp_inference(x,sm,sparm)
     return l
 
 def find_most_violated_constraint(x, y, sm, sparm):
