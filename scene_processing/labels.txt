@@ -65,3 +65,5 @@ tv
 bedFrame
 sideTable
 tableLamp
+sideTableSide
+jug
