@@ -68,3 +68,7 @@ tableLamp
 sideTableSide
 jug
 diningTable
+lamp
+windowFrame
+sideTableDrawer
+curtain
