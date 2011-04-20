@@ -63,3 +63,5 @@ step
 dvdPlayer
 tv
 bedFrame
+sideTable
+tableLamp
