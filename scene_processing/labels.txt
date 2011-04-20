@@ -45,3 +45,5 @@ laptop
 laptopScreen
 bookStand
 pillow
+closetDoor
+quilt
