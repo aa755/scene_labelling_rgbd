@@ -67,3 +67,4 @@ sideTable
 tableLamp
 sideTableSide
 jug
+diningTable
