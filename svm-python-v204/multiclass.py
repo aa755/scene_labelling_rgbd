@@ -519,6 +519,29 @@ def loss(Y, Ybar, sparm):
             
     return sum/size;
 
+def evaluation_class_pr(Y,Ybar,K,N,spram):
+    y = Y[0]   
+    ybar = Ybar[0]
+    truecount = zeros((K,1))
+    predcount = zeros((K,1))
+    tpcount = zeros((K,1))
+    prec = zeros((K,1))
+    recall = zeros((K,1))
+    for node in xrange(0,N):
+        for label in xrange(0,K):
+            if(y[node*K+label,0] == 1):
+                truecount[label,0] += 1;
+            if(ybar[node*K+label,0] == 1):
+                predcount[label,0] += 1;
+            if((y[node*K+label,0] == 1) and (ybar[node*K+label,0] == 1)):
+                tpcount[label,0] += 1;
+    for label in xrange(0,K):
+        if(predcount[label,0] != 0):
+            prec[label,0] = tpcount[label,0]/float(predcount[label,0])
+        if(truecount[label,0] !=0):
+            recall[label,0] = tpcount[label,0]/float(truecount[label,0])
+    return (tpcount,truecount,predcount)
+
 def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
     y = Y[0]
     ybar = Ybar[0]
@@ -584,7 +607,8 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     if exnum==0: teststats = []
     print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
     print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
-    teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
+    #teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
+    teststats.append(evaluation_class_pr(y, ypred, sm.num_classes , x[2], sparm))
     return teststats
 
 
@@ -596,9 +620,32 @@ def print_testing_stats(sample, sm, sparm, teststats):
     the teststats object through use of the eval_prediction function.
 
     The default behavior is that nothing is printed."""
-    avg = 0
-    for v in teststats:
-        avg += v
-    avg = avg/len(teststats)
-    print "Average Error is: " , avg
-    print "Error per Test example: ", teststats
+
+
+    avgp = zeros((sm.num_classes,1))
+    avgr = zeros((sm.num_classes,1))
+    tpcount = zeros((sm.num_classes,1))
+    truecount = zeros((sm.num_classes,1))
+    predcount = zeros((sm.num_classes,1))
+    for t in teststats:
+        
+        for label in xrange(0,sm.num_classes):
+            tpcount[label,0] += t[0][label,0]
+            truecount[label,0] += t[1][label,0]
+            predcount[label,0] += t[2][label,0]
+    total_tc  = 0
+    total_pc = 0
+    total_tp = 0
+    for label in xrange(0,sm.num_classes):
+        if(predcount[label,0] != 0):
+            avgp[label,0] = tpcount[label,0]/float(predcount[label,0])
+        if(truecount[label,0] !=0):
+            avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
+        #avgp[label,0] = avgp[label,0]/len(teststats)
+        #avgr[label,0] = avgr[label,0]/len(teststats)
+        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
+        total_tc +=  truecount[label,0]
+        total_pc += predcount[label,0]
+        total_tp += tpcount[label,0]
+    print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    #print "Error per Test example: ", teststats
