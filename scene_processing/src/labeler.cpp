@@ -292,7 +292,7 @@ void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &se
      
 }
 
-void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud , int segment)
+void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud , size_t segment)
 {
    ROS_INFO ("applying filter");
    outcloud.points.erase(outcloud.points.begin(),outcloud.points.end());
@@ -356,14 +356,14 @@ boost::recursive_mutex global_mutex;
       apply_segment_filter( cloud, *cloud_colored , *cloud_filtered, seg_no);
            for (size_t i = 0; i < cloud_filtered->points.size(); ++i)
   {
-           //    if(!((cloud_filtered->points[i].x<conf.maxx&&cloud_filtered->points[i].x>=conf.minx)&&(cloud_filtered->points[i].y<conf.maxy&&cloud_filtered->points[i].y>=conf.miny)&&(cloud_filtered->points[i].z<conf.maxz&&cloud_filtered->points[i].z>=conf.minz)))
-             //    return false;
+               if(!((cloud_filtered->points[i].x<conf.maxx&&cloud_filtered->points[i].x>=conf.minx)&&(cloud_filtered->points[i].y<conf.maxy&&cloud_filtered->points[i].y>=conf.miny)&&(cloud_filtered->points[i].z<conf.maxz&&cloud_filtered->points[i].z>=conf.minz)))
+                 return false;
                  
   }
 
  //     cout<<"passed range test\n";
       
-    int curLabel=cloud_filtered->points[1].label;
+    size_t curLabel=cloud_filtered->points[1].label;
     if(curLabel==0)
     {
         cout<<"not assigned a label yet\n";
@@ -377,6 +377,8 @@ boost::recursive_mutex global_mutex;
     }
 
        ROS_INFO ("CLuster number %d",seg_no);
+          viewer.removePointCloud("cluster",viewportCluster);
+            viewer.removePointCloud("cloud",viewportCloud);
 
     pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
     pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
@@ -385,6 +387,7 @@ boost::recursive_mutex global_mutex;
     viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewportCloud);
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
     viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewportCluster);
+    return true;
   
   }
   std::string fn;
@@ -406,7 +409,7 @@ boost::recursive_mutex global_mutex;
   
     std::ofstream labelFileOut;
     labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
-                 for(int li=0;li<labels.size();li++)
+                 for(size_t li=0;li<labels.size();li++)
                  {
                      labelFileOut<<labels.at(li)<<endl;
                  }
@@ -416,25 +419,78 @@ boost::recursive_mutex global_mutex;
   writer.write ( fn,labeled_cloud, true);
     
   }
-void nextPointCloud()
-{
+
+  void showClippedPointCloud()
+  {
+    pcl::PointCloud<PointT>::Ptr cloud_ptr (new pcl::PointCloud<PointT > (cloud));
+          pcl::PointCloud<PointT>::Ptr temp1(new pcl::PointCloud<PointT> ());
+          pcl::PointCloud<PointT>::Ptr temp2(new pcl::PointCloud<PointT> ());
+          pcl::PointCloud<PointT>::Ptr clippedCloud(new pcl::PointCloud<PointT> ());
+          pcl::PassThrough<PointT> pass;
+          cout<<"original cloud has "<<cloud_ptr->size ()<<endl;
+          pass.setInputCloud (cloud_ptr);
+          pass.setFilterFieldName ("z");
+          pass.setFilterLimits (conf.minz, conf.maxz);
+          pass.filter (*temp1);
+          cout<<"clipped x cloud has "<<temp1->size ()<<endl;
+
+          pass.setInputCloud (temp1);
+          pass.setFilterFieldName ("y");
+          pass.setFilterLimits (conf.miny, conf.maxy);
+          pass.filter (*temp2);
+          cout<<"clipped y cloud has "<<temp2->size ()<<endl;
+  
+          pass.setInputCloud (temp2);
+          pass.setFilterFieldName ("x");
+          pass.setFilterLimits (conf.minx, conf.maxx);
+          pass.filter (*clippedCloud);
+          cout<<"clipped cloud has "<<clippedCloud->size ()<<endl;
+          
           viewer.removePointCloud("cluster",viewportCluster);
             viewer.removePointCloud("cloud",viewportCloud);
+          pcl::toROSMsg (*clippedCloud,cloud_blob_filtered);
+        //pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
+
+    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob));
+    viewer.addPointCloud(cloud,color_handler,"cloud",viewportCloud);
+    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
+    viewer.addPointCloud(*clippedCloud,color_handler ,"cluster",viewportCluster);
+  //        viewer.removeCoordinateSystem ();
+          
+  }
+  
+void nextPointCloud()
+{
             seg_iter++;
             while(!processPointCloud (*seg_iter))
                 seg_iter++;
   
 }
+bool labellingMode=false; //clippingMode=(!labelingMode)
 void reconfig(scene_processing::labelingConfig & config, uint32_t level)
 {
   conf=config;
   boost::recursive_mutex::scoped_lock lock(global_mutex);
+  if((!labellingMode)&&(!conf.show_clipped)) // just started labeling => reset
+    {
+         seg_iter=segmentIndices.begin() ; 
+            while(!processPointCloud (*seg_iter))
+                seg_iter++;
+//          viewer.removeCoordinateSystem ();
+         labellingMode=true;
+         return;
+    }
+  
+  labellingMode=!conf.show_clipped;
+  
+  if(labellingMode)
+    {
   if(config.accept_label)
     {
       std::string labelStr=config.label;
          cout <<"selected label:"<< labelStr << endl;
          bool found=false;
-         for(int li=0;li<labels.size();li++)
+         for(size_t li=0;li<labels.size();li++)
          {
              if(labelStr.compare(labels.at(li))==0)
              {
@@ -447,7 +503,6 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
          }
          if(found)
                 nextPointCloud ();
-         else
          
          conf.accept_label=false;
          doUpdate=true;
@@ -460,7 +515,7 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
                   labels.push_back(labelStr);
                   //the next iteration will match and exit... no need to set done now
                   cout<<"new set of labels: \n";
-                 for(int li=0;li<labels.size();li++)
+                 for(size_t li=0;li<labels.size();li++)
                  {
                      cout<<labels.at(li)<<endl;
                  }
@@ -469,9 +524,10 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
          conf.new_label=false;
          doUpdate=true;
     }
-  else if(conf.show_clipped)
+    }
+  else 
     {
-      
+      showClippedPointCloud ();
     }
   
 
@@ -485,7 +541,7 @@ int
     ros::init(argc, argv, "labelling");
   std::string fn = "labeled_"  + std::string(argv[1]);
 
-    bool groundSelected=false;
+//    bool groundSelected=false;
     bool editLabel=false;
     int targetLabel;
     if(argc>2)
@@ -534,7 +590,7 @@ int
 
 
   // find the max segment number 
-  int max_segment_num = 0;
+  size_t max_segment_num = 0;
   for (size_t i = 0; i < cloud.points.size (); ++i)
   {
      if (max_segment_num < cloud.points[i].segment) {max_segment_num = cloud.points[i].segment;}    
@@ -546,11 +602,10 @@ int
     viewer.createViewPort(0.0,0.0,0.5,1.0,viewportCloud);
     viewer.createViewPort(0.5,0.0,1.0,1.0,viewportCluster);
  
- 
-  seg_iter=segmentIndices.begin() ; 
-            while(!processPointCloud (*seg_iter))
-                seg_iter++;
+      viewer.addCoordinateSystem (1);
 
+    labellingMode=false;
+    showClippedPointCloud ();
       viewer.spinOnce(1000,true);
   srv = new dynamic_reconfigure::Server < scene_processing::labelingConfig > (global_mutex);
   dynamic_reconfigure::Server < scene_processing::labelingConfig >::CallbackType f =
@@ -565,7 +620,11 @@ int
     viewer.spinOnce ();
     ros::spinOnce();
     if(conf.done)
+      {
+        conf.done=false;
+              srv->updateConfig(conf);
       break;
+      }
     if (doUpdate) {
       doUpdate = false;
       srv->updateConfig(conf);

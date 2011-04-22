@@ -81,7 +81,7 @@
   (pcl::PointWithRange)       \
   (pcl::PointWithViewpoint)   \
   (pcl::PointWithScale)         \
-  (pcl::PointXYGRGBCam)      \ 
+  (pcl::PointXYGRGBCam)      \
   (pcl::PointXYZRGBCamSL)         
 
 // Define all point types that include normal[3] data
