@@ -212,7 +212,7 @@ bool GraphManager::addNode(Node new_node) {
     Eigen::Matrix4f ransac_trafo, final_trafo;
 
     bool edge_added_to_base;
-    std::vector<int> vertices_to_comp = getPotentialEdgeTargets(new_node, 8); //vernetzungsgrad
+    std::vector<int> vertices_to_comp = getPotentialEdgeTargets(new_node, -1); //vernetzungsgrad
     int id_of_id = vertices_to_comp.size() -1;
     for (; id_of_id >=0; id_of_id--){ //go from the back, so the last comparison is with the first node. The last comparison is visualized.
      initial_matches = processNodePair(new_node, graph_[vertices_to_comp[id_of_id]],edge_added_to_base,ransac_trafo, final_trafo);

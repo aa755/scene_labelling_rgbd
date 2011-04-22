@@ -2,7 +2,7 @@ wall
 floor
 table
 shelf
-chair
+chairBackRest
 cpu
 monitor
 clutter
@@ -20,7 +20,7 @@ multiple
 sofaBase
 waterDispenser
 printer
-sofa
+sofaBackRest
 pillar
 ACVent
 dustbin
@@ -72,3 +72,17 @@ lamp
 windowFrame
 sideTableDrawer
 curtain
+tableSide
+stove
+stoveFrontPanel
+grater
+microwaveTop
+microwaveSide
+boxSide
+drawer
+fan
+floorShelf
+drawerTop
+tableFrontComplete
+quiltPartHangingDown
+coffeeMugLid

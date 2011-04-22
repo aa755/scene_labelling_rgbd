@@ -46,11 +46,19 @@ classdef Scene < handle
 
         end
         
+        function [err]=getTrainingErrorNorm(obj,WN,WE)
+            [H f]=obj.getQPCoeffs(WN,WE);
+            diff=obj.nodeLableIndicatorVector-H\(f');
+            err=diff'*diff; 
+         %   err=sum(abs(diff)); 
+            
+        end
+        
         %nodeFeats ,NL, edgeFeatures,EL
         function [H f]=getQPCoeffs(obj,WN,WE)
 %            obj.WN=WN;
-            
-            
+           % disp('entered')
+           % tic;
             N = obj.numNodes;% number of nodes
             E = obj.numEdges; % number of edges
             
@@ -58,8 +66,10 @@ classdef Scene < handle
             %WE = ones(K,size(edgeFeatures,2),K);
             
             K=obj.numLabels;
-            M = zeros( K*K*E,N*K);
-            
+            %M = sparse( K*K*E,N*K);
+            MXindices=zeros(1,2*K*K*E);
+            MYindices=zeros(1,2*K*K*E);
+            MValues=zeros(1,2*K*K*E);
             r=0;
             for i = 1:E
                 for l = 1:K
@@ -67,18 +77,31 @@ classdef Scene < handle
                         in1 = obj.edgeNodeIndices(i,1); % id of node 1
                         in2 = obj.edgeNodeIndices(i,2); % id of node 2
                         r=r+1;
-                        sizWE=size(WE);
               %          sezEd=size(obj.edgeFeats(i,:))
-              l;
-              k;
+             % l;
+             % k;
+     
                         w = WE(:,l,k)'* obj.edgeFeats(i,:)';
-                        M(r,(in1-1)*K+l) = w;
-                        M(r,(in2-1)*K+k) = -w;
+                        index=2*r-1;
+                    MXindices(index)=r;
+                    MYindices(index)=(in1-1)*K+l;
+                    MValues(index)=w;
+                        
+                        index=2*r;
+                    MXindices(index)=r;
+                    MYindices(index)=(in2-1)*K+k;
+                    MValues(index)=-w;
+                        
+%                        M(r,(in1-1)*K+l) = w;
+ %                       M(r,(in2-1)*K+k) = -w;
+ 
                     end
                 end
             end
             
-            I = eye(N*K,N*K);
+            M=sparse(MXindices,MYindices,MValues,K*K*E,N*K);
+        
+            I = speye(N*K,N*K);
             
             H =2*( I + M'*M);
             
@@ -91,7 +114,7 @@ classdef Scene < handle
                     f(1,(i-1)*K+k) = -2*T(k,:)*obj.nodeFeats(i,:)';
                 end
             end
-            
+           % toc;
             
 
         end

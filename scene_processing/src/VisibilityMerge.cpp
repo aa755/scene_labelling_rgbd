@@ -138,6 +138,7 @@ main(int argc, char** argv)
                 *aCloud=*cloud_normal;
                 pcl::KdTreeFLANN<PointT>::Ptr nnFinder(new pcl::KdTreeFLANN<PointT>);
 
+
                 std::cerr<<" processing "<<pcl_count<<std::endl;
                 for (unsigned int p = 0; p < cloud_normal->size(); p++)
                 {

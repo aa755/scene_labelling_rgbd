@@ -1,5 +1,5 @@
 function [WN we minVal Bcomb Xcomb]=train(nodeMat,edgeMat)
-    [Scenes nodeFeats NL numLabels]= parseScenes(nodeMat,edgeMat,5);
+    [Scenes nodeFeats NL numLabels]= parseScenes(nodeMat,edgeMat,20);
     numLabels
     lenWE=size(edgeMat,2)-5;
     minVal=Inf;
@@ -7,7 +7,7 @@ function [WN we minVal Bcomb Xcomb]=train(nodeMat,edgeMat)
                 'MaxIter',15,'Hessian','off','TolFun',1e-6,'DerivativeCheck','off',...
                 'FinDiffType','central','TolX',1e-6);
             
-we=10*rand([lenWE,numLabels*numLabels]);
+we=zeros([lenWE,numLabels*numLabels]);
 WN = inv(nodeFeats'*nodeFeats) * nodeFeats'*NL;
 WN=WN';
 
