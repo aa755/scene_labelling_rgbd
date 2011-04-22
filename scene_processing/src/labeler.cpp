@@ -68,6 +68,8 @@
 #include "pcl/segmentation/sac_segmentation.h"
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <dynamic_reconfigure/server.h>
+#include <scene_processing/labelingConfig.h>
 
 //typedef pcl::PointXYZRGB PointT;
 //std::string initLabels[]={"wall","floor","table","shelf","chair","cpu","monitor","clutter"};
@@ -75,7 +77,8 @@
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 
-
+dynamic_reconfigure::Server < scene_processing::labelingConfig > *srv;
+scene_processing::labelingConfig conf;
 
 typedef pcl::PointXYZRGBCamSL PointT;
 float
@@ -325,10 +328,163 @@ void spinThread()
     while(true)
         viewer.spinOnce(1000,true);
 }
+
+    int viewportCloud = 0;
+    int viewportCluster = 0;
+
+boost::recursive_mutex global_mutex;
+  bool doUpdate=false;
+    std::vector<std::string> labels;//(initLabels);
+  sensor_msgs::PointCloud2 cloud_blob;
+  sensor_msgs::PointCloud2 cloud_blob_filtered;
+  sensor_msgs::PointCloud2 cloud_blob_colored;
+
+  pcl::PointCloud<PointT> cloud;
+ //ColorHandlerPtr color_handler;
+  pcl::PCDWriter writer;
+  ColorHandlerPtr color_handler;
+
+  pcl::PointCloud<PointT>::Ptr  cloud_filtered (new pcl::PointCloud<PointT> ());
+  pcl::PointCloud<PointT>::Ptr  cloud_colored (new pcl::PointCloud<PointT> ());
+  std::map<int,int> label_mapping; 
+  std::vector<int> segmentIndices; 
+  std::vector<int>::iterator seg_iter;
+// * Dynamic reconfigure callback */
+
+  bool processPointCloud(int seg_no)
+  {
+      apply_segment_filter( cloud, *cloud_colored , *cloud_filtered, seg_no);
+           for (size_t i = 0; i < cloud_filtered->points.size(); ++i)
+  {
+           //    if(!((cloud_filtered->points[i].x<conf.maxx&&cloud_filtered->points[i].x>=conf.minx)&&(cloud_filtered->points[i].y<conf.maxy&&cloud_filtered->points[i].y>=conf.miny)&&(cloud_filtered->points[i].z<conf.maxz&&cloud_filtered->points[i].z>=conf.minz)))
+             //    return false;
+                 
+  }
+
+ //     cout<<"passed range test\n";
+      
+    int curLabel=cloud_filtered->points[1].label;
+    if(curLabel==0)
+    {
+        cout<<"not assigned a label yet\n";
+    }
+    else if(conf.skip_labeled)
+      return false;
+    else
+    {
+        assert(curLabel>0&&curLabel<=labels.size());
+        cout<<"segment "<<seg_no<<" had label :"<<labels.at(curLabel-1)<<endl;
+    }
+
+       ROS_INFO ("CLuster number %d",seg_no);
+
+    pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
+    pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
+
+    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_colored));
+    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewportCloud);
+    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
+    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewportCluster);
+  
+  }
+  std::string fn;
+  
+  void saveAndExit()
+  {
+  std::vector<pcl::PointCloud<PointT> > clusters2;
+  pcl::PointCloud<PointT> labeled_cloud;
+  pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
+  pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
+  //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
+  labeled_cloud.header = cloud.header;
+  labeled_cloud.points = cloud.points;
+  for (size_t i = 0; i< labeled_cloud.points.size(); i++)
+  {
+    labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
+
+  }
+  
+    std::ofstream labelFileOut;
+    labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
+                 for(int li=0;li<labels.size();li++)
+                 {
+                     labelFileOut<<labels.at(li)<<endl;
+                 }
+    labelFileOut.close();
+  pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
+
+  writer.write ( fn,labeled_cloud, true);
+    
+  }
+void nextPointCloud()
+{
+          viewer.removePointCloud("cluster",viewportCluster);
+            viewer.removePointCloud("cloud",viewportCloud);
+            seg_iter++;
+            while(!processPointCloud (*seg_iter))
+                seg_iter++;
+  
+}
+void reconfig(scene_processing::labelingConfig & config, uint32_t level)
+{
+  conf=config;
+  boost::recursive_mutex::scoped_lock lock(global_mutex);
+  if(config.accept_label)
+    {
+      std::string labelStr=config.label;
+         cout <<"selected label:"<< labelStr << endl;
+         bool found=false;
+         for(int li=0;li<labels.size();li++)
+         {
+             if(labelStr.compare(labels.at(li))==0)
+             {
+                label_mapping[*seg_iter] = li+1;
+                cout <<"label numerical alias:"<< li+1 << endl;
+
+                found=true;
+                break;
+             }
+         }
+         if(found)
+                nextPointCloud ();
+         else
+         
+         conf.accept_label=false;
+         doUpdate=true;
+    }
+  else if(config.new_label)
+    {
+      
+      std::string labelStr=config.label;
+                    cout<<"added new label:"<<labelStr<<endl;
+                  labels.push_back(labelStr);
+                  //the next iteration will match and exit... no need to set done now
+                  cout<<"new set of labels: \n";
+                 for(int li=0;li<labels.size();li++)
+                 {
+                     cout<<labels.at(li)<<endl;
+                 }
+
+                  nextPointCloud ();
+         conf.new_label=false;
+         doUpdate=true;
+    }
+  else if(conf.show_clipped)
+    {
+      
+    }
+  
+
+}
+
+
 /* ---[ */
 int
   main (int argc, char** argv)
 {
+    ros::init(argc, argv, "labelling");
+  std::string fn = "labeled_"  + std::string(argv[1]);
+
     bool groundSelected=false;
     bool editLabel=false;
     int targetLabel;
@@ -339,7 +495,6 @@ int
     }
         
             boost::numeric::ublas::matrix<double> outMat(4, 4);
-    std::vector<std::string> labels;//(initLabels);
     std::ifstream labelFile;
     std::string line;
     labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
@@ -363,17 +518,6 @@ int
         cout<<"could not open label file...exiting\n";
         exit(-1);
     }
-  sensor_msgs::PointCloud2 cloud_blob;
-  sensor_msgs::PointCloud2 cloud_blob_filtered;
-  sensor_msgs::PointCloud2 cloud_blob_colored;
-
-  pcl::PointCloud<PointT> cloud;
- //ColorHandlerPtr color_handler;
-  pcl::PCDWriter writer;
-  ColorHandlerPtr color_handler;
-
-  pcl::PointCloud<PointT>::Ptr  cloud_filtered (new pcl::PointCloud<PointT> ());
-  pcl::PointCloud<PointT>::Ptr  cloud_colored (new pcl::PointCloud<PointT> ());
 
  
  // read from file
@@ -395,254 +539,40 @@ int
   {
      if (max_segment_num < cloud.points[i].segment) {max_segment_num = cloud.points[i].segment;}    
   }
-  std::map<int,int> label_mapping; 
-  std::vector<int> segmentIndices; 
   get_sorted_indices ( *cloud_ptr , segmentIndices , max_segment_num);
 
   // get the 
-    int viewportCloud = 0;
-    int viewportCluster = 0;
 
     viewer.createViewPort(0.0,0.0,0.5,1.0,viewportCloud);
     viewer.createViewPort(0.5,0.0,1.0,1.0,viewportCluster);
-  //for (int i = 1 ; i <= max_segment_num ; i++ ){
  
-  for ( std::vector<int>::iterator it=segmentIndices.begin() ; it < segmentIndices.end(); it++ ) { 
-    int i = *it;
+ 
+  seg_iter=segmentIndices.begin() ; 
+            while(!processPointCloud (*seg_iter))
+                seg_iter++;
 
-   ROS_INFO ("CLuster number %d",i);
-//    viewer.addCoordinateSystem(1.0f);
-
-    apply_segment_filter( *cloud_ptr, *cloud_colored , *cloud_filtered, i);
-/*      for (size_t i = 0; i < cloud_filtered->points.size(); ++i)
-  {
-     std::cerr <<  i << ": " << cloud.points[i].segment << ", " << cloud.points[i].label << std::endl;
-  }
-*/
-    int curLabel=cloud_filtered->points[1].label;
-    if(curLabel==0)
-    {
-        cout<<"not assigned a label yet\n";
-    }
-    else
-    {
-        assert(curLabel>0&&curLabel<=labels.size());
-        label_mapping[i] = curLabel;
-        cout<<"segment "<<i<<" had label :"<<labels.at(curLabel-1)<<"to change , rerun this program later with argv[2]=target label number "<<endl;
-        if(!editLabel || curLabel!=targetLabel)
-            continue;
-//        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
-    }
-
-    pcl::toROSMsg (*cloud_filtered,cloud_blob_filtered);
-    pcl::toROSMsg (*cloud_colored,cloud_blob_colored);
-
-    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_colored));
-    viewer.addPointCloud(*cloud_colored,color_handler,"cloud",viewportCloud);
-    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> (cloud_blob_filtered));
-    viewer.addPointCloud(*cloud_filtered,color_handler ,"cluster",viewportCluster);
-    //viewer.
-
-  //  while (!viewer.wasStopped())
-
- //     viewer.spin();
       viewer.spinOnce(1000,true);
-
-     // usleep(100000);
-      char label[] = "8";
-      int spintime=500;
-      while(label[0]=='8')
-      {
-          cout << "Enter label(enter 8 if you want to see/iteract with the viewer for more time,6 to edit prev pcl's label,5 to align with ground, 9 to quit):" << endl;
-          if(spintime==1000)
-              spintime=5000;
-//    if(it==segmentIndices.begin())
-//        boost::thread trds(spinThread);
-      //getline(cin, input_line);
-        viewer.spinOnce(spintime,true);
-          cin >> label;
-          
-          spintime=spintime*2; //show it for more time if user complains 
-
-        }
-      
-        if (label[0] == '5') {
-            pcl::ModelCoefficients coefficients;
-            pcl::PointIndices inliers;
-            // Create the segmentation object
-            pcl::SACSegmentation<PointT> seg;
-            // Optional
-            seg.setOptimizeCoefficients(true);
-            // Mandatory
-            seg.setModelType(pcl::SACMODEL_PLANE);
-            seg.setMethodType(pcl::SAC_RANSAC);
-            seg.setDistanceThreshold(10);
-            seg.setMaxIterations(100000);
-
-            //pcl::PointCloud<pcl::PointXYZ>::Ptr cloudptr(new pcl::PointCloud<pcl::PointXYZ > (cloud));
-            seg.setInputCloud(cloud_filtered);
-            seg.segment(inliers, coefficients);
-
-            if (inliers.indices.size() == 0) {
-                ROS_ERROR("Could not estimate a planar model for the given dataset.");
-                return (-1);
-            }
-            groundSelected=true;
-            std::cerr << "Model coefficients: " << coefficients.values[0] << " " << coefficients.values[1] << " "
-                    << coefficients.values[2] << " " << coefficients.values[3] << std::endl;
-
-            int numPointsInFloor=cloud_filtered->points.size();
-         VectorG sum(0,0,0); 
-            for(int fili=0;fili<numPointsInFloor;++fili)
-            {
-                sum=sum.add(VectorG(cloud_filtered->points[fili].x,cloud_filtered->points[fili].y,cloud_filtered->points[fili].z));
-            }
-            VectorG origin=sum.multiply(1.0/numPointsInFloor);
-            std::cerr<<"origin:"<<origin.v[0]<<","<<origin.v[1]<<","<<origin.v[2]<<endl;
-            origin.v[2]=-(coefficients.values[0]/*a*/*origin.v[0]+coefficients.values[1]/*b*/*origin.v[1]+coefficients.values[3]/*d*/)/coefficients.values[2]/*c*/;
-            
-            double cosTheta=coefficients.values[3];
-            double sinTheta=sqrt(1-cosTheta*cosTheta);
-            double root2=sqrt(2);
-            outMat(3,3)=1;
-            //set the  displacements:
-            outMat(0,3)=-origin.v[0];
-            outMat(1,3)=-origin.v[1];
-            outMat(2,3)=-origin.v[2];
-            VectorG vz(coefficients.values[0],coefficients.values[1],coefficients.values[2]);
-            assert(vz.isUnitVector());
-            assert(VectorG::isZero(vz.dotProduct(origin)+coefficients.values[3]));
-            //set the 3rd column=position of Z axis
-            outMat(0,2)=coefficients.values[0];
-            outMat(1,2)=coefficients.values[1];
-            outMat(2,2)=coefficients.values[2];
-            
-//The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
-            double tx=5;
-            double ty=0;
-            double tz=-(coefficients.values[0]/*a*/*tx+coefficients.values[3]/*d*/)/coefficients.values[2]/*c*/;
-            VectorG vt(tx,ty,tz);
-            VectorG vx=vt.subtract(origin);
-            vx.normalize();
-            assert(VectorG::isZero(vx.dotProduct(vz)));
-            
-            //set the 1st column=position of X axis
-            outMat(0,0)=vx.v[0];
-            outMat(1,0)=vx.v[1];
-            outMat(2,0)=vx.v[2];
-            
-            VectorG vy=vz.crossProduct(vx);
-            
-            //set the 2nd column=position of Y axis
-            outMat(0,1)=vy.v[0];
-            outMat(1,1)=vy.v[1];
-            outMat(2,1)=vy.v[2];
-            
-            outMat(3,0)=0;
-            outMat(3,1)=0;
-            outMat(3,2)=0;
-            
-          //  break; 
-            
-//The plane coefficients are: a, b, c, d (ax+by+cz+d=0)
-
-
-        }
-      
-      //if (strcmp (label, "q") == 0) {break;}
-      if (label[0] =='6') {
-          it--;it--;
-            viewer.removePointCloud("cluster");
-            viewer.removePointCloud("cloud");
-      continue;
-      }
-      
-      if (label[0] =='9') {break;}
-      bool done=false;
-         std::string labelStr(label);
-      while(!done)
-      {
-         cout <<"selected label:"<< labelStr << endl;
-         for(int li=0;li<labels.size();li++)
-         {
-             if(labelStr.compare(labels.at(li))==0)
-             {
-                label_mapping[i] = li+1;
-                cout <<"label numerical alias:"<< li+1 << endl;
-
-                done=true;
-                break;
-             }
-         }
-         if(!done)
-         {
-             cout <<"label not found... enter label again or 7 to add this as another label...in all cases, if you mistyped, enter again:" << endl;
-              cin >> label;
-              if(label[0]=='7')
-              {
-                  cout<<"added new label:"<<labelStr<<endl;
-                  labels.push_back(labelStr);
-                  //the next iteration will match and exit... no need to set done now
-                  cout<<"new set of labels: \n";
-                 for(int li=0;li<labels.size();li++)
-                 {
-                     cout<<labels.at(li)<<endl;
-                 }
-
-              }
-              else
-                  labelStr=std::string(label);
-             
-         }
-      }
-
-
-    viewer.removePointCloud("cluster");
-    viewer.removePointCloud("cloud");
- 
- }
-
-
-
-
-  std::vector<pcl::PointCloud<PointT> > clusters2;
-  pcl::PointCloud<PointT> labeled_cloud;
-  pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
-  pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
-  //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
-  labeled_cloud.header = cloud.header;
-  labeled_cloud.points = cloud.points;
-  for (size_t i = 0; i< labeled_cloud.points.size(); i++)
-  {
-    labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
-
-  }
+  srv = new dynamic_reconfigure::Server < scene_processing::labelingConfig > (global_mutex);
+  dynamic_reconfigure::Server < scene_processing::labelingConfig >::CallbackType f =
+    boost::bind(&reconfig, _1, _2);
   
-  std::string fn = "labeled_"  + std::string(argv[1]);
-  std::string fnt = "transformed_"  + std::string(argv[1]);
-    std::ofstream labelFileOut;
-    labelFileOut.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
-                 for(int li=0;li<labels.size();li++)
-                 {
-                     labelFileOut<<labels.at(li)<<endl;
-                 }
-    labelFileOut.close();
-  pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
+  srv->setCallback(f);
+  conf.done=false;
 
-  for(int i=0;i<4;i++)
-  {
-      for(int j=0;j<4;j++)
-          std::cerr<<outMat(i,j)<<",";
-      std::cerr<<endl;
-  }       
-    transformPointCloud(outMat,labeled_cloud_ptr,labeled_transformed_cloud);
-  writer.write ( fn,labeled_cloud, true);
-  if(groundSelected)
-  {
-  writer.write ( "transformed_"+fn,*labeled_transformed_cloud, true);
-    transformPointCloud(outMat,cloud_ptr,transformed_cloud);
-  writer.write ( fnt,*transformed_cloud, true);
+  bool isDone=false;
+  //ROS_INFO ("Press q to quit.");
+  while (!isDone) {
+    viewer.spinOnce ();
+    ros::spinOnce();
+    if(conf.done)
+      break;
+    if (doUpdate) {
+      doUpdate = false;
+      srv->updateConfig(conf);
+    }
   }
+
+  cout<<"normal kill";
   return (0);
 }
 /* ]--- */
