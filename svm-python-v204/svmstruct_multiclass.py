@@ -1,6 +1,7 @@
 """A module for SVM^python for multiclass learning."""
 
 import svmapi
+from numpy import *
 
 def read_examples(filename, sparm):
     """Parses an input file into an example sequence."""
@@ -66,3 +67,38 @@ def loss(y, ybar, sparm):
     if y==ybar: return 0
     return 1
 
+
+def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
+    """Accumulate statistics about a single training example.
+
+    Allows accumulated statistics regarding how well the predicted
+    label ypred for pattern x matches the true label y.  The first
+    time this function is called teststats is None.  This function's
+    return value will be passed along to the next call to
+    eval_prediction.  After all test predictions are made, the last
+    value returned will be passed along to print_testing_stats.
+
+    On the first call, that is, when exnum==0, teststats==None.  The
+    default behavior is that the function does nothing."""
+    if exnum==0: teststats = []
+    teststats.append((y,ybar));
+    return teststats
+
+def print_testing_stats(sample, sm, sparm, teststats):
+    """Print statistics once classification has finished.
+
+    This is called after all test predictions are made to allow the
+    display of any summary statistics that have been accumulated in
+    the teststats object through use of the eval_prediction function.
+
+    The default behavior is that nothing is printed."""
+
+
+    aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes))
+    for t in teststats:
+        aggConfusionMatrixWMultiple[t[1],t[0]]+=1
+
+
+    print "confusion matrix:"
+    print aggConfusionMatrix;
+    savetxt('conf.txt',aggConfusionMatrix);
