@@ -7,6 +7,7 @@ from numpy import *
 import scipy as Sci
 import scipy.linalg
 from scipy.sparse import lil_matrix
+from numpy.ma.core import zeros
 import glpk
 
 global NUM_CLASSES
@@ -525,22 +526,41 @@ def evaluation_class_pr(Y,Ybar,K,N,spram):
     truecount = zeros((K,1))
     predcount = zeros((K,1))
     tpcount = zeros((K,1))
+    confusionMatrix=zeros((K,K))
+    confusionMatrixWMultiple=zeros((K,K))
+    multipleClasses=zeros((K,1))
+    zeroClasses=zeros((K,1))
     prec = zeros((K,1))
     recall = zeros((K,1))
     for node in xrange(0,N):
+        numPositives=0;
+        predClass=-1;
+        actualClass=-1;
         for label in xrange(0,K):
             if(y[node*K+label,0] == 1):
                 truecount[label,0] += 1;
+                actualClass=label
+        for label in xrange(0,K):
             if(ybar[node*K+label,0] == 1):
                 predcount[label,0] += 1;
+                numPositives+=1;
+                predClass=label;
+                confusionMatrixWMultiple[label,actualClass]+=1;
             if((y[node*K+label,0] == 1) and (ybar[node*K+label,0] == 1)):
-                tpcount[label,0] += 1;
+                tpcount[label,0] += 1
+
+        if(numPositives==0):
+            zeroClasses[actualClass,0]+=1
+        elif(numPositives>1):
+            multipleClasses[actualClass,0]+=1
+        else:
+            confusionMatrix[predClass,actualClass]+=1
     for label in xrange(0,K):
         if(predcount[label,0] != 0):
             prec[label,0] = tpcount[label,0]/float(predcount[label,0])
         if(truecount[label,0] !=0):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
-    return (tpcount,truecount,predcount)
+    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
 
 def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
     y = Y[0]
@@ -627,12 +647,20 @@ def print_testing_stats(sample, sm, sparm, teststats):
     tpcount = zeros((sm.num_classes,1))
     truecount = zeros((sm.num_classes,1))
     predcount = zeros((sm.num_classes,1))
+    aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes))
+    aggConfusionMatrixWMultiple=zeros((sm.num_classes,sm.num_classes))
+    aggZeroPreds=zeros((sm.num_classes,1))
+    aggMultiplePreds=zeros((sm.num_classes,1))
     for t in teststats:
-        
-        for label in xrange(0,sm.num_classes):
-            tpcount[label,0] += t[0][label,0]
-            truecount[label,0] += t[1][label,0]
-            predcount[label,0] += t[2][label,0]
+        tpcount += t[0]
+        truecount += t[1]
+        predcount += t[2]
+        aggConfusionMatrix+=t[3];
+        aggZeroPreds +=t[4];
+        aggMultiplePreds +=t[5];
+        aggConfusionMatrixWMultiple+=t[6];
+
+
     total_tc  = 0
     total_pc = 0
     total_tp = 0
@@ -649,3 +677,14 @@ def print_testing_stats(sample, sm, sparm, teststats):
         total_tp += tpcount[label,0]
     print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
     #print "Error per Test example: ", teststats
+    print "confusion matrix:"
+    print aggConfusionMatrix;
+
+    print "confusion matrix with multiple semantics:"
+    print aggConfusionMatrixWMultiple;
+
+    print "num Zeros:"
+    print aggZeroPreds;
+
+    print "num Multiples:"
+    print aggMultiplePreds;
