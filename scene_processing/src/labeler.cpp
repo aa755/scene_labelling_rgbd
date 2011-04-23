@@ -272,18 +272,26 @@ void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::
         out->points[i].z = matrixPtr[2];
     }
 }
-
+std::map<int, VectorG> centroids;
 void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &segmentindices , int size)
 {
+  
    std::map<int,int> countmap;
    for (int i = 1; i <=size; i++)
    {
      countmap[i] = 0;
+     centroids[i]=VectorG(0,0,0);
    }
    for (size_t i = 0; i < incloud.points.size (); ++i)
    {
      countmap[incloud.points[i].segment ] = countmap[incloud.points[i].segment ] + 1;
+     centroids[incloud.points[i].segment]=centroids[incloud.points[i].segment].add (VectorG(incloud.points[i]));
    }
+   for (int i = 1; i <=size; i++)
+   {
+     centroids[i]=centroids[i].multiply (1.0/countmap[i]);
+   }
+   
    std::multimap<int,int> inverted_countmap ;
    for ( std::map<int,int>::iterator it=countmap.begin() ; it != countmap.end(); it++ )
      inverted_countmap.insert (std::pair<int,int>(it->second ,it->first));
@@ -292,8 +300,9 @@ void get_sorted_indices (pcl::PointCloud<PointT> &incloud , std::vector<int> &se
      
 }
 
-void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud , size_t segment)
+void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud , uint32_t segment)
 {
+  //size_t
    ROS_INFO ("applying filter");
    outcloud.points.erase(outcloud.points.begin(),outcloud.points.end());
    segment_cloud.points.erase(segment_cloud.points.begin(),segment_cloud.points.end());
@@ -317,7 +326,7 @@ void apply_segment_filter ( pcl::PointCloud<PointT> &incloud ,  pcl::PointCloud<
        j++;
      }
   }
-   segment_cloud.points.resize ( outcloud.points.size() );
+   segment_cloud.points.resize ( j );
 }
 
    pcl_visualization::PCLVisualizer viewer("3D Viewer");
@@ -353,13 +362,23 @@ boost::recursive_mutex global_mutex;
 
   bool processPointCloud(int seg_no)
   {
+    
+    if(centroids[seg_no].v[0]>=conf.maxx ||centroids[seg_no].v[0]<conf.minx ||centroids[seg_no].v[1]>=conf.maxy ||centroids[seg_no].v[1]<conf.miny ||centroids[seg_no].v[2]>=conf.maxz ||centroids[seg_no].v[2]<conf.minz)
+    return false;
       apply_segment_filter( cloud, *cloud_colored , *cloud_filtered, seg_no);
-           for (size_t i = 0; i < cloud_filtered->points.size(); ++i)
+      if(cloud_filtered->size ()<conf.minSegSize)
+        return false;
+/*           for (size_t i = 1; i < cloud_filtered->points.size(); ++i)
   {
+                   cout<<cloud_filtered->points[i].x<<endl;
+                   cout<<cloud_filtered->points[i].y<<endl;
+                   cout<<cloud_filtered->points[i].z<<endl;
                if(!((cloud_filtered->points[i].x<conf.maxx&&cloud_filtered->points[i].x>=conf.minx)&&(cloud_filtered->points[i].y<conf.maxy&&cloud_filtered->points[i].y>=conf.miny)&&(cloud_filtered->points[i].z<conf.maxz&&cloud_filtered->points[i].z>=conf.minz)))
-                 return false;
+                 {
+                        return false;
+                 }
                  
-  }
+  }*/
 
  //     cout<<"passed range test\n";
       
@@ -392,12 +411,12 @@ boost::recursive_mutex global_mutex;
   }
   std::string fn;
   
-  void saveAndExit()
+  void savePCDAndLabels()
   {
   std::vector<pcl::PointCloud<PointT> > clusters2;
   pcl::PointCloud<PointT> labeled_cloud;
-  pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
-  pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
+  //pcl::PointCloud<PointT>::Ptr labeled_transformed_cloud(new pcl::PointCloud<PointT>());
+  //pcl::PointCloud<PointT>::Ptr transformed_cloud(new pcl::PointCloud<PointT>());
   //getClustersFromPointCloud2(*cloud_filtered, clusters, clusters2,combined_cloud);
   labeled_cloud.header = cloud.header;
   labeled_cloud.points = cloud.points;
@@ -414,7 +433,7 @@ boost::recursive_mutex global_mutex;
                      labelFileOut<<labels.at(li)<<endl;
                  }
     labelFileOut.close();
-  pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
+  //pcl::PointCloud<PointT>::Ptr labeled_cloud_ptr(new pcl::PointCloud<PointT> (labeled_cloud));
 
   writer.write ( fn,labeled_cloud, true);
     
@@ -462,9 +481,15 @@ boost::recursive_mutex global_mutex;
 void nextPointCloud()
 {
             seg_iter++;
-            while(!processPointCloud (*seg_iter))
+            while(seg_iter<segmentIndices.end () && !processPointCloud (*seg_iter))
                 seg_iter++;
-  
+            if(seg_iter==segmentIndices.end ())
+              {
+                conf.label="finished labelling all. choose done";
+                        doUpdate=true;
+              }
+
+                      
 }
 bool labellingMode=false; //clippingMode=(!labelingMode)
 void reconfig(scene_processing::labelingConfig & config, uint32_t level)
@@ -474,7 +499,7 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
   if((!labellingMode)&&(!conf.show_clipped)) // just started labeling => reset
     {
          seg_iter=segmentIndices.begin() ; 
-            while(!processPointCloud (*seg_iter))
+            while(seg_iter<segmentIndices.end () && !processPointCloud (*seg_iter))
                 seg_iter++;
 //          viewer.removeCoordinateSystem ();
          labellingMode=true;
@@ -539,7 +564,7 @@ int
   main (int argc, char** argv)
 {
     ros::init(argc, argv, "labelling");
-  std::string fn = "labeled_"  + std::string(argv[1]);
+    fn = "labeled_"  + std::string(argv[1]);
 
 //    bool groundSelected=false;
     bool editLabel=false;
@@ -623,6 +648,7 @@ int
       {
         conf.done=false;
               srv->updateConfig(conf);
+              savePCDAndLabels ();
       break;
       }
     if (doUpdate) {

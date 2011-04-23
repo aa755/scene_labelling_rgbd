@@ -35,7 +35,7 @@ gencfg()
 
 rosbuild_add_executable (scene_segmentation src/segmentation.cpp)
 rosbuild_add_executable (scene_labler src/labeler.cpp)
-rosbuild_add_executable (label_visualizer src/labelVisualizer.cpp)
+#rosbuild_add_executable (label_visualizer src/labelVisualizer.cpp)
 rosbuild_add_executable (merge_frames src/merge_frames.cpp)
 #rosbuild_add_executable (shape_features src/shape_features.cpp)
 #rosbuild_add_executable (shape_features src/shape_features.cpp)

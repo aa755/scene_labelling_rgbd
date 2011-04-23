@@ -144,7 +144,7 @@ main(int argc, char** argv)
                 {
                     bool occluded=false;
                     cpoint = cloud_normal->points[p];
-                    int c;
+                    size_t c;
                         VectorG vpoint(cpoint.x,cpoint.y,cpoint.z);
                     if(!transG.isPointVisible(vpoint)) // if this point is not around the centre of it's own cam, ignore it
                         continue;
