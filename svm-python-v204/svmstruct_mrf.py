@@ -572,9 +572,11 @@ def print_testing_stats(sample, sm, sparm, teststats):
     #print "Error per Test example: ", teststats
     print "confusion matrix:"
     print aggConfusionMatrix;
+    savetxt('conf.txt',aggConfusionMatrix);
 
     print "confusion matrix with multiple semantics:"
     print aggConfusionMatrixWMultiple;
+    savetxt('confm.txt',aggConfusionMatrixWMultiple);
 
     print "num Zeros:"
     print aggZeroPreds;
