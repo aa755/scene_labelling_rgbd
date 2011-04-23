@@ -99,6 +99,7 @@ ColorHandlerPtr color_handler;
 std::map<int, std::set<int> > label_mapping;
 pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
 pcl::PointCloud<PointT>::Ptr cloud_colored(new pcl::PointCloud<PointT > ());
+bool doUpdate=false;
 
 float
 sqrG(float y) {
@@ -134,7 +135,7 @@ void get_label_mapping(pcl::PointCloud<PointT> &incloud, std::map<int, std::set 
 
 }
 
-void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, std::set <int> segmentlist) {
+void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int label) {
     ROS_INFO("applying filter");
 
     outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
@@ -142,14 +143,14 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
     outcloud.header.frame_id = incloud.header.frame_id;
     outcloud.points = incloud.points;
 
-    int j = 1;
+
     for (size_t i = 0; i < incloud.points.size(); ++i) {
 
-        if (segmentlist.find(incloud.points[i].segment) != segmentlist.end()) {
+        if (incloud.points[i].label == label) {
 
             //     std::cerr<<segment_cloud.points[j].label<<",";
             outcloud.points[i].rgb = 0.00005;
-            j++;
+     
         }
     }
 }
@@ -167,26 +168,38 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
-    pcl::PointCloud<PointT>::Ptr cloud_colored;
+    bool found = false;
+    int labelNum = 0;
 
-    if (conf.wall) {
-        std::string labelStr("wall");
-        int labelNum = 0;
-        bool found = false;
-        viewer.removePointCloud("labeled");
+    if (conf.showLabel) {
+        conf.showLabel = false;
+        doUpdate = true;
+        std::string labelStr(conf.label);
         for (size_t li = 0; li < labels.size(); li++) {
             if (labelStr.compare(labels.at(li)) == 0) {
-                labelNum = li;
-                        found = true;
+                labelNum = li+1;
+                found = true;
                 break;
             }
         }
-        if (found) {
-            apply_segment_filter(*cloud_ptr, *cloud_colored, label_mapping[labelNum]);
-            color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered));
-            viewer.addPointCloud(*cloud_filtered, color_handler, "labeled", viewportCluster);
-        }
     }
+    if (found) {
+        ROS_INFO("label found %d",labelNum);
+        viewer.removePointCloud("labeled");
+        apply_segment_filter(*cloud_ptr, *cloud_colored, labelNum);
+        ROS_INFO("filetered sucessfully");
+        pcl::toROSMsg (*cloud_colored,cloud_blob_filtered);
+        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered));
+        viewer.addPointCloud(*cloud_colored, color_handler, "labeled", viewportCluster);
+    }else
+    {
+        conf.message = "label not found!";
+        doUpdate = true;
+        viewer.removePointCloud("labeled");
+        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+        viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
+    }
+    
 
 }
 
@@ -259,6 +272,7 @@ main(int argc, char** argv) {
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
     viewer.addPointCloud(*cloud_ptr, color_handler, "cloud", viewportCloud);
+    viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
     viewer.spinOnce(5000, true);
 
 
@@ -280,10 +294,10 @@ main(int argc, char** argv) {
             //savePCDAndLabels ();
             break;
         }
-        //if (doUpdate) {
-        // doUpdate = false;
-        // srv->updateConfig(conf);
-        // }
+        if (doUpdate) {
+         doUpdate = false;
+         srv->updateConfig(conf);
+        }
     }
     cout << "normal kill";
     return (0);

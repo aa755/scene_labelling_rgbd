@@ -528,6 +528,8 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
          }
          if(found)
                 nextPointCloud ();
+         else
+           std::cerr<<"suspected typo. use new label checkbox to add a new model"<<endl;
          
          conf.accept_label=false;
          doUpdate=true;
