@@ -84,21 +84,26 @@ dynamic_reconfigure::Server < scene_processing::labelviewerConfig > *srv;
 scene_processing::labelviewerConfig conf;
 boost::recursive_mutex global_mutex;
 pcl_visualization::PCLVisualizer viewer("3D Viewer");
-int viewportCloud = 0;
-int viewportCluster = 0;
+int viewportOrig = 0;
+int viewportPred = 0;
 std::vector<std::string> labels;
 
 
-sensor_msgs::PointCloud2 cloud_blob;
-sensor_msgs::PointCloud2 cloud_blob_filtered;
-sensor_msgs::PointCloud2 cloud_blob_colored;
+sensor_msgs::PointCloud2 cloud_blob_orig;
+sensor_msgs::PointCloud2 cloud_blob_pred;
+sensor_msgs::PointCloud2 cloud_blob_filtered_orig;
+sensor_msgs::PointCloud2 cloud_blob_filtered_pred;
 
-pcl::PointCloud<PointT> cloud;
+
+pcl::PointCloud<PointT> cloud_orig;
+pcl::PointCloud<PointT> cloud_pred;
 pcl::PCDWriter writer;
-ColorHandlerPtr color_handler;
+ColorHandlerPtr color_handler_orig;
+ColorHandlerPtr color_handler_pred;
 std::map<int, std::set<int> > label_mapping;
-pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
-pcl::PointCloud<PointT>::Ptr cloud_colored(new pcl::PointCloud<PointT > ());
+
+pcl::PointCloud<PointT>::Ptr cloud_colored_pred(new pcl::PointCloud<PointT > ());
+pcl::PointCloud<PointT>::Ptr cloud_colored_orig(new pcl::PointCloud<PointT > ());
 bool doUpdate=false;
 
 float
@@ -135,8 +140,9 @@ void get_label_mapping(pcl::PointCloud<PointT> &incloud, std::map<int, std::set 
 
 }
 
-void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int label) {
+bool apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int label) {
     ROS_INFO("applying filter");
+    bool changed = false;
 
     outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
 
@@ -150,9 +156,10 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
 
             //     std::cerr<<segment_cloud.points[j].label<<",";
             outcloud.points[i].rgb = 0.00005;
-     
+            changed = true;
         }
     }
+    return changed;
 }
 
 
@@ -167,8 +174,11 @@ void spinThread() {
 void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
-    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
+    pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
     bool found = false;
+    bool c = false;
+  
     int labelNum = 0;
 
     if (conf.showLabel) {
@@ -186,18 +196,42 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     if (found) {
         ROS_INFO("label found %d",labelNum);
         viewer.removePointCloud("labeled");
-        apply_segment_filter(*cloud_ptr, *cloud_colored, labelNum);
+        c = apply_segment_filter(*orig_cloud_ptr, *cloud_colored_orig, labelNum);
         ROS_INFO("filetered sucessfully");
-        pcl::toROSMsg (*cloud_colored,cloud_blob_filtered);
-        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered));
-        viewer.addPointCloud(*cloud_colored, color_handler, "labeled", viewportCluster);
+        if(c){
+            conf.message_orig = "label found!";
+            
+        }else {
+            conf.message_pred = "label not found!";
+        }
+        doUpdate = true;
+        pcl::toROSMsg (*cloud_colored_orig,cloud_blob_filtered_orig);
+        color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered_orig));
+        viewer.addPointCloud(*cloud_colored_orig, color_handler_orig, "orig", viewportOrig);
+
+        c = apply_segment_filter(*pred_cloud_ptr, *cloud_colored_pred, labelNum);
+        ROS_INFO("filetered sucessfully");
+        if(c){
+            conf.message_pred = "label found!";
+        }else {
+            conf.message_pred = "label not found!";
+        }
+        doUpdate = true;
+        pcl::toROSMsg (*cloud_colored_pred,cloud_blob_filtered_pred);
+        color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered_pred));
+        viewer.addPointCloud(*cloud_colored_pred, color_handler_pred, "pred", viewportPred);
+
     }else
     {
-        conf.message = "label not found!";
+        conf.message_orig = "label not found!";
+        conf.message_pred = "label not found!";
         doUpdate = true;
-        viewer.removePointCloud("labeled");
-        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
-        viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
+        viewer.removePointCloud("orig");
+        color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
+        viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
+        viewer.removePointCloud("pred");
+        color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
+        viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
     }
     
 
@@ -241,38 +275,43 @@ main(int argc, char** argv) {
 
 
     // read from file
-    if (pcl::io::loadPCDFile(argv[1], cloud_blob) == -1) {
+    if (pcl::io::loadPCDFile(argv[1], cloud_blob_orig) == -1) {
         ROS_ERROR("Couldn't read file ");
         return (-1);
     }
-    ROS_INFO("Loaded %d data points from %s with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), argv[1], pcl::getFieldsList(cloud_blob).c_str());
+    ROS_INFO("Loaded %d data points from %s with the following fields: %s", (int) (cloud_blob_orig.width * cloud_blob_orig.height), argv[1], pcl::getFieldsList(cloud_blob_orig).c_str());
+    if (pcl::io::loadPCDFile(argv[2], cloud_blob_pred) == -1) {
+        ROS_ERROR("Couldn't read file ");
+        return (-1);
+    }
+    ROS_INFO("Loaded %d data points from %s with the following fields: %s", (int) (cloud_blob_pred.width * cloud_blob_pred.height), argv[2], pcl::getFieldsList(cloud_blob_pred).c_str());
+
+
 
     // Convert to the templated message type
-    pcl::fromROSMsg(cloud_blob, cloud);
-    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    pcl::fromROSMsg(cloud_blob_orig, cloud_orig);
+    pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
+
+    pcl::fromROSMsg(cloud_blob_pred, cloud_pred);
+    pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
 
 
-    // find the max segment number
-    int max_segment_num = 0;
-    for (size_t i = 0; i < cloud.points.size(); ++i) {
-        if (max_segment_num < cloud.points[i].segment) {
-            max_segment_num = cloud.points[i].segment;
-        }
-    }
 
     std::vector<int> segmentIndices;
     // get_sorted_indices(*cloud_ptr, segmentIndices, max_segment_num);
-    get_label_mapping(*cloud_ptr, label_mapping);
+    //get_label_mapping(*cloud_ptr, label_mapping);
 
     // get the
 
 
-    viewer.createViewPort(0.0, 0.0, 0.5, 1.0, viewportCloud);
-    viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportCluster);
+    viewer.createViewPort(0.0, 0.0, 0.5, 1.0, viewportOrig);
+    viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportPred);
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
-    color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
-    viewer.addPointCloud(*cloud_ptr, color_handler, "cloud", viewportCloud);
-    viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
+    color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
+
+    color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
+    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
+    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
     viewer.spinOnce(5000, true);
 
 
@@ -305,8 +344,8 @@ main(int argc, char** argv) {
 
 
 
-    viewer.removePointCloud("labeled");
-    viewer.removePointCloud("cloud");
+    viewer.removePointCloud("orig");
+    viewer.removePointCloud("pred");
 
 
     return (0);
