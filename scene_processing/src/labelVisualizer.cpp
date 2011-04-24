@@ -69,15 +69,37 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <scene_processing/labelviewerConfig.h>
+
+
 //typedef pcl::PointXYZRGB PointT;
 //std::string initLabels[]={"wall","floor","table","shelf","chair","cpu","monitor","clutter"};
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
-
-
-
 typedef pcl::PointXYZRGBCamSL PointT;
+
+dynamic_reconfigure::Server < scene_processing::labelviewerConfig > *srv;
+scene_processing::labelviewerConfig conf;
+boost::recursive_mutex global_mutex;
+pcl_visualization::PCLVisualizer viewer("3D Viewer");
+int viewportCloud = 0;
+int viewportCluster = 0;
+std::vector<std::string> labels;
+
+
+sensor_msgs::PointCloud2 cloud_blob;
+sensor_msgs::PointCloud2 cloud_blob_filtered;
+sensor_msgs::PointCloud2 cloud_blob_colored;
+
+pcl::PointCloud<PointT> cloud;
+pcl::PCDWriter writer;
+ColorHandlerPtr color_handler;
+std::map<int, std::set<int> > label_mapping;
+pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
+pcl::PointCloud<PointT>::Ptr cloud_colored(new pcl::PointCloud<PointT > ());
+bool doUpdate=false;
 
 float
 sqrG(float y) {
@@ -102,33 +124,38 @@ void get_sorted_indices(pcl::PointCloud<PointT> &incloud, std::vector<int> &segm
 
 }
 
-void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, pcl::PointCloud<PointT> &segment_cloud, int segment) {
-    ROS_INFO("applying filter");
-    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
-    segment_cloud.points.erase(segment_cloud.points.begin(), segment_cloud.points.end());
-    outcloud.header.frame_id = incloud.header.frame_id;
-    outcloud.points = incloud.points;
-    segment_cloud.header.frame_id = incloud.header.frame_id;
-    segment_cloud.points.resize(incloud.points.size());
-    int j = 1;
+void get_label_mapping(pcl::PointCloud<PointT> &incloud, std::map<int, std::set <int> > &label_mapping) {
+    std::map <int, int> seg_label_mapping;
     for (size_t i = 0; i < incloud.points.size(); ++i) {
+        seg_label_mapping[incloud.points[i].segment] = incloud.points[i].label;
 
-        if (incloud.points[i].segment == segment) {
-            segment_cloud.points[j].x = incloud.points[i].x;
-            segment_cloud.points[j].y = incloud.points[i].y;
-            segment_cloud.points[j].z = incloud.points[i].z;
-            segment_cloud.points[j].rgb = incloud.points[i].rgb;
-            segment_cloud.points[j].segment = incloud.points[i].segment;
-            segment_cloud.points[j].label = incloud.points[i].label;
-            //     std::cerr<<segment_cloud.points[j].label<<",";
-            outcloud.points[i].rgb = 0.00005;
-            j++;
-        }
     }
-    segment_cloud.points.resize(outcloud.points.size());
+    for (std::map<int, int>::iterator it = seg_label_mapping.begin(); it != seg_label_mapping.end(); it++)
+        label_mapping[it->second].insert(it->first);
+
 }
 
-pcl_visualization::PCLVisualizer viewer("3D Viewer");
+void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int label) {
+    ROS_INFO("applying filter");
+
+    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
+
+    outcloud.header.frame_id = incloud.header.frame_id;
+    outcloud.points = incloud.points;
+
+
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].label == label) {
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+            outcloud.points[i].rgb = 0.00005;
+     
+        }
+    }
+}
+
+
 //   int spin=1;
 
 void spinThread() {
@@ -137,9 +164,50 @@ void spinThread() {
         viewer.spinOnce(1000, true);
 }
 
+void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
+    conf = config;
+    boost::recursive_mutex::scoped_lock lock(global_mutex);
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    bool found = false;
+    int labelNum = 0;
+
+    if (conf.showLabel) {
+        conf.showLabel = false;
+        doUpdate = true;
+        std::string labelStr(conf.label);
+        for (size_t li = 0; li < labels.size(); li++) {
+            if (labelStr.compare(labels.at(li)) == 0) {
+                labelNum = li+1;
+                found = true;
+                break;
+            }
+        }
+    }
+    if (found) {
+        ROS_INFO("label found %d",labelNum);
+        viewer.removePointCloud("labeled");
+        apply_segment_filter(*cloud_ptr, *cloud_colored, labelNum);
+        ROS_INFO("filetered sucessfully");
+        pcl::toROSMsg (*cloud_colored,cloud_blob_filtered);
+        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered));
+        viewer.addPointCloud(*cloud_colored, color_handler, "labeled", viewportCluster);
+    }else
+    {
+        conf.message = "label not found!";
+        doUpdate = true;
+        viewer.removePointCloud("labeled");
+        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+        viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
+    }
+    
+
+}
+
 /* ---[ */
 int
 main(int argc, char** argv) {
+
+    ros::init(argc, argv, "labelviewer");
     bool groundSelected = false;
     bool editLabel = false;
     int targetLabel;
@@ -149,7 +217,7 @@ main(int argc, char** argv) {
     }
 
     boost::numeric::ublas::matrix<double> outMat(4, 4);
-    std::vector<std::string> labels; //(initLabels);
+
     std::ifstream labelFile;
     std::string line;
     labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
@@ -169,17 +237,7 @@ main(int argc, char** argv) {
         cout << "could not open label file...exiting\n";
         exit(-1);
     }
-    sensor_msgs::PointCloud2 cloud_blob;
-    sensor_msgs::PointCloud2 cloud_blob_filtered;
-    sensor_msgs::PointCloud2 cloud_blob_colored;
 
-    pcl::PointCloud<PointT> cloud;
-    //ColorHandlerPtr color_handler;
-    pcl::PCDWriter writer;
-    ColorHandlerPtr color_handler;
-
-    pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
-    pcl::PointCloud<PointT>::Ptr cloud_colored(new pcl::PointCloud<PointT > ());
 
 
     // read from file
@@ -201,67 +259,53 @@ main(int argc, char** argv) {
             max_segment_num = cloud.points[i].segment;
         }
     }
-    std::map<int, int> label_mapping;
+
     std::vector<int> segmentIndices;
-    get_sorted_indices(*cloud_ptr, segmentIndices, max_segment_num);
+    // get_sorted_indices(*cloud_ptr, segmentIndices, max_segment_num);
+    get_label_mapping(*cloud_ptr, label_mapping);
 
     // get the
-    int viewportCloud = 0;
-    int viewportCluster = 0;
+
 
     viewer.createViewPort(0.0, 0.0, 0.5, 1.0, viewportCloud);
     viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportCluster);
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
     color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
     viewer.addPointCloud(*cloud_ptr, color_handler, "cloud", viewportCloud);
+    viewer.addPointCloud(*cloud_ptr, color_handler, "labeled", viewportCluster);
     viewer.spinOnce(5000, true);
-    for (std::vector<int>::iterator it = segmentIndices.begin(); it < segmentIndices.end(); it++) {
-        int i = *it;
-
-        ROS_INFO("CLuster number %d", i);
-        //    viewer.addCoordinateSystem(1.0f);
-
-        apply_segment_filter(*cloud_ptr, *cloud_colored, *cloud_filtered, i);
 
 
-        int curLabel = cloud_filtered->points[1].label;
-        if (curLabel == 0) {
-            cout << "not assigned a label yet\n";
-            continue;
-        } else {
-            assert(curLabel > 0 && curLabel <= labels.size());
-            label_mapping[i] = curLabel;
-            cout << "segment " << i << " had label :" << labels.at(curLabel - 1) << "to change , rerun this program later with argv[2]=target label number " << endl;
-            //if(!editLabel || curLabel!=targetLabel)
-            //  continue;
-            //        cout<<"current label:"<<labels.at(curLabel-1)<<"to preserve, enter same label again later"<<endl;
+    srv = new dynamic_reconfigure::Server < scene_processing::labelviewerConfig > (global_mutex);
+    dynamic_reconfigure::Server < scene_processing::labelviewerConfig >::CallbackType f = boost::bind(&reconfig, _1, _2);
+
+
+    srv->setCallback(f);
+    conf.done = false;
+
+    bool isDone = false;
+    //ROS_INFO ("Press q to quit.");
+    while (!isDone) {
+        viewer.spinOnce();
+        ros::spinOnce();
+        if (conf.done) {
+            conf.done = false;
+            srv->updateConfig(conf);
+            //savePCDAndLabels ();
+            break;
         }
-
-        pcl::toROSMsg(*cloud_filtered, cloud_blob_filtered);
-        pcl::toROSMsg(*cloud_colored, cloud_blob_colored);
-
-
-
-        std::stringstream name;
-        name << "cluster" << i;
-
-        color_handler.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered));
-        viewer.addPointCloud(*cloud_filtered, color_handler, name.str(), viewportCluster);
-        std::stringstream tname;
-        tname << "text" << i;
-        viewer.addText(labels.at(curLabel - 1),cloud_filtered->points[1].x,cloud_filtered->points[1].y,tname.str(),viewportCluster);
-
-        //  while (!viewer.wasStopped())
-
-        //
-        // viewer.spinOnce(10,true);
-
-
+        if (doUpdate) {
+         doUpdate = false;
+         srv->updateConfig(conf);
+        }
     }
-    while (!viewer.wasStopped()) {
-        viewer.spin();
-    }
-    viewer.removePointCloud("cluster");
+    cout << "normal kill";
+    return (0);
+
+
+
+
+    viewer.removePointCloud("labeled");
     viewer.removePointCloud("cloud");
 
 
