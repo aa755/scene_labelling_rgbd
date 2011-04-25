@@ -81,7 +81,7 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     On the first call, that is, when exnum==0, teststats==None.  The
     default behavior is that the function does nothing."""
     if exnum==0: teststats = []
-    teststats.append((y,ybar));
+    teststats.append((y,ypred));
     return teststats
 
 def print_testing_stats(sample, sm, sparm, teststats):
@@ -94,10 +94,30 @@ def print_testing_stats(sample, sm, sparm, teststats):
     The default behavior is that nothing is printed."""
 
 
-    aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes))
+    aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes), dtype='i')
+    prec = []
+    recall = []
     for t in teststats:
-        aggConfusionMatrixWMultiple[t[1],t[0]]+=1
+        aggConfusionMatrix[t[1]-1,t[0]-1]+=1
+    tc = 0;
+    for i  in xrange(0,sm.num_classes):
+        sum = 0;
+        for j in xrange(0,sm.num_classes):
+            sum+= aggConfusionMatrix[i,j]
+        tc += sum
+        prec.append(aggConfusionMatrix[i,i]*100.0/sum);
+    for i  in xrange(0,sm.num_classes):
+        sum = 0;
+        for j in xrange(0,sm.num_classes):
+            sum+= aggConfusionMatrix[j,i]
+        recall.append(aggConfusionMatrix[i,i]*100.0/sum);
+    for i in xrange(0,sm.num_classes):
+        print "Class: ", i+1 , " prec: ", prec[i], " recall: ", recall[i]
+    match = 0
+    for i in xrange(0,sm.num_classes):
+        match += aggConfusionMatrix[i,i]
 
+    print "accuracy: ", match*100.0/tc
 
     print "confusion matrix:"
     print aggConfusionMatrix;
