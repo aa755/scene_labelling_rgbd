@@ -452,11 +452,10 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
     for (vector<int>::iterator it = neighbor_list.begin(); it != neighbor_list.end(); it++) {
 
         int seg2_id = *it;
-        // distance between centroids:
-        float centroid_dist = sqrt(pow(features[segment_id][centroid_x_index] - features[seg2_id][centroid_x_index], 2)
-                + pow(features[segment_id][centroid_y_index] - features[seg2_id][centroid_y_index], 2)
-                + pow(features[segment_id][centroid_z_index] - features[seg2_id][centroid_z_index], 2));
-        edge_features[seg2_id].push_back(centroid_dist);
+        // horizontal distance between centroids:
+        float centroid_dist_horz = sqrt(pow(features[segment_id][centroid_x_index] - features[seg2_id][centroid_x_index], 2)
+                + pow(features[segment_id][centroid_y_index] - features[seg2_id][centroid_y_index], 2));
+        edge_features[seg2_id].push_back(centroid_dist_horz);
         // difference in z coordinates of the centroids
         edge_features[seg2_id].push_back((features[segment_id][centroid_z_index ] - features[seg2_id][centroid_z_index ]));
         //cerr << "edge feature for edge (" << seg1_id << "," << seg2_id << ")  = " << centroid_z_diff << endl;
@@ -464,11 +463,16 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         // distance between closest points
         edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);
 
-        // difference of angles
+        // difference of angles with vertical
         edge_features[seg2_id].push_back((acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
 		
 		// dot product of normals
 		edge_features[seg2_id].push_back( cloud_normals[segment_num_index_map[segment_id]].normal[0]*cloud_normals[segment_num_index_map[seg2_id]].normal[0] + cloud_normals[segment_num_index_map[segment_id]].normal[1]*cloud_normals[segment_num_index_map[seg2_id]].normal[1]  + cloud_normals[segment_num_index_map[segment_id]].normal[2]*cloud_normals[segment_num_index_map[seg2_id]].normal[2] );
+
+        float innerness = sqrt(pow(features[segment_id][centroid_x_index],2) + pow(features[segment_id][centroid_y_index], 2))
+                - sqrt(pow(features[seg2_id][centroid_x_index],2) + pow(features[seg2_id][centroid_y_index], 2));
+        
+        edge_features[seg2_id].push_back(innerness);
     }
 
 }
