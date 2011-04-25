@@ -455,7 +455,7 @@ def evaluation_class_pr(Y,Ybar,K,N,spram):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
     return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
 
-def evaluation_class_pr(Y,Ybar,K,N,spram):
+def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
     y = Y[0]
     ybar = Ybar[0]
     truecount = zeros((K,1))
