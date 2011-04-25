@@ -308,6 +308,8 @@ public:
     bool isPointVisible(VectorG vPoint)
     {
         VectorG cam2PointRay=vPoint.subtract(getOrigin());
+        if(cam2PointRay.getNormSqr()>9.0)
+            return false;
         cam2PointRay.normalize();
         VectorG cam2PointRayUnit=cam2PointRay;
         double xDot=cam2PointRayUnit.dotProduct(getXUnitVector());
