@@ -458,14 +458,14 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                 + pow(features[segment_id][centroid_z_index] - features[seg2_id][centroid_z_index], 2));
         edge_features[seg2_id].push_back(centroid_dist);
         // difference in z coordinates of the centroids
-        edge_features[seg2_id].push_back(abs(features[segment_id][centroid_z_index ] - features[seg2_id][centroid_z_index ]));
+        edge_features[seg2_id].push_back((features[segment_id][centroid_z_index ] - features[seg2_id][centroid_z_index ]));
         //cerr << "edge feature for edge (" << seg1_id << "," << seg2_id << ")  = " << centroid_z_diff << endl;
         
         // distance between closest points
         edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);
 
         // difference of angles
-        edge_features[seg2_id].push_back(abs(acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
+        edge_features[seg2_id].push_back((acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
 		
 		// dot product of normals
 		edge_features[seg2_id].push_back( cloud_normals[segment_num_index_map[segment_id]].normal[0]*cloud_normals[segment_num_index_map[seg2_id]].normal[0] + cloud_normals[segment_num_index_map[segment_id]].normal[1]*cloud_normals[segment_num_index_map[seg2_id]].normal[1]  + cloud_normals[segment_num_index_map[segment_id]].normal[2]*cloud_normals[segment_num_index_map[seg2_id]].normal[2] );
