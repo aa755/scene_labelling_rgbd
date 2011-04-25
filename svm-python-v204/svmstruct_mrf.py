@@ -455,6 +455,51 @@ def evaluation_class_pr(Y,Ybar,K,N,spram):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
     return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
 
+def evaluation_class_pr(Y,Ybar,K,N,spram):
+    y = Y[0]
+    ybar = Ybar[0]
+    truecount = zeros((K,1))
+    predcount = zeros((K,1))
+    tpcount = zeros((K,1))
+    confusionMatrix=zeros((K,K))
+    confusionMatrixWMultiple=zeros((K,K))
+    multipleClasses=zeros((K,1))
+    zeroClasses=zeros((K,1))
+    prec = zeros((K,1))
+    recall = zeros((K,1))
+    for node in xrange(0,N):
+        numPositives=0;
+        predClass=-1;
+        actualClass=-1;
+        maxYBar=-1;
+        for label in xrange(0,K):
+            if(y[node*K+label,0] == 1):
+                truecount[label,0] += 1;
+                actualClass=label
+            if(maxYBar<ybar[node*K+label,0]):
+                maxYBar=ybar[node*K+label,0]
+        for label in xrange(0,K):
+            if(ybar[node*K+label,0] == maxYBar and maxYBar>0): #suboptimal way, but who cares!
+                predcount[label,0] += 1;
+                numPositives+=1;
+                predClass=label;
+                confusionMatrixWMultiple[label,actualClass]+=1;
+                if((y[node*K+label,0] == 1)):
+                    tpcount[label,0] += 1
+
+        if(numPositives==0):
+            zeroClasses[actualClass,0]+=1
+        elif(numPositives>1):
+            multipleClasses[actualClass,0]+=1
+        else:
+            confusionMatrix[predClass,actualClass]+=1
+    for label in xrange(0,K):
+        if(predcount[label,0] != 0):
+            prec[label,0] = tpcount[label,0]/float(predcount[label,0])
+        if(truecount[label,0] !=0):
+            recall[label,0] = tpcount[label,0]/float(truecount[label,0])
+    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
+
 def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
     y = Y[0]
     ybar = Ybar[0]
