@@ -186,7 +186,7 @@ def init_model(sample, sm, sparm):
 thecount = 0
 
 
-def lp_training_sum1_opt(X,Y,sm,sparm):
+def lp_training_opt(X,Y,sm,sparm):
     y = Y[0]
     K = sm.num_classes
     w = sm.w
@@ -196,7 +196,7 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
     E = edge.shape[0]
     N = X[2]
     lp = glpk.LPX()        # Create empty problem instance
-    lp.name = 'inference'     # Assign symbolic name to problem
+    lp.name = 'training'     # Assign symbolic name to problem
     lp.obj.maximize = True # Set this as a maximization problem
     lp.cols.add(N*K+(E*K*K/2))         # Append three columns to this instance
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
@@ -228,7 +228,125 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
 
     #print lp.obj[:]
 
-    lp.rows.add(3*E*K*K/2 + N) # N stands for sum=1 constraints
+    lp.rows.add(3*E*K*K/2 )# + N) # N stands for sum=1 constraints
+    for r in lp.rows:      # Iterate over all rows
+        r.name = 'p%d' %  r.index # Name them
+
+    for i in xrange(0,E*K*K): # y_i^l>y_ij^lk and y_j^k >= y_ij^lk
+        lp.rows[i].bounds = 0, None
+    for i in xrange(E*K*K,3*E*K*K/2): #y_i^l + y_j^k \<= 1+y_ij^lk
+        lp.rows[i].bounds = None,1
+    #for i in xrange(3*E*K*K/2,3*E*K*K/2 + N): #sum=1
+     #   lp.rows[i].bounds = 1,1
+
+    t = []
+    for n in xrange(0, E * K * K / 2):
+        u = ijlk[n, 0]
+        v = ijlk[n, 1]
+        l = ijlk[n, 2]
+        k = ijlk[n, 3]
+        a = int(u * K + l) # index of y_i^l
+        b = int(v * K + k) # index of y_j^k
+        c = N * K + n # index of y_ij^lk
+        ec = n
+        t.append((ec, a, 1))
+        t.append((ec, c, -1))
+        ec += E * K * K / 2
+        t.append((ec, b, 1))
+        t.append((ec, c, -1))
+        ec += E * K * K / 2
+        t.append((ec, a, 1))
+        t.append((ec, b, 1))
+        t.append((ec, c, -1))
+
+    '''for n in xrange(0, N):
+        r = 3*E*K*K/2+n
+        for i in xrange(0,K):
+            c = n*K+i
+            t.append((r,c,1))'''
+
+    #print len(t)
+    lp.matrix = t
+    lp.simplex()
+  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
+   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # Print struct variable names and primal val
+    labeling = asmatrix(array([c.primal for c in lp.cols]))
+    #print labeling.T.shape[0],labeling.T.shape[1]
+    y_compact = csr_matrix(labeling.T,dtype='d')
+    y_uncompact = compactify*y_compact
+    ymax = (y_uncompact,N,K,compactify,ijlk)
+    c1 = 0
+    c0= 0
+    ch =0
+    cr = 0
+    for c in xrange(0,y_uncompact.shape[0]):
+        if (y_uncompact[c,0] == 1):
+            c1 += 1
+        elif(y_uncompact[c,0] ==0):
+            c0 += 1
+        elif (y_uncompact[c,0] == 0.5):
+            ch += 1
+        else:
+            cr +=1
+            assert(round (y_uncompact[c,0],2) == 0.00)
+    print 'number of 1s: %d' % c1
+    print 'number of 0s: %d' % c0
+    print 'number of 0.5s: %d' % ch
+    print 'number of 0s: %d' % cr
+    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+    score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
+    print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    print 'score : ' , round(score,2), ' score2: ',score2;
+    print 'loss: ',loss(Y,ymax,sparm)
+    print '\n'
+    if(lp.obj.value  > 1.1):
+      assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
+    return ymax
+
+def lp_training_sum1_opt(X,Y,sm,sparm):
+    y = Y[0]
+    K = sm.num_classes
+    w = sm.w
+    ijlk = Y[4]
+    compactify = Y[3]
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+    lp = glpk.LPX()        # Create empty problem instance
+    lp.name = 'training'     # Assign symbolic name to problem
+    lp.obj.maximize = True # Set this as a maximization problem
+    lp.cols.add(N*K+(E*K*K/2))         # Append three columns to this instance
+    #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
+
+    for c in lp.cols:      # Iterate over all columns
+        if (c.index < N*K) :
+            c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
+            #print c.name
+        else:
+            index = c.index - N*K
+            c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
+            #print c.name
+        c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
+
+
+    x = X[0]
+    #x = (X[0]).todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+    w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
+    #print w_list
+    #print (asarray(w*x)[0]).tolist()
+    coeff_list = (asarray((w_mat*x*compactify).todense())[0]).tolist()
+    for index in xrange(0,N*K):
+        if(y[index,0] == 1):
+            coeff_list[index] = coeff_list[index]-(1.0/(N*K))
+        else:
+            coeff_list[index] = coeff_list[index]+(1.0/(N*K))
+    lp.obj[:] = coeff_list
+
+    #print lp.obj[:]
+
+    lp.rows.add(3*E*K*K/2  + N) # N stands for sum=1 constraints
     for r in lp.rows:      # Iterate over all rows
         r.name = 'p%d' %  r.index # Name them
 
@@ -264,7 +382,7 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
         for i in xrange(0,K):
             c = n*K+i
             t.append((r,c,1))
-
+    
     #print len(t)
     lp.matrix = t
     lp.simplex()
@@ -748,8 +866,9 @@ def areEqualVectors(V1,V2):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-#    lprime = lp_training_sum1_opt(x,y,sm,sparm)
-    l = lp_training_sum1(x,y,sm,sparm)
+    l = lp_training_sum1_opt(x,y,sm,sparm)
+    #l = lp_training_sum1(x,y,sm,sparm)
+    #l = lp_training(x,y,sm,sparm)
 
     #print l.T
     return l
@@ -793,6 +912,21 @@ def write_label(fileptr, y):
                 s = repr(node+1)+':'+repr(label+1)
                 print>>fileptr,s,
     print>>fileptr
+
+def print_iteration_stats(ceps, cached_constraint, sample, sm,
+                          cset, alpha, sparm):
+    """Called just before the end of each cutting plane iteration.
+
+    This is called just before the end of each cutting plane
+    iteration, primarily to print statistics.  The 'ceps' argument is
+    how much the most violated constraint was violated by.  The
+    'cached_constraint' argument is true if this constraint was
+    constructed from the cache.
+    
+    The default behavior is that nothing is printed."""
+    w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
+    print w_list 
+
 
 def evaluation_class_pr(Y,Ybar,K,N,spram):
     y = Y[0]   
@@ -959,7 +1093,6 @@ def print_testing_stats(sample, sm, sparm, teststats):
     the teststats object through use of the eval_prediction function.
 
     The default behavior is that nothing is printed."""
-
 
     avgp = zeros((sm.num_classes,1))
     avgr = zeros((sm.num_classes,1))
