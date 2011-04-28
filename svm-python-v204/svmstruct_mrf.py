@@ -264,12 +264,15 @@ def lp_inference(X,sm,sparm):
     lp.obj.maximize = True # Set this as a maximization problem
     lp.cols.add(X[0].shape[1])         # Append three columns to this instance
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
+    print X[0].shape[1]
+    print N,E,K
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
             #print c.name
         else:
             index = c.index - N*K
+            print index
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
             #print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
