@@ -874,6 +874,7 @@ def find_most_violated_constraint(x, y, sm, sparm):
     return l
 
 def psi(x, y, sm, sparm):
+    
     """Returns the combined feature vector Psi(x,y)."""
     # Return the product of x and y
     #print x[0].shape[0]

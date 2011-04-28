@@ -60,14 +60,15 @@
 #include <dynamic_reconfigure/server.h>
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
+#include "CombineUtils.h"
 
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 
-typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZRGBCamSL PointT;
 
-
+std::string fn;
 dynamic_reconfigure::Server < scene_processing::pcmergerConfig > *srv;
 scene_processing::pcmergerConfig conf;
 boost::recursive_mutex global_mutex;
@@ -98,6 +99,7 @@ pcl::PCDWriter writer;
 
 pcl::PointCloud<PointT>::Ptr cloud_prev_ptr(new pcl::PointCloud<PointT > ());
 pcl::PointCloud<PointT>::Ptr cloud_new_ptr(new pcl::PointCloud<PointT > ());
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp_ptr(new pcl::PointCloud<pcl::PointXYZRGB > ());
 pcl::PointCloud<PointT>::Ptr cloud_mod_ptr(new pcl::PointCloud<PointT > ());
 pcl::PointCloud<PointT>::Ptr cloud_merged_ptr(new pcl::PointCloud<PointT > ());
 bool doUpdate = false;
@@ -124,7 +126,19 @@ void updateUI() {
     
    // viewer.spinOnce();
 }
+    std::ofstream transformFile;
 
+    void writeMatrixToFile(Matrix4f globalTrans)
+    {
+                 for(size_t li=0;li<16;li++)
+                 {
+                     transformFile<<globalTrans.data()[li];
+                     if(li%4==3)
+                         transformFile<<endl;
+
+                 }
+    }
+    
 void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
@@ -148,6 +162,9 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
             if(ITpresent){
                 transformXYZYPR(*cloud_new_ptr, *cloud_mod_ptr, InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
                 *cloud_new_ptr = *cloud_mod_ptr;
+                conf.pitch=0;
+                conf.yaw=0;
+                conf.roll=0;
             }
             //ROS_INFO("PointCloud with %d data points and frame %s (%f) received.", (int) cloud_new_ptr->points.size(), cloud_new_ptr->header.frame_id.c_str(), cloud_new_ptr->header.stamp.toSec());
             viewer.removePointCloud("new");
@@ -169,8 +186,16 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         conf.add_pc = false;
         doUpdate = true;
         *cloud_new_ptr = *cloud_mod_ptr;
-        //*cloud_merged_ptr += *cloud_new_ptr;
-        *cloud_merged_ptr =*cloud_new_ptr;
+        if(Merged)
+        {
+            *cloud_merged_ptr += *cloud_new_ptr;
+            Matrix4f globalTrans=computeTransformXYZYPR(config.x, config.y, config.z, config.yaw/180.0*PI, config.pitch/180.0*PI, config.roll/180.0*PI);
+            writeMatrixToFile(globalTrans)
+
+        }
+        else
+            *cloud_merged_ptr = *cloud_new_ptr;
+        //*cloud_merged_ptr =*cloud_new_ptr;
         viewer.removePointCloud("new");
         if(Merged)
             viewer.removePointCloud("merged");
@@ -183,13 +208,29 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     }
 
     if(conf.setIT) {
-        conf.setIT = false;
+
+            transformFile.open(fn+".transforms.txt");
+
+conf.setIT = false;
         doUpdate = true;
         InitialTransformConfig = conf;
+        
+            Matrix4f globalTrans=computeTransformXYZYPR(InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
+            writeMatrixToFile(globalTrans);
+
         *cloud_new_ptr = *cloud_mod_ptr;
         ITpresent = true;
     }
-
+    if(conf.skip_pc){
+        conf.skip_pc = false;
+        doUpdate = true;
+        
+    }
+    if(conf.set_skip){
+        conf.set_skip = false;
+        doUpdate = true;
+        skipNum = atoi(conf.skipNum);
+    }
     if(conf.update)
     {
         conf.update = false;
@@ -204,6 +245,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
 /* ---[ */
 int
 main(int argc, char** argv) {
+       fn = "transformed_"  + std::string(argv[1])+".pcd";
 
   ros::init(argc, argv, "pcmerger");
 
@@ -240,6 +282,10 @@ main(int argc, char** argv) {
             srv->updateConfig(conf);
         }
     }
+    pcl::PCDWriter writer;
+      writer.write ( fn,*cloud_merged_ptr, true);
+    transformFile.close();
+
     
 
    // viewer.removePointCloud("pred");
