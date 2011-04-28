@@ -13,6 +13,8 @@ from numpy.ma.core import zeros
 import glpk
 
 global NUM_CLASSES
+global ITER
+ITER = 0
 NUM_CLASSES = 0
 
 def read_examples(filename,sparm):
@@ -54,9 +56,9 @@ def read_examples(filename,sparm):
                 if(num_edge_feats<int(k)):
                     num_edge_feats=int(k)
 
-    print 'number of classes: ', max_target
-    print 'number of node features: ', num_node_feats
-    print 'number of edge features: ',num_edge_feats
+    #print 'number of classes: ', max_target
+    #print 'number of node features: ', num_node_feats
+    #print 'number of edge features: ',num_edge_feats
 
     for input_file in file(filename):
         input = [line.split() for line in line_reader(file(input_file.strip()))]
@@ -77,17 +79,17 @@ def read_examples(filename,sparm):
 
             # Get the features.
             tokens = [line.split(':') for line in input[i+1][2:]]
-            #print [float(v) for k,v in tokens]
+            ##print [float(v) for k,v in tokens]
             # assumes all features are present
             features = mat([float(v) for k,v in tokens])
-            print features
+            #print features
             f = features.transpose()
             #XY_test[(target-1)*num_node_feats:target*num_node_feats,0] += f
             # fill in the Xn matrix
             for j in xrange(0,max_target):
-                #print X[j*9:(j+1)*9,j];
+                ##print X[j*9:(j+1)*9,j];
                 Xn[j*num_node_feats:(j+1)*num_node_feats,i*max_target+(j)] = f.copy();
-            #print X
+            ##print X
         Xe = mat(zeros((max_target*max_target*num_edge_feats,max_target*max_target*E)))
         Ye = mat(zeros((max_target*max_target*E,1)))
         for i in xrange(N,N+E):
@@ -100,17 +102,17 @@ def read_examples(filename,sparm):
 
             tokens = [line.split(':') for line in input[i+1][4:]]
             features = mat([float(v) for k,v in tokens])
-            print features
+            #print features
             f = features.transpose()
             z = max_target*num_node_feats + (target1-1)*max_target*num_edge_feats+(target2-1)*num_edge_feats
             #XY_test[z : z+num_edge_feats ,0] += f
             # fill in the Xn matrix
             for j in xrange(0,max_target*max_target):
-                #print X[j*9:(j+1)*9,j];
+                ##print X[j*9:(j+1)*9,j];
                 Xe[j*num_edge_feats:(j+1)*num_edge_feats,(i-N)*max_target*max_target+j] = f.copy();
 
-        #print Xe.shape[0]
-        #print Xe.shape[1]
+        ##print Xe.shape[0]
+        ##print Xe.shape[1]
         a = concatenate ((Xn, mat(zeros((Xn.shape[0],Xe.shape[1])))),1)
         b = concatenate ((mat(zeros((Xe.shape[0],Xn.shape[1]))),Xe),1)
         X = concatenate ((a,b))
@@ -157,8 +159,8 @@ def read_examples(filename,sparm):
         # Add the example to the list
         examples.append(((X_s, edges, N), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
-    # Print out some very useful statistics.
-    print len(examples),'examples read'
+    # #print out some very useful statistics.
+    #print len(examples),'examples read'
     return examples
     
 
@@ -174,14 +176,14 @@ def init_model(sample, sm, sparm):
     # Note that these features will be stored in the model and written
     # when it comes time to write the model to a file, and restored in
     # the classifier when reading the model from the file.
-    #print sample[0][0].shape[0]
+    ##print sample[0][0].shape[0]
     global NUM_CLASSES
     #sm.num_features = sample[0][0][0].shape[0]
     sm.num_features = sample[0][0][0].get_shape()[0]
     sm.num_classes = NUM_CLASSES
-    print 'num of classes: ', sm.num_classes
+    #print 'num of classes: ', sm.num_classes
     sm.size_psi = sm.num_features
-    print 'size_psi set to: ',sm.size_psi
+    #print 'size_psi set to: ',sm.size_psi
 
 thecount = 0
 
@@ -204,11 +206,11 @@ def lp_training_opt(X,Y,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
 
@@ -216,8 +218,8 @@ def lp_training_opt(X,Y,sm,sparm):
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     coeff_list = (asarray((w_mat*x*compactify).todense())[0]).tolist()
     for index in xrange(0,N*K):
         if(y[index,0] == 1):
@@ -226,7 +228,7 @@ def lp_training_opt(X,Y,sm,sparm):
             coeff_list[index] = coeff_list[index]+(1.0/(N*K))
     lp.obj[:] = coeff_list
 
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K/2 )# + N) # N stands for sum=1 constraints
     for r in lp.rows:      # Iterate over all rows
@@ -265,14 +267,14 @@ def lp_training_opt(X,Y,sm,sparm):
             c = n*K+i
             t.append((r,c,1))'''
 
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    #print labeling.T.shape[0],labeling.T.shape[1]
+    ##print labeling.T.shape[0],labeling.T.shape[1]
     y_compact = csr_matrix(labeling.T,dtype='d')
     y_uncompact = compactify*y_compact
     ymax = (y_uncompact,N,K,compactify,ijlk)
@@ -290,16 +292,16 @@ def lp_training_opt(X,Y,sm,sparm):
         else:
             cr +=1
             assert(round (y_uncompact[c,0],2) == 0.00)
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value w/ const= ", (lp.obj.value+(1.0/K))
-    print 'score : ' , round(score,2), ' score2: ',score2;
-    print 'loss: ',loss(Y,ymax,sparm)
-    print '\n'
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score,2), ' score2: ',score2;
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
@@ -322,11 +324,11 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
 
@@ -334,8 +336,8 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     coeff_list = (asarray((w_mat*x*compactify).todense())[0]).tolist()
     for index in xrange(0,N*K):
         if(y[index,0] == 1):
@@ -344,7 +346,7 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
             coeff_list[index] = coeff_list[index]+(1.0/(N*K))
     lp.obj[:] = coeff_list
 
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K/2  + N) # N stands for sum=1 constraints
     for r in lp.rows:      # Iterate over all rows
@@ -383,14 +385,14 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
             c = n*K+i
             t.append((r,c,1))
     
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    #print labeling.T.shape[0],labeling.T.shape[1]
+    ##print labeling.T.shape[0],labeling.T.shape[1]
     y_compact = csr_matrix(labeling.T,dtype='d')
     y_uncompact = compactify*y_compact
     ymax = (y_uncompact,N,K,compactify,ijlk)
@@ -407,16 +409,18 @@ def lp_training_sum1_opt(X,Y,sm,sparm):
             ch += 1
         else:
             cr +=1
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+            #print "value of other value : ", y_uncompact[c,0]
+            assert(round (y_uncompact[c,0],2) == 0.00)
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value w/ const= ", (lp.obj.value+(1.0/K))
-    print 'score : ' , round(score,2), ' score2: ',score2;
-    print 'loss: ',loss(Y,ymax,sparm)
-    print '\n'
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score,2), ' score2: ',score2;
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
@@ -437,11 +441,11 @@ def lp_training_sum1(X,Y,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
 
@@ -449,8 +453,8 @@ def lp_training_sum1(X,Y,sm,sparm):
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
     for index in xrange(0,N*K):
         if(y[index,0] == 1):
@@ -459,7 +463,7 @@ def lp_training_sum1(X,Y,sm,sparm):
             coeff_list[index] = coeff_list[index]+(1.0/(N*K))
     lp.obj[:] = coeff_list
 
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K + N)
     for r in lp.rows:      # Iterate over all rows
@@ -499,14 +503,14 @@ def lp_training_sum1(X,Y,sm,sparm):
             c = e*K+i
             t.append((r,c,1))
 
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    #print labeling.T.shape[0],labeling.T.shape[1]
+    ##print labeling.T.shape[0],labeling.T.shape[1]
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
     c1 = 0
     c0= 0
@@ -521,16 +525,16 @@ def lp_training_sum1(X,Y,sm,sparm):
             ch += 1
         else:
             cr +=1
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value w/ const= ", (lp.obj.value+(1.0/K))
-    print 'score : ' , round(score,2), ' score2: ',score2;
-    print 'loss: ',loss(Y,ymax,sparm)
-    print '\n'
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score,2), ' score2: ',score2;
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
@@ -550,21 +554,21 @@ def lp_inference_sum1(X,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
     x = X[0]
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     lp.obj[:] = (asarray((w_mat*x).todense())[0]).tolist()
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K+N)
     for r in lp.rows:      # Iterate over all rows
@@ -605,14 +609,14 @@ def lp_inference_sum1(X,sm,sparm):
             t.append((r,c,1))
 
 
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    print labeling.T
+    #print labeling.T
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
     c1 = 0
     c0= 0
@@ -627,14 +631,14 @@ def lp_inference_sum1(X,sm,sparm):
             ch += 1
         else:
             cr +=1
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value = ", round(lp.obj.value,2)
-    print '\n score : ' , round(score,2), ' score2: ',score2;
+    #print "objective value = ", round(lp.obj.value,2)
+    #print '\n score : ' , round(score,2), ' score2: ',score2;
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value,2) ==  round(score,2))
     return ymax
@@ -655,11 +659,11 @@ def lp_training(X,Y,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
 
@@ -667,8 +671,8 @@ def lp_training(X,Y,sm,sparm):
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
     for index in xrange(0,N*K):
         if(y[index,0] == 1):
@@ -677,7 +681,7 @@ def lp_training(X,Y,sm,sparm):
             coeff_list[index] = coeff_list[index]+(1.0/(N*K))
     lp.obj[:] = coeff_list
 
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K)
     for r in lp.rows:      # Iterate over all rows
@@ -710,14 +714,14 @@ def lp_training(X,Y,sm,sparm):
                 t.append((ec,b,1))
                 t.append((ec,c,-1))
 
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    #print labeling.T.shape[0],labeling.T.shape[1]
+    ##print labeling.T.shape[0],labeling.T.shape[1]
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
     c1 = 0
     c0= 0
@@ -732,16 +736,16 @@ def lp_training(X,Y,sm,sparm):
             ch += 1
         else:
             cr +=1
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value w/ const= ", (lp.obj.value+(1.0/K))
-    print 'score : ' , round(score,2), ' score2: ',score2;
-    print 'loss: ',loss(Y,ymax,sparm)
-    print '\n'
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score,2), ' score2: ',score2;
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
@@ -761,21 +765,21 @@ def lp_inference(X,sm,sparm):
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            #print c.name
+            ##print c.name
         else:
             index = c.index - N*K
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
-            #print c.name
+            ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
     x = X[0]
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
-    #print w_list
-    #print (asarray(w*x)[0]).tolist()
+    ##print w_list
+    ##print (asarray(w*x)[0]).tolist()
     lp.obj[:] = (asarray((w_mat*x).todense())[0]).tolist()
-    #print lp.obj[:]
+    ##print lp.obj[:]
 
     lp.rows.add(3*E*K*K)
     for r in lp.rows:      # Iterate over all rows
@@ -808,14 +812,14 @@ def lp_inference(X,sm,sparm):
                 t.append((ec,b,1))
                 t.append((ec,c,-1))
 
-    #print len(t)
+    ##print len(t)
     lp.matrix = t
     lp.simplex()
-  #  print 'Z = %g;' % lp.obj.value,  # Retrieve and print obj func value
-   # print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
-                       # Print struct variable names and primal val
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
     labeling = asmatrix(array([c.primal for c in lp.cols]))
-    #print labeling.T
+    ##print labeling.T
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
     c1 = 0
     c0= 0
@@ -830,14 +834,14 @@ def lp_inference(X,sm,sparm):
             ch += 1
         else:
             cr +=1
-    print 'number of 1s: %d' % c1
-    print 'number of 0s: %d' % c0
-    print 'number of 0.5s: %d' % ch
-    print 'number of 0s: %d' % cr
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    print "objective value = ", round(lp.obj.value,2) 
-    print '\n score : ' , round(score,2), ' score2: ',score2;
+    #print "objective value = ", round(lp.obj.value,2)
+    #print '\n score : ' , round(score,2), ' score2: ',score2;
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value,2) ==  round(score,2))
     return ymax
@@ -866,21 +870,21 @@ def areEqualVectors(V1,V2):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp_training_sum1_opt(x,y,sm,sparm)
-    #l = lp_training_sum1(x,y,sm,sparm)
+    #l = lp_training_sum1_opt(x,y,sm,sparm)
+    l = lp_training_sum1(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
-    #print l.T
+    ##print l.T
     return l
 
 def psi(x, y, sm, sparm):
     
     """Returns the combined feature vector Psi(x,y)."""
     # Return the product of x and y
-    #print x[0].shape[0]
-    #print x[0].shape[1]
-    #print y.shape[0]
-    #print y.shape[1]
+    ##print x[0].shape[0]
+    ##print x[0].shape[1]
+    ##print y.shape[0]
+    ##print y.shape[1]
     return svmapi.Sparse(((x[0]*y[0]).todense()))
     
 
@@ -890,7 +894,7 @@ def loss(Y, Ybar, sparm):
     K = Y[2]
     y= Y[0]
     
-   # print N,K,y.shape[0],y.shape[1]
+   # #print N,K,y.shape[0],y.shape[1]
     ybar = Ybar[0] 
     yDiff=y- ybar;
     sum=0.0;
@@ -919,14 +923,30 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     """Called just before the end of each cutting plane iteration.
 
     This is called just before the end of each cutting plane
-    iteration, primarily to print statistics.  The 'ceps' argument is
+    iteration, primarily to #print statistics.  The 'ceps' argument is
     how much the most violated constraint was violated by.  The
     'cached_constraint' argument is true if this constraint was
     constructed from the cache.
     
-    The default behavior is that nothing is printed."""
-    w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
-    print w_list 
+    The default behavior is that nothing is #printed."""
+    # for every 10th iteration save the model file 
+    global ITER
+    ITER += 1;
+    if(ITER%10 == 0):
+        filename = "imodels/model_"+ `ITER`;
+        write_model(filename, sm, sparm) 
+    # #printig the weight vector
+    #w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
+    ##print w_list
+
+def write_model(filename, sm, sparm):
+    import cPickle, bz2
+    cPickle.dump(sm,file(filename,'w'))
+
+def read_model(filename, sparm):
+    import cPickle, bz2
+    return cPickle.load(file(filename))
+
 
 
 def evaluation_class_pr(Y,Ybar,K,N,spram):
@@ -1039,7 +1059,7 @@ def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
         else:
             recall += 0;
 
-    #print "similarity is", sim/N
+    ##print "similarity is", sim/N
     return (prec/N, recall/N);
 
 
@@ -1062,7 +1082,7 @@ def evaluation_loss(Y, Ybar, K, N ,sparm):
         else:
             sim += 0;
     
-    #print "similarity is", sim/N
+    ##print "similarity is", sim/N
     return 1-(sim/N);
 
 
@@ -1074,26 +1094,26 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     time this function is called teststats is None.  This function's
     return value will be passed along to the next call to
     eval_prediction.  After all test predictions are made, the last
-    value returned will be passed along to print_testing_stats.
+    value returned will be passed along to #print_testing_stats.
 
     On the first call, that is, when exnum==0, teststats==None.  The
     default behavior is that the function does nothing."""
     if exnum==0: teststats = []
-    print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
-    print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
+    #print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
+    #print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
     #teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
     teststats.append(evaluation_class_pr_sum1(y, ypred, sm.num_classes , x[2], sparm))
     return teststats
 
 
 def print_testing_stats(sample, sm, sparm, teststats):
-    """Print statistics once classification has finished.
+    """#print statistics once classification has finished.
 
     This is called after all test predictions are made to allow the
     display of any summary statistics that have been accumulated in
     the teststats object through use of the eval_prediction function.
 
-    The default behavior is that nothing is printed."""
+    The default behavior is that nothing is #printed."""
 
     avgp = zeros((sm.num_classes,1))
     avgr = zeros((sm.num_classes,1))
@@ -1124,22 +1144,22 @@ def print_testing_stats(sample, sm, sparm, teststats):
             avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
         #avgp[label,0] = avgp[label,0]/len(teststats)
         #avgr[label,0] = avgr[label,0]/len(teststats)
-        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
+        #print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
         total_tc +=  truecount[label,0]
         total_pc += predcount[label,0]
         total_tp += tpcount[label,0]
-    print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
-    #print "Error per Test example: ", teststats
-    print "confusion matrix:"
-    print aggConfusionMatrix;
+    #print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    ##print "Error per Test example: ", teststats
+    #print "confusion matrix:"
+    #print aggConfusionMatrix;
     savetxt('conf.txt',aggConfusionMatrix);
 
-    print "confusion matrix with multiple semantics:"
-    print aggConfusionMatrixWMultiple;
+    #print "confusion matrix with multiple semantics:"
+    #print aggConfusionMatrixWMultiple;
     savetxt('confm.txt',aggConfusionMatrixWMultiple);
 
-    print "num Zeros:"
-    print aggZeroPreds;
+    #print "num Zeros:"
+    #print aggZeroPreds;
 
-    print "num Multiples:"
-    print aggMultiplePreds;
+    #print "num Multiples:"
+    #print aggMultiplePreds;
