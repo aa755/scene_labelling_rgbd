@@ -167,31 +167,27 @@ PointT findLowestPoint(pcl::PointCloud<PointT> &o) {
     return lowest;
 }
 
-// Rotate the pcd w.r.t its centroid, and then translate 
-template <typename PointT>
-
-void transformXYZYPR(pcl::PointCloud<PointT> &pcd, pcl::PointCloud<PointT> &target,
-        // YPR in radians
-        double x, double y, double z, double yaw, double pitch, double roll)
-{   
-    Matrix4f Ti = computeTransformXYZYPR(double x, double y, double z, double yaw, double pitch, double roll);
-    pcl::transformPointCloud(pcd,target,Ti);
-}
-
-        // YPR in radians
 Matrix4f computeTransformXYZYPR(double x, double y, double z, double yaw, double pitch, double roll)
 {
     Matrix4f Ti = rotationMatrix(yaw, pitch, roll);
     Matrix4f eye = Eigen::Matrix4f::Identity();
     Vector4f tr, centroid;
     tr << x, y, z, 0;
-    pcl::compute3DCentroid (pcd, centroid);
-    translate(eye,-centroid);
-    Ti = Ti * eye;
-    translate(Ti,tr+centroid);
-    return ti;
+    translate(Ti,tr);
+    return Ti;
 
 }
+// Rotate the pcd w.r.t its centroid, and then translate 
+template <typename PointT>
+void transformXYZYPR(pcl::PointCloud<PointT> &pcd, pcl::PointCloud<PointT> &target,
+        // YPR in radians
+        double x, double y, double z, double yaw, double pitch, double roll)
+{   
+    Matrix4f Ti = computeTransformXYZYPR(x, y, z, yaw,  pitch, roll);
+    pcl::transformPointCloud/*<pcl::PointCloud<PointT>*/(pcd,target,Ti);
+}
+
+        // YPR in radians
 
 
 

@@ -47,6 +47,8 @@
 
 #include <stdint.h>
 
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 
 
@@ -60,13 +62,14 @@
 #include <dynamic_reconfigure/server.h>
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
+typedef pcl::PointXYGRGBCam PointT;
 #include "CombineUtils.h"
+//#include "CombineUtils.h"
 
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 
-typedef pcl::PointXYZRGBCamSL PointT;
 
 std::string fn;
 dynamic_reconfigure::Server < scene_processing::pcmergerConfig > *srv;
@@ -138,7 +141,7 @@ void updateUI() {
 
                  }
     }
-    
+    int globalFrameCount=0;
 void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
@@ -158,7 +161,9 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
             count ++;
         }
         if (cloud_blob_prev != cloud_blob_new) {
-            pcl::fromROSMsg(*cloud_blob_new, *cloud_new_ptr);
+            pcl::fromROSMsg(*cloud_blob_new, *cloud_temp_ptr);
+            appendCamIndexAndDistance (cloud_temp_ptr,cloud_new_ptr,globalFrameCount,VectorG(0,0,0));
+            globalFrameCount++;
             if(ITpresent){
                 transformXYZYPR(*cloud_new_ptr, *cloud_mod_ptr, InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
                 *cloud_new_ptr = *cloud_mod_ptr;
@@ -190,7 +195,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         {
             *cloud_merged_ptr += *cloud_new_ptr;
             Matrix4f globalTrans=computeTransformXYZYPR(config.x, config.y, config.z, config.yaw/180.0*PI, config.pitch/180.0*PI, config.roll/180.0*PI);
-            writeMatrixToFile(globalTrans)
+            writeMatrixToFile(globalTrans);
 
         }
         else
@@ -209,7 +214,8 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
 
     if(conf.setIT) {
 
-            transformFile.open(fn+".transforms.txt");
+        std::string transformsFileName=fn+".transforms.txt";
+            transformFile.open(transformsFileName.data());
 
 conf.setIT = false;
         doUpdate = true;
@@ -229,7 +235,7 @@ conf.setIT = false;
     if(conf.set_skip){
         conf.set_skip = false;
         doUpdate = true;
-        skipNum = atoi(conf.skipNum);
+        skipNum = (conf.skipNum);
     }
     if(conf.update)
     {

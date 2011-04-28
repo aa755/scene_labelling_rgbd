@@ -14,52 +14,9 @@
  * - a ROS listener, listening to and processing kinect data
  */
 
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/foreach.hpp>
-//#include <Eigen/Core>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <stdint.h>
-#include "pcl/ros/register_point_struct.h"
-#include "pcl/kdtree/kdtree.h"
-#include "pcl/kdtree/tree_types.h"
-#include "pcl/io/pcd_io.h"
-#include <string>
-#include <pcl_ros/io/bag_io.h>
-#include "pcl/kdtree/kdtree_flann.h"
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/PointCloud2.h>
-//#include <Eigen/Core>
-#include <tf/transform_listener.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/filters/project_inliers.h>
-#include <pcl/surface/convex_hull.h>
-#include <pcl/segmentation/extract_polygonal_prism_data.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl/filters/radius_outlier_removal.h>
-#include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
-#include "pcl/filters/statistical_outlier_removal.h"
-#include "pcl/point_cloud.h"
 
 
 
-typedef pcl::PointXYZRGBNormal PointT;
 void transformPointCloud(boost::numeric::ublas::matrix<double> &transform, pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr out)
 {
@@ -109,7 +66,15 @@ public:
 
     }
 
-    VectorG(PointT p)
+    VectorG(pcl::PointXYZRGBNormal p)
+    {
+        v[0] = p.x;
+        v[1] = p.y;
+        v[2] = p.z;
+
+
+    }
+    VectorG(pcl::PointXYZRGB p)
     {
         v[0] = p.x;
         v[1] = p.y;
@@ -364,6 +329,7 @@ void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXY
         out->points[i].cameraIndex=camIndex;
     }
 }
+
 void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex,VectorG camOrigin)
 {
     out->header=in->header;
@@ -377,6 +343,24 @@ void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr in,p
         out->points[i].normal_x=in->points[i].normal_x;
         out->points[i].normal_y=in->points[i].normal_y;
         out->points[i].normal_z=in->points[i].normal_z;
+        out->points[i].cameraIndex=camIndex;
+        VectorG pt(in->points[i]);
+        VectorG disp=pt.subtract(camOrigin);
+        out->points[i].distance=disp.getNorm();
+
+    }
+}
+
+void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex,VectorG camOrigin)
+{
+    out->header=in->header;
+    out->points.resize(in->size());
+    for(unsigned int i=0;i<in->size();i++)
+    {
+        out->points[i].x=in->points[i].x;
+        out->points[i].y=in->points[i].y;
+        out->points[i].z=in->points[i].z;
+        out->points[i].rgb=in->points[i].rgb;
         out->points[i].cameraIndex=camIndex;
         VectorG pt(in->points[i]);
         VectorG disp=pt.subtract(camOrigin);
@@ -409,6 +393,7 @@ pcl::PointCloud<pcl::Normal> cloud_normals;
  pcl::concatenateFields (*in, cloud_normals, *out);
 }
 
+/*
 void
 applyFilters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr outp)
 {
@@ -431,7 +416,7 @@ applyFilters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr inp_cloud_ptr, pcl::PointClo
     ror.filter(*outp);
     std::cerr << "after radius : " << outp->size() << std::endl;
 }
-
+*/
 #ifdef	__cplusplus
 extern "C" {
 #endif
