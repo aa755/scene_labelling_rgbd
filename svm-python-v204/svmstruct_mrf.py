@@ -1248,20 +1248,20 @@ def print_testing_stats(sample, sm, sparm, teststats):
             avgp[label,0] = tpcount[label,0]/float(predcount[label,0])
         if(truecount[label,0] !=0):
             avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
-        #avgp[label,0] = avgp[label,0]/len(teststats)
-        #avgr[label,0] = avgr[label,0]/len(teststats)
-        #print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
+        avgp[label,0] = avgp[label,0]/len(teststats)
+        avgr[label,0] = avgr[label,0]/len(teststats)
+        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
         total_tc +=  truecount[label,0]
         total_pc += predcount[label,0]
         total_tp += tpcount[label,0]
-    #print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
-    ##print "Error per Test example: ", teststats
-    #print "confusion matrix:"
-    #print aggConfusionMatrix;
+    print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    #print "Error per Test example: ", teststats
+    print "confusion matrix:"
+    print aggConfusionMatrix;
     savetxt('conf.txt',aggConfusionMatrix);
 
-    #print "confusion matrix with multiple semantics:"
-    #print aggConfusionMatrixWMultiple;
+    print "confusion matrix with multiple semantics:"
+    print aggConfusionMatrixWMultiple;
     savetxt('confm.txt',aggConfusionMatrixWMultiple);
 
     #print "num Zeros:"
