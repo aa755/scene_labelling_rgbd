@@ -184,7 +184,7 @@ void transformXYZYPR(pcl::PointCloud<PointT> &pcd, pcl::PointCloud<PointT> &targ
         double x, double y, double z, double yaw, double pitch, double roll)
 {   
     Matrix4f Ti = computeTransformXYZYPR(x, y, z, yaw,  pitch, roll);
-    pcl::transformPointCloud/*<pcl::PointCloud<PointT>*/(pcd,target,Ti);
+    pcl::transformPointCloud<PointT>/*<pcl::PointCloud<PointT>*/(pcd,target,Ti);
 }
 
         // YPR in radians

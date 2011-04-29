@@ -94,7 +94,8 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
   }
 
 
-  epsilon=100.0;                  /* start with low precision and
+  epsilon=1.5625;                  /* start with low precision and
+  epsilon=100.0;                   start with low precision and
 				     increase later */
   tolerance=MIN(n/3,MAX(n/100,5));/* increase precision, whenever less
                                      than that number of constraints
@@ -524,7 +525,8 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm,
 
 
   lparm->biased_hyperplane=0;     /* set threshold to zero */
-  epsilon=100.0;                  /* start with low precision and
+  epsilon=1.5625;                  /* start with low precision and
+  epsilon=100.0;                   start with low precision and
 				     increase later */
   epsilon_cached=epsilon;         /* epsilon to use for iterations
 				     using constraints constructed

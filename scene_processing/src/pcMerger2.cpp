@@ -62,7 +62,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
-typedef pcl::PointXYGRGBCam PointT;
+typedef pcl::PointXYZRGBCamSL PointT;
 #include "CombineUtils.h"
 //#include "CombineUtils.h"
 
@@ -163,9 +163,10 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         if (cloud_blob_prev != cloud_blob_new) {
             pcl::fromROSMsg(*cloud_blob_new, *cloud_temp_ptr);
             appendCamIndexAndDistance (cloud_temp_ptr,cloud_new_ptr,globalFrameCount,VectorG(0,0,0));
+            writer.write (std::string("tempAppend.pcd"),*cloud_new_ptr);
             globalFrameCount++;
             if(ITpresent){
-                transformXYZYPR(*cloud_new_ptr, *cloud_mod_ptr, InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
+                transformXYZYPR<PointT>(*cloud_new_ptr, *cloud_mod_ptr, InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
                 *cloud_new_ptr = *cloud_mod_ptr;
                 conf.pitch=0;
                 conf.yaw=0;
@@ -173,7 +174,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
             }
             //ROS_INFO("PointCloud with %d data points and frame %s (%f) received.", (int) cloud_new_ptr->points.size(), cloud_new_ptr->header.frame_id.c_str(), cloud_new_ptr->header.stamp.toSec());
             viewer.removePointCloud("new");
-            pcl::toROSMsg(*cloud_new_ptr, cloud_blobc_new);
+            pcl::toROSMsg<PointT>(*cloud_new_ptr, cloud_blobc_new);
             color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_new));
             viewer.addPointCloud(*cloud_new_ptr, color_handler_new, "new", viewportOrig);
             ROS_INFO("displaying new point cloud");
@@ -260,7 +261,7 @@ main(int argc, char** argv) {
     ROS_ERROR ("Couldn't read file ");
     return (-1);
   }
-  skipNum = atoi(argv[2]);
+//  skipNum = atoi(argv[2]);
 
 
    viewer.createViewPort(0.0, 0.0, 1.0, 1.0, viewportOrig);

@@ -31,7 +31,7 @@
 # define INST_VERSION_DATE  "2007.12.24"
 
 /* default precision for solving the optimization problem */
-# define DEFAULT_EPS         0.1 
+# define DEFAULT_EPS         0.005 
 /* default loss rescaling method: 1=slack_rescaling, 2=margin_rescaling */
 # define DEFAULT_RESCALING   2
 /* default loss function: */
