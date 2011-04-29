@@ -353,9 +353,10 @@ void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr in,p
 
 void appendCamIndexAndDistance(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in,pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr out,int camIndex,VectorG camOrigin)
 {
-    //out->header=in->header;
+   // out->header=in->header;
+   
     out->points.resize(in->size());
-    for(unsigned int i=0;i<in->size();i++)
+    for(unsigned int i=0;i<in->size();++i)
     {
         out->points[i].x=in->points[i].x;
         out->points[i].y=in->points[i].y;

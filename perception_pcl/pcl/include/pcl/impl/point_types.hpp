@@ -220,12 +220,21 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
     struct PointXYZRGBCamSL
     {
         PCL_ADD_POINT4D;
-       float rgb;
+  union
+  {
+    struct
+    {
+      float rgb;
+    };
+    float data_c[4];
+  };
        uint32_t cameraIndex;
        float distance;
        uint32_t segment;
        uint32_t label;
-    };
+         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+   
 
 
  /*   struct PointXYGRGBDist
