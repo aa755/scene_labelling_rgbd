@@ -920,6 +920,7 @@ def lp_inference(X,sm,sparm):
 
     ##print len(t)
     lp.matrix = t
+#    lp.simplex(it_lim=10000)
     lp.simplex()
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
@@ -966,7 +967,7 @@ def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,y,sm,sparm)
-    l = lp_inference_sum1(x,sm,sparm)
+    l = lp_inference(x,sm,sparm)
     return l
 
 def areEqualVectors(V1,V2):
@@ -1049,9 +1050,9 @@ def write_model(filename, sm, sparm):
     import cPickle, bz2
     cPickle.dump(sm,file(filename,'w'))
 
-def read_model(filename, sparm):
-    import cPickle, bz2
-    return cPickle.load(file(filename))
+#def read_model(filename, sparm):
+#    import cPickle, bz2
+#    return cPickle.load(file(filename))
 
 
 
@@ -1208,7 +1209,7 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     #print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
     #print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
     #teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
-    teststats.append(evaluation_class_pr_sum1(y, ypred, sm.num_classes , x[2], sparm))
+    teststats.append(evaluation_class_pr(y, ypred, sm.num_classes , x[2], sparm))
     return teststats
 
 
@@ -1264,8 +1265,8 @@ def print_testing_stats(sample, sm, sparm, teststats):
     print aggConfusionMatrixWMultiple;
     savetxt('confm.txt',aggConfusionMatrixWMultiple);
 
-    #print "num Zeros:"
-    #print aggZeroPreds;
+    print "num Zeros:"
+    print aggZeroPreds;
 
-    #print "num Multiples:"
-    #print aggMultiplePreds;
+    print "num Multiples:"
+    print aggMultiplePreds;
