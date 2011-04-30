@@ -60,7 +60,9 @@ def read_examples(filename,sparm):
     #print 'number of node features: ', num_node_feats
     #print 'number of edge features: ',num_edge_feats
 
+    example_num=0
     for input_file in file(filename):
+        example_num+=1
         input = [line.split() for line in line_reader(file(input_file.strip()))]
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
@@ -157,7 +159,8 @@ def read_examples(filename,sparm):
         Yuc_reconstructed=Compactify*Yc;
         areEqualVectors(Y, Yuc_reconstructed)
         # Add the example to the list
-        examples.append(((X_s, edges, N), (Y_s,N,max_target,Compactify,ijlk)))
+
+        examples.append(((X_s, edges, N,None), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     # #print out some very useful statistics.
     #print len(examples),'examples read'
@@ -197,21 +200,55 @@ def lp_training_opt(X,Y,sm,sparm):
     edge = X[1]
     E = edge.shape[0]
     N = X[2]
-    lp = glpk.LPX()        # Create empty problem instance
-    lp.name = 'training'     # Assign symbolic name to problem
-    lp.obj.maximize = True # Set this as a maximization problem
-    lp.cols.add(N*K+(E*K*K/2))         # Append three columns to this instance
+    if(X[3]==None):
+        lp = glpk.LPX()        # Create empty problem instance
+        lp.name = 'training'     # Assign symbolic name to problem
+        lp.obj.maximize = True # Set this as a maximization problem
+        lp.cols.add(N*K+(E*K*K/2))         # Append three columns to this instance
+        for c in lp.cols:      # Iterate over all columns
+            if (c.index < N*K) :
+                c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
+               ##print c.name
+            else:
+                index = c.index - N*K
+                c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
+               ##print c.name
+            c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
+        lp.rows.add(3*E*K*K/2 )# + N) # N stands for sum=1 constraints
+        for r in lp.rows:      # Iterate over all rows
+            r.name = 'p%d' %  r.index # Name them
+
+        for i in xrange(0,E*K*K): # y_i^l>y_ij^lk and y_j^k >= y_ij^lk
+            lp.rows[i].bounds = 0, None
+        for i in xrange(E*K*K,3*E*K*K/2): #y_i^l + y_j^k \<= 1+y_ij^lk
+            lp.rows[i].bounds = None,1
+        #for i in xrange(3*E*K*K/2,3*E*K*K/2 + N): #sum=1
+         #   lp.rows[i].bounds = 1,1
+
+        t = []
+        for n in xrange(0, E * K * K / 2):
+            u = ijlk[n, 0]
+            v = ijlk[n, 1]
+            l = ijlk[n, 2]
+            k = ijlk[n, 3]
+            a = int(u * K + l) # index of y_i^l
+            b = int(v * K + k) # index of y_j^k
+            c = N * K + n # index of y_ij^lk
+            ec = n
+            t.append((ec, a, 1))
+            t.append((ec, c, -1))
+            ec += E * K * K / 2
+            t.append((ec, b, 1))
+            t.append((ec, c, -1))
+            ec += E * K * K / 2
+            t.append((ec, a, 1))
+            t.append((ec, b, 1))
+            t.append((ec, c, -1))
+        lp.matrix = t
+    else:
+        lp=X[3];
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
 
-    for c in lp.cols:      # Iterate over all columns
-        if (c.index < N*K) :
-            c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
-            ##print c.name
-        else:
-            index = c.index - N*K
-            c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
-            ##print c.name
-        c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
 
 
     x = X[0]
@@ -230,36 +267,6 @@ def lp_training_opt(X,Y,sm,sparm):
 
     ##print lp.obj[:]
 
-    lp.rows.add(3*E*K*K/2 )# + N) # N stands for sum=1 constraints
-    for r in lp.rows:      # Iterate over all rows
-        r.name = 'p%d' %  r.index # Name them
-
-    for i in xrange(0,E*K*K): # y_i^l>y_ij^lk and y_j^k >= y_ij^lk
-        lp.rows[i].bounds = 0, None
-    for i in xrange(E*K*K,3*E*K*K/2): #y_i^l + y_j^k \<= 1+y_ij^lk
-        lp.rows[i].bounds = None,1
-    #for i in xrange(3*E*K*K/2,3*E*K*K/2 + N): #sum=1
-     #   lp.rows[i].bounds = 1,1
-
-    t = []
-    for n in xrange(0, E * K * K / 2):
-        u = ijlk[n, 0]
-        v = ijlk[n, 1]
-        l = ijlk[n, 2]
-        k = ijlk[n, 3]
-        a = int(u * K + l) # index of y_i^l
-        b = int(v * K + k) # index of y_j^k
-        c = N * K + n # index of y_ij^lk
-        ec = n
-        t.append((ec, a, 1))
-        t.append((ec, c, -1))
-        ec += E * K * K / 2
-        t.append((ec, b, 1))
-        t.append((ec, c, -1))
-        ec += E * K * K / 2
-        t.append((ec, a, 1))
-        t.append((ec, b, 1))
-        t.append((ec, c, -1))
 
     '''for n in xrange(0, N):
         r = 3*E*K*K/2+n
@@ -268,7 +275,6 @@ def lp_training_opt(X,Y,sm,sparm):
             t.append((r,c,1))'''
 
     ##print len(t)
-    lp.matrix = t
     lp.simplex()
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
@@ -978,7 +984,7 @@ def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
     #l = lp_training_sum1_opt(x,y,sm,sparm)
-    l = lp_training_sum1(x,y,sm,sparm)
+    l = lp_training_opt(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
     ##print l.T
@@ -1209,7 +1215,7 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     #print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
     #print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
     #teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
-    teststats.append(evaluation_class_pr(y, ypred, sm.num_classes , x[2], sparm))
+    teststats.append(evaluation_class_pr_sum1(y, ypred, sm.num_classes , x[2], sparm))
     return teststats
 
 
