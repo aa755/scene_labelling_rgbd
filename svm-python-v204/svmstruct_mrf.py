@@ -920,8 +920,8 @@ def lp_inference(X,sm,sparm):
 
     ##print len(t)
     lp.matrix = t
-#    lp.simplex(it_lim=10000)
-    lp.simplex()
+    lp.simplex(it_lim=1000000)
+#    lp.simplex()
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
@@ -1249,8 +1249,8 @@ def print_testing_stats(sample, sm, sparm, teststats):
             avgp[label,0] = tpcount[label,0]/float(predcount[label,0])
         if(truecount[label,0] !=0):
             avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
-        avgp[label,0] = avgp[label,0]/len(teststats)
-        avgr[label,0] = avgr[label,0]/len(teststats)
+      #  avgp[label,0] = avgp[label,0]/len(teststats)
+      #  avgr[label,0] = avgr[label,0]/len(teststats)
         print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
         total_tc +=  truecount[label,0]
         total_pc += predcount[label,0]
