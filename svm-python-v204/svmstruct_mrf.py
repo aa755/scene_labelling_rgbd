@@ -41,7 +41,7 @@ def read_examples(filename,sparm):
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
-
+        K = int(input[0][2].strip());
         # find the max class and number of node features -- will work for sparse representation
         for i in xrange(0,N):
             target = int(input[i+1][0]);
@@ -56,7 +56,7 @@ def read_examples(filename,sparm):
             for k,v in tokens:
                 if(num_edge_feats<int(k)):
                     num_edge_feats=int(k)
-
+    max_target = K # use the max number of classes read from the file
     #print 'number of classes: ', max_target
     #print 'number of node features: ', num_node_feats
     #print 'number of edge features: ',num_edge_feats
@@ -271,9 +271,9 @@ def lp_training_opt(X,Y,sm,sparm):
 
     ##print len(t)
     lp.matrix = t
-    if(ITER <10):
+    if(ITER < 4):
       numIt = 1000
-    elif(ITER < 20):
+    elif(ITER < 8):
       numIt = 10000
     else:
       numIt = 100000
@@ -871,6 +871,7 @@ def lp_inference(X,sm,sparm):
     lp = glpk.LPX()        # Create empty problem instance
     lp.name = 'inference'     # Assign symbolic name to problem
     lp.obj.maximize = True # Set this as a maximization problem
+    print "num cols: ",X[0].shape[1] , " K: " , K , " N: ",N , " E: ",E
     lp.cols.add(X[0].shape[1])         # Append three columns to this instance
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
     #print X[0].shape[1]
@@ -918,13 +919,16 @@ def lp_inference(X,sm,sparm):
                 ec = e*K*K + n
                 t.append((ec,a,1))
                 t.append((ec,c,-1))
+   #             print ec,a,c
                 ec += E*K*K
                 t.append((ec,b,1))
                 t.append((ec,c,-1))
+   #             print ec,c,b
                 ec += E*K*K
                 t.append((ec,a,1))
                 t.append((ec,b,1))
                 t.append((ec,c,-1))
+    #            print ec,a,b,c
 
     ##print len(t)
     lp.matrix = t
@@ -1269,11 +1273,11 @@ def print_testing_stats(sample, sm, sparm, teststats):
     #print "Error per Test example: ", teststats
     print "confusion matrix:"
     print aggConfusionMatrix;
-    savetxt('conf.txt',aggConfusionMatrix,fmt='d');
+    savetxt('conf.txt',aggConfusionMatrix,fmt='%d');
 
     print "confusion matrix with multiple semantics:"
     print aggConfusionMatrixWMultiple;
-    savetxt('confm.txt',aggConfusionMatrixWMultiple,fmt='d');
+    savetxt('confm.txt',aggConfusionMatrixWMultiple,fmt='%d');
 
     print "num Zeros:"
     print aggZeroPreds;
