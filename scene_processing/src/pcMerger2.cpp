@@ -105,6 +105,7 @@ pcl::PointCloud<PointT>::Ptr cloud_new_ptr(new pcl::PointCloud<PointT > ());
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp_ptr(new pcl::PointCloud<pcl::PointXYZRGB > ());
 pcl::PointCloud<PointT>::Ptr cloud_mod_ptr(new pcl::PointCloud<PointT > ());
 pcl::PointCloud<PointT>::Ptr cloud_merged_ptr(new pcl::PointCloud<PointT > ());
+pcl::PointCloud<PointT>::Ptr cloud_merged_backup_ptr(new pcl::PointCloud<PointT > ());
 bool doUpdate = false;
 bool Merged = false;
 bool ITpresent = false;
@@ -113,7 +114,7 @@ int skipNum = 20;
 
 scene_processing::pcmergerConfig InitialTransformConfig;
 
-
+bool noMoreUndo=false;
 
 void updateUI() {
     pcl::PointCloud<PointT> cloud;
@@ -153,6 +154,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
        //conf.add_pc = false;
         doUpdate = true;
         *cloud_new_ptr = *cloud_mod_ptr;
+        *cloud_merged_backup_ptr=*cloud_merged_ptr;
         if(Merged)
         {
             *cloud_merged_ptr += *cloud_new_ptr;
@@ -163,6 +165,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         else
             *cloud_merged_ptr = *cloud_new_ptr;
         //*cloud_merged_ptr =*cloud_new_ptr;
+        
         viewer.removePointCloud("new");
         if(Merged)
             viewer.removePointCloud("merged");
@@ -189,7 +192,63 @@ conf.setIT = false;
         *cloud_new_ptr = *cloud_mod_ptr;
         ITpresent = true;
     }
+    if(config.undo)
+    {
+        if(noMoreUndo)
+        {
+            conf.undo=false;
+            doUpdate=true;
+            return;
+        }
+
+        noMoreUndo=true;
+        transformFile<<"endo"<<endl;
+        *cloud_merged_ptr=*cloud_merged_backup_ptr;
+        if(Merged)
+            viewer.removePointCloud("merged");
+        Merged = true;
+        pcl::toROSMsg(*cloud_merged_ptr, cloud_blobc_merged);
+        color_handler_merged.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_merged));
+        viewer.addPointCloud(*cloud_merged_ptr, color_handler_merged, "merged", viewportOrig);
+        ROS_INFO("undo:displaying mergered pointcloud");
+        conf.undo=false;
+        doUpdate=true;
+  if (pcl::io::loadPCDFile (std::string("tempAppend.pcd"), cloud_blobc_new) == -1)
+  {
+    ROS_ERROR ("Couldn't read file ");
+    return ;
+  }
+//  ROS_INFO ("Loaded %d data points from %s with the following fields: %s", (int)(cloud_blob.width * cloud_blob.height), argv[1] ,pcl::getFieldsList (cloud_blob).c_str ());
+
+  // Convert to the templated message type
+   pcl::fromROSMsg (cloud_blobc_new, *cloud_new_ptr);
+//   pcl::PointCloud<PointT>::Ptr cloud_ptr (new pcl::PointCloud<PointT> (cloud));
+
+            if(ITpresent){
+                cout<<"inside IT"<<endl;
+                transformXYZYPR<PointT>(*cloud_new_ptr, *cloud_mod_ptr, InitialTransformConfig.x, InitialTransformConfig.y, InitialTransformConfig.z, InitialTransformConfig.yaw/180.0*PI, InitialTransformConfig.pitch/180.0*PI, InitialTransformConfig.roll/180.0*PI);
+                *cloud_new_ptr = *cloud_mod_ptr;
+                conf.pitch=0;
+                conf.yaw=0;
+                conf.roll=0;
+            }
+            //ROS_INFO("PointCloud with %d data points and frame %s (%f) received.", (int) cloud_new_ptr->points.size(), cloud_new_ptr->header.frame_id.c_str(), cloud_new_ptr->header.stamp.toSec());
+            viewer.removePointCloud("new");
+           // pcl::toROSMsg<PointT>(*cloud_new_ptr, cloud_blobc_new);
+            color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_new));
+            viewer.addPointCloud(*cloud_new_ptr, color_handler_new, "new", viewportOrig);
+            ROS_INFO("undo:displaying new point cloud");
+            conf.x=0;
+            conf.y=0;
+            conf.z=0;
+            conf.yaw=0;
+            conf.pitch=0;
+            conf.roll=0;
+
+        
+    }
     if(conf.skip_pc || conf.add_pc) {
+        noMoreUndo=false;
         conf.skip_pc = false;
         conf.add_pc =false;
         
