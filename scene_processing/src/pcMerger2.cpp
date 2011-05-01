@@ -192,9 +192,17 @@ conf.setIT = false;
         *cloud_new_ptr = *cloud_mod_ptr;
         ITpresent = true;
     }
-    if(config.undo&&!noMoreUndo)
+    if(config.undo)
     {
+        if(noMoreUndo)
+        {
+            conf.undo=false;
+            doUpdate=true;
+            return;
+        }
+
         noMoreUndo=true;
+        transformFile<<"endo"<<endl;
         *cloud_merged_ptr=*cloud_merged_backup_ptr;
         if(Merged)
             viewer.removePointCloud("merged");
@@ -202,7 +210,9 @@ conf.setIT = false;
         pcl::toROSMsg(*cloud_merged_ptr, cloud_blobc_merged);
         color_handler_merged.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_merged));
         viewer.addPointCloud(*cloud_merged_ptr, color_handler_merged, "merged", viewportOrig);
-        ROS_INFO("displaying mergered pointcloud");
+        ROS_INFO("undo:displaying mergered pointcloud");
+        conf.undo=false;
+        doUpdate=true;
   if (pcl::io::loadPCDFile (std::string("tempAppend.pcd"), cloud_blobc_new) == -1)
   {
     ROS_ERROR ("Couldn't read file ");
@@ -227,7 +237,7 @@ conf.setIT = false;
            // pcl::toROSMsg<PointT>(*cloud_new_ptr, cloud_blobc_new);
             color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_new));
             viewer.addPointCloud(*cloud_new_ptr, color_handler_new, "new", viewportOrig);
-            ROS_INFO("displaying new point cloud");
+            ROS_INFO("undo:displaying new point cloud");
             conf.x=0;
             conf.y=0;
             conf.z=0;
