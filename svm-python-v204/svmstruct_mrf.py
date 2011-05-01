@@ -1,7 +1,7 @@
 """A module for SVM^python for multiclass MRF learning."""
 
 # Thomas Finley, tfinley@gmail.com
-
+import time
 from operator import concat
 import svmapi, array
 from numpy import *
@@ -19,6 +19,7 @@ NUM_CLASSES = 0
 
 def read_examples(filename,sparm):
     global NUM_CLASSES
+    print sparm
     # Helper function for reading from files.
     def line_reader(lines):
         # returns only non-empty lines
@@ -181,14 +182,15 @@ def init_model(sample, sm, sparm):
     #sm.num_features = sample[0][0][0].shape[0]
     sm.num_features = sample[0][0][0].get_shape()[0]
     sm.num_classes = NUM_CLASSES
-    #print 'num of classes: ', sm.num_classes
+    print 'num of classes: ', sm.num_classes
     sm.size_psi = sm.num_features
-    #print 'size_psi set to: ',sm.size_psi
+    print 'size_psi set to: ',sm.size_psi
 
 thecount = 0
 
 
 def lp_training_opt(X,Y,sm,sparm):
+    global ITER
     y = Y[0]
     K = sm.num_classes
     w = sm.w
@@ -269,7 +271,13 @@ def lp_training_opt(X,Y,sm,sparm):
 
     ##print len(t)
     lp.matrix = t
-    lp.simplex()
+    if(ITER <10):
+      numIt = 1000
+    elif(ITER < 20):
+      numIt = 10000
+    else:
+      numIt = 100000
+    lp.simplex(it_lim=numIt)
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
@@ -854,7 +862,7 @@ def lp_training(X,Y,sm,sparm):
     return ymax
 
 def lp_inference(X,sm,sparm):
-    
+    start = time.clock() 
     K = sm.num_classes
     w = sm.w
     edge = X[1]
@@ -865,15 +873,15 @@ def lp_inference(X,sm,sparm):
     lp.obj.maximize = True # Set this as a maximization problem
     lp.cols.add(X[0].shape[1])         # Append three columns to this instance
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
-    print X[0].shape[1]
-    print N,E,K
+    #print X[0].shape[1]
+    #print N,E,K
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.name = 'y_%d_%d' % ( c.index/K , (c.index%K)+1) # Name them x0, x1, and x2
             ##print c.name
         else:
             index = c.index - N*K
-            print index
+            #print index
             c.name = 'y_%d-%d_%d-%d' % ( edge[int(index/(K*K)),0] ,edge[int(index/(K*K)),1] , int((index%(K*K))/K)+1 , int((index%(K*K))%K)+1)
             ##print c.name
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
@@ -920,7 +928,9 @@ def lp_inference(X,sm,sparm):
 
     ##print len(t)
     lp.matrix = t
-    lp.simplex(it_lim=1000000)
+    lp.simplex() #it_lim=10000)
+    elapsed = (time.clock() - start) 
+    print "Time for LP:", elapsed
 #    lp.simplex()
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
@@ -978,7 +988,7 @@ def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
     #l = lp_training_sum1_opt(x,y,sm,sparm)
-    l = lp_training_sum1(x,y,sm,sparm)
+    l = lp_training_opt(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
     ##print l.T
@@ -1040,8 +1050,8 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     global ITER
     ITER += 1;
     if(ITER%1 == 0):
-        filename = "imodels/model_"+ `ITER`;
-        write_model(filename, sm, sparm) 
+        filename = "imodels/model.c"+ `sparm.c`  + ".m" + `ITER`;
+        write_model(filename, sm, sparm)
     # #printig the weight vector
     #w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
     ##print w_list
@@ -1050,9 +1060,9 @@ def write_model(filename, sm, sparm):
     import cPickle, bz2
     cPickle.dump(sm,file(filename,'w'))
 
-#def read_model(filename, sparm):
-#    import cPickle, bz2
-#    return cPickle.load(file(filename))
+def read_model(filename, sparm):
+    import cPickle, bz2
+    return cPickle.load(file(filename))
 
 
 
@@ -1259,11 +1269,11 @@ def print_testing_stats(sample, sm, sparm, teststats):
     #print "Error per Test example: ", teststats
     print "confusion matrix:"
     print aggConfusionMatrix;
-    savetxt('conf.txt',aggConfusionMatrix);
+    savetxt('conf.txt',aggConfusionMatrix,fmt='d');
 
     print "confusion matrix with multiple semantics:"
     print aggConfusionMatrixWMultiple;
-    savetxt('confm.txt',aggConfusionMatrixWMultiple);
+    savetxt('confm.txt',aggConfusionMatrixWMultiple,fmt='d');
 
     print "num Zeros:"
     print aggZeroPreds;
