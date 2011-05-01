@@ -391,8 +391,8 @@ static PyObject* glpsolver_retval_to_message(int retval) {
 
 static PyObject* LPX_warm_up(LPXObject *self) {
 //#if GLPK_VERSION(4, 39)
-  int retval =lpx_warm_up(LP);
-  return solver_retval_to_message(retval);  
+  glp_std_basis(LP);
+  return solver_retval_to_message(LPX_E_OK);  
 }
 
 static PyObject* LPX_solver_simplex(LPXObject *self, PyObject *args,

@@ -14,6 +14,8 @@ import glpk
 
 global NUM_CLASSES
 global ITER
+global LP_LIST
+LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
 
@@ -60,7 +62,7 @@ def read_examples(filename,sparm):
     #print 'number of node features: ', num_node_feats
     #print 'number of edge features: ',num_edge_feats
 
-    example_num=0
+    example_num=-1
     for input_file in file(filename):
         example_num+=1
         input = [line.split() for line in line_reader(file(input_file.strip()))]
@@ -160,7 +162,7 @@ def read_examples(filename,sparm):
         areEqualVectors(Y, Yuc_reconstructed)
         # Add the example to the list
 
-        examples.append(((X_s, edges, N,None), (Y_s,N,max_target,Compactify,ijlk)))
+        examples.append(((X_s, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     # #print out some very useful statistics.
     #print len(examples),'examples read'
@@ -192,6 +194,7 @@ thecount = 0
 
 
 def lp_training_opt(X,Y,sm,sparm):
+    global LP_LIST
     y = Y[0]
     K = sm.num_classes
     w = sm.w
@@ -200,7 +203,9 @@ def lp_training_opt(X,Y,sm,sparm):
     edge = X[1]
     E = edge.shape[0]
     N = X[2]
-    if(X[3]==None):
+
+    if(len(LP_LIST) <= X[3]):
+        assert(len(LP_LIST) == X[3])
         lp = glpk.LPX()        # Create empty problem instance
         lp.name = 'training'     # Assign symbolic name to problem
         lp.obj.maximize = True # Set this as a maximization problem
@@ -245,8 +250,10 @@ def lp_training_opt(X,Y,sm,sparm):
             t.append((ec, b, 1))
             t.append((ec, c, -1))
         lp.matrix = t
+        print 'new LP 2 created'
+        LP_LIST.append(lp)
     else:
-        lp=X[3];
+        lp=LP_LIST[X[3]];
     #lp.cols.add(X[0].get_shape()[1])         # Append three columns to this instance
 
 
@@ -275,7 +282,8 @@ def lp_training_opt(X,Y,sm,sparm):
             t.append((r,c,1))'''
 
     ##print len(t)
-    lp.simplex()
+    #lp.warm_up();
+    lp.simplex(glpk.LPX.MSG_ALL)
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
@@ -310,6 +318,7 @@ def lp_training_opt(X,Y,sm,sparm):
     #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
+    #LP_LIST[X[3]]=lp
     return ymax
 
 def lp_training_sum1_opt(X,Y,sm,sparm):
