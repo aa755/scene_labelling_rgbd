@@ -93,3 +93,4 @@ dishRack
 sink
 plate
 cofeeMug
+exerciseBall
