@@ -200,7 +200,7 @@ public:
     crossProduct(VectorG v2g)
     {
          VectorG ret(v[2-1]*v2g.v[3-1]-v[3-1]*v2g.v[2-1],  v[3-1]*v2g.v[1-1]-v[1-1]*v2g.v[3-1],  v[0]*v2g.v[2-1]-v[2-1]*v2g.v[1-1]);
-         std::cerr<<"norm is"<<ret.getNorm()<<endl;
+         std::cerr<<"nsaorm is"<<ret.getNorm()<<endl;
         assert(isZero(ret.getNorm()-1));
         assert(isZero(ret.dotProduct(*this)));
         assert(isZero(ret.dotProduct(v2g)));
@@ -383,7 +383,8 @@ boost::recursive_mutex global_mutex;
  //     cout<<"passed range test\n";
       
     size_t curLabel=cloud_filtered->points[1].label;
-    if(curLabel==0)
+    
+    if(curLabel==0&&label_mapping[seg_no]==0)
     {
         cout<<"not assigned a label yet\n";
     }
@@ -391,6 +392,8 @@ boost::recursive_mutex global_mutex;
       return false;
     else
     {
+        if(curLabel==0)
+          curLabel=label_mapping[seg_no];
         assert(curLabel>0&&curLabel<=labels.size());
         cout<<"segment "<<seg_no<<" had label :"<<labels.at(curLabel-1)<<endl;
     }
@@ -422,8 +425,9 @@ boost::recursive_mutex global_mutex;
   labeled_cloud.points = cloud.points;
   for (size_t i = 0; i< labeled_cloud.points.size(); i++)
   {
-    labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
-
+      int newLabel=label_mapping[labeled_cloud.points[i].segment];
+      if(newLabel>0)
+        labeled_cloud.points[i].label = newLabel;
   }
   
     std::ofstream labelFileOut;
