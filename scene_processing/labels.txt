@@ -87,3 +87,5 @@ tableFrontComplete
 quiltPartHangingDown
 coffeeMugLid
 mouse
+fridge
+kitchenPlatform
