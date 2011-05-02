@@ -89,3 +89,7 @@ coffeeMugLid
 mouse
 fridge
 kitchenPlatform
+dishRack
+sink
+plate
+cofeeMug
