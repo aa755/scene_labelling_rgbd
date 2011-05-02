@@ -86,3 +86,4 @@ drawerTop
 tableFrontComplete
 quiltPartHangingDown
 coffeeMugLid
+mouse
