@@ -389,7 +389,7 @@ static PyObject* glpsolver_retval_to_message(int retval) {
   return PyString_FromString(returnval);
 }
 
-static PyObject* LPX_warm_up(LPXObject *self) {
+static PyObject* LPX_cool_down(LPXObject *self) {
 //#if GLPK_VERSION(4, 39)
   glp_std_basis(LP);
   return solver_retval_to_message(LPX_E_OK);  
@@ -1003,9 +1003,9 @@ static PyGetSetDef LPX_getset[] = {
 };
 
 static PyMethodDef LPX_methods[] = {
-  {"warm_up", (PyCFunction)LPX_warm_up, METH_NOARGS,
-   "warm_up()\n\n"
-   "calls lpx_warm_up . see glpk documentation for details\n"
+  {"cool_down", (PyCFunction)LPX_cool_down, METH_NOARGS,
+   "cool_down()\n\n"
+   "calls glp_std_basis so that it resets to initial trivial soln . see glpk documentation for details\n"
    "end of doc."},
   {"erase", (PyCFunction)LPX_Erase, METH_NOARGS,
    "erase()\n\n"

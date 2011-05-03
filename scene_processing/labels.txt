@@ -94,3 +94,7 @@ sink
 plate
 cofeeMug
 exerciseBall
+laundryBag
+photoFrame
+sofaFrontBelowSeat
+kitchenPlatformFront
