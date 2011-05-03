@@ -47,6 +47,7 @@ typedef pcl::PointXYZRGBNormal PointT;
 using namespace std;
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 
+bool detectOcclusion=true;
 int
 main(int argc, char** argv)
 {
@@ -189,13 +190,15 @@ main(int argc, char** argv)
                     cpoint = cloud_normal->points[p];
                     size_t c;
                         VectorG vpoint(cpoint.x,cpoint.y,cpoint.z);
-                    if(!transG.isPointVisible(vpoint)) // if this point is not around the centre of it's own cam, ignore it
+                    if(!transG.isPointVisible(vpoint)) // if this point is not visible in it's own cam, ignore it
                         continue;
                     for (c = 0; c < transformsG.size(); c++)
                     {
                         TransformG ctrans=transformsG[c];
                         if((ctrans.isPointVisible(vpoint))) // is it already visibile in a prev camera? then it might be an outlier
                         {
+                            if(!detectOcclusion)
+                              break;
                             // is it also not occluded in the same camera in which it is visible? only then it will be an outlier
                             pcl::PointCloud<PointT>::Ptr apc=pointClouds[c];
                             pcl::KdTreeFLANN<PointT>::Ptr annFinder=searchTrees[c];
