@@ -93,6 +93,7 @@ dishRack
 sink
 plate
 cofeeMug
+<<<<<<< HEAD
 oven
 exhaust
 stovePanel
@@ -101,3 +102,4 @@ toaster
 container
 ovenHandle
 towel
+exerciseBall

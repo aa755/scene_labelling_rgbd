@@ -31,4 +31,4 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 rosbuild_add_executable (to_binary src/convert.cpp)
 rosbuild_add_executable (to_ascii src/to_ascii.cpp)
-
+rosbuild_add_executable (merge_frames src/merge_frames.cpp)
