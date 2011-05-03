@@ -1137,6 +1137,7 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
     ybar = Ybar[0]
     truecount = zeros((K,1))
     predcount = zeros((K,1))
+    singlepredcount = zeros((K,1))
     tpcount = zeros((K,1))
     confusionMatrix=zeros((K,K))
     confusionMatrixWMultiple=zeros((K,K))
@@ -1179,15 +1180,16 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
             else:
                 prediction=maxLabelList[0]
             confusionMatrix[prediction,actualClass]+=1
+            singlepredcount[prediction,0] += 1;
             if(actualClass==prediction):
                 tpcount[prediction,0] += 1
              
     for label in xrange(0,K):
         if(predcount[label,0] != 0):
-            prec[label,0] = tpcount[label,0]/float(predcount[label,0])
+            prec[label,0] = tpcount[label,0]/float(singlepredcount[label,0])
         if(truecount[label,0] !=0):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
-    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
+    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple,singlepredcount)
 
 def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
     y = Y[0]
@@ -1273,6 +1275,7 @@ def print_testing_stats(sample, sm, sparm, teststats):
     tpcount = zeros((sm.num_classes,1))
     truecount = zeros((sm.num_classes,1))
     predcount = zeros((sm.num_classes,1))
+    singlepredcount = zeros((sm.num_classes,1))
     aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes),dtype='i')
     aggConfusionMatrixWMultiple=zeros((sm.num_classes,sm.num_classes),dtype='i')
     aggZeroPreds=zeros((sm.num_classes,1))
@@ -1281,6 +1284,7 @@ def print_testing_stats(sample, sm, sparm, teststats):
         tpcount += t[0]
         truecount += t[1]
         predcount += t[2]
+        singlepredcount += t[7]
         aggConfusionMatrix+=t[3];
         aggZeroPreds +=t[4];
         aggMultiplePreds +=t[5];
@@ -1291,17 +1295,17 @@ def print_testing_stats(sample, sm, sparm, teststats):
     total_pc = 0
     total_tp = 0
     for label in xrange(0,sm.num_classes):
-        if(predcount[label,0] != 0):
-            avgp[label,0] = tpcount[label,0]/float(predcount[label,0])
+        if(singlepredcount[label,0] != 0):
+            avgp[label,0] = tpcount[label,0]/float(singlepredcount[label,0])
         if(truecount[label,0] !=0):
             avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
       #  avgp[label,0] = avgp[label,0]/len(teststats)
       #  avgr[label,0] = avgr[label,0]/len(teststats)
-        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
+        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", singlepredcount[label,0]
         total_tc +=  truecount[label,0]
-        total_pc += predcount[label,0]
+        total_pc += singlepredcount[label,0]
         total_tp += tpcount[label,0]
-    print "tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    print "prec: ", total_tp/total_pc , "recall: ",total_tp/total_tc ,"tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
     #print "Error per Test example: ", teststats
     print "confusion matrix:"
     print aggConfusionMatrix;
