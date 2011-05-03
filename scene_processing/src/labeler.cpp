@@ -544,6 +544,7 @@ void reconfig(scene_processing::labelingConfig & config, uint32_t level)
       std::string labelStr=config.label;
                     cout<<"added new label:"<<labelStr<<endl;
                   labels.push_back(labelStr);
+                label_mapping[*seg_iter] = labels.size();
                   //the next iteration will match and exit... no need to set done now
                   cout<<"new set of labels: \n";
                  for(size_t li=0;li<labels.size();li++)
