@@ -1,6 +1,7 @@
 """A module for SVM^python for multiclass MRF learning."""
 
 # Thomas Finley, tfinley@gmail.com
+from numpy import random
 import time
 from operator import concat
 import svmapi, array
@@ -285,7 +286,7 @@ def lp_training_opt(X,Y,sm,sparm):
 
     ##print len(t)
     #lp.warm_up();
-    lp.simplex(glpk.LPX.MSG_ALL)
+    lp.simplex()#glpk.LPX.MSG_ALL)
     #----------------------------
     # iter changes.. which are not required with warm restart..
     #if(ITER < 4):
@@ -1000,7 +1001,7 @@ def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,y,sm,sparm)
-    l = lp_inference_sum1(x,sm,sparm)
+    l = lp_inference(x,sm,sparm)
     return l
 
 def areEqualVectors(V1,V2):
@@ -1148,27 +1149,39 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
         predClass=-1;
         actualClass=-1;
         maxYBar=-1;
+        countMax=0
         for label in xrange(0,K):
             if(y[node*K+label,0] == 1):
                 truecount[label,0] += 1;
                 actualClass=label
             if(maxYBar<ybar[node*K+label,0]):
                 maxYBar=ybar[node*K+label,0]
+                countMax=0
+            if(maxYBar==ybar[node*K+label,0]):
+                countMax+=1
+
+        maxLabelList=[];
         for label in xrange(0,K):
             if(ybar[node*K+label,0] == maxYBar and maxYBar>0): #suboptimal way, but who cares!
+                maxLabelList.append(label);
                 predcount[label,0] += 1;
                 numPositives+=1;
                 predClass=label;
-                confusionMatrixWMultiple[label,actualClass]+=1;
-                if((y[node*K+label,0] == 1)):
-                    tpcount[label,0] += 1
+                confusionMatrixWMultiple[label,actualClass]+=1.0/countMax;
 
         if(numPositives==0):
             zeroClasses[actualClass,0]+=1
-        elif(numPositives>1):
-            multipleClasses[actualClass,0]+=1
-        else:
-            confusionMatrix[predClass,actualClass]+=1
+        elif(numPositives>=1):
+#            multipleClasses[actualClass,0]+=1
+#        else:
+            if(numPositives>1):
+                prediction=maxLabelList[random.randint(0,countMax)]
+            else:
+                prediction=maxLabelList[0]
+            confusionMatrix[prediction,actualClass]+=1
+            if(actualClass==prediction):
+                tpcount[prediction,0] += 1
+             
     for label in xrange(0,K):
         if(predcount[label,0] != 0):
             prec[label,0] = tpcount[label,0]/float(predcount[label,0])
