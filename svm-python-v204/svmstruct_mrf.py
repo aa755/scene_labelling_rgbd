@@ -1075,6 +1075,7 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     ITER += 1;
     if(ITER%1 == 0):
         filename = "imodels/model.c"+ `sparm.c`  + ".m" + `ITER`;
+        print "writing intermediate model: ", filename
         write_model(filename, sm, sparm)
     # #printig the weight vector
     #w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
@@ -1185,7 +1186,7 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
                 tpcount[prediction,0] += 1
              
     for label in xrange(0,K):
-        if(predcount[label,0] != 0):
+        if(singlepredcount[label,0] != 0):
             prec[label,0] = tpcount[label,0]/float(singlepredcount[label,0])
         if(truecount[label,0] !=0):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
