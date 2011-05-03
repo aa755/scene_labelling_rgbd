@@ -93,7 +93,6 @@ dishRack
 sink
 plate
 cofeeMug
-<<<<<<< HEAD
 oven
 exhaust
 stovePanel
@@ -107,3 +106,4 @@ laundryBag
 photoFrame
 sofaFrontBelowSeat
 kitchenPlatformFront
+breadPack
