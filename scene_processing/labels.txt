@@ -93,6 +93,15 @@ dishRack
 sink
 plate
 cofeeMug
+<<<<<<< HEAD
+oven
+exhaust
+stovePanel
+microwave
+toaster
+container
+ovenHandle
+towel
 exerciseBall
 laundryBag
 photoFrame
