@@ -24,6 +24,36 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
 using namespace pcl;
 
+
+void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
+    //ROS_INFO("applying filter");
+
+    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
+
+    outcloud.header.frame_id = incloud.header.frame_id;
+//    outcloud.points = incloud.points;
+    outcloud.points.resize ( incloud.points.size() );
+
+    int j = 0;
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].segment == segment) {
+          j++;
+          outcloud.points[j].x = incloud.points[i].x;
+          outcloud.points[j].y = incloud.points[i].y;
+          outcloud.points[j].z = incloud.points[i].z;
+          outcloud.points[j].rgb = incloud.points[i].rgb;
+          outcloud.points[j].segment = incloud.points[i].segment;
+          outcloud.points[j].label = incloud.points[i].label;
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+        }
+    }
+    outcloud.points.resize ( j );
+}
+
+
+
 float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::PointCloud<PointT> &cloud2)
 {
   float min_distance = FLT_MAX;
@@ -150,11 +180,11 @@ void getCentroid(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &centroid
     centroid[1]=0;
     centroid[2]=0;
     for (size_t i = 0; i < cloud.points.size(); ++i) {
-			assert(cloud.points[i].z>=0);
+			//assert(cloud.points[i].z>=0);
         centroid[0] += cloud.points[i].x;
         centroid[1] += cloud.points[i].y;
         centroid[2] += cloud.points[i].z;
-			assert(centroid[2]>=0);
+			//assert(centroid[2]>=0);
     }
     centroid[0] = centroid[0]/(cloud.points.size()-1) ;
     centroid[1] = centroid[1]/(cloud.points.size()-1) ;
@@ -524,22 +554,27 @@ int main(int argc, char** argv) {
 
     int index_ = 0;
     for (int seg = 1; seg <= max_segment_num; seg++) {
-        vector<float> features;
-        int label;
-        segment_indices->indices.clear();
-        for (size_t i = 0; i < cloud.points.size(); ++i) {
-			assert(cloud.points[i].z>=0);
-            if (cloud.points[i].segment == seg) {
-                segment_indices->indices.push_back(i);
-                label = cloud.points[i].label;
-            }
-        }
-        extract.setInputCloud(cloud_ptr);
-        extract.setIndices(segment_indices);
-        extract.setNegative(false);
-        extract.filter(*cloud_seg);
-       //  std::cerr << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
-        if (cloud_seg->points.size() > 10 && cloud_seg->points[1].label != 0) {
+        //vector<float> features;
+        //int label;
+        //segment_indices->indices.clear();
+        //int sizec = 0;
+        //for (size_t i = 0; i < cloud.points.size(); ++i) {
+			//assert(cloud.points[i].z>=0);
+          //  if (cloud.points[i].segment == seg) {
+            //    sizec++;
+              //  segment_indices->indices.push_back(i);
+               // label = cloud.points[i].label;
+           // }
+       // }
+       // if(label!=0) cout << "segment: "<< seg << " label: " << label  << " size: " << sizec << endl;
+        //extract.setInputCloud(cloud_ptr);
+        //extract.setIndices(segment_indices);
+        //extract.setNegative(false);
+        //extract.filter(*cloud_seg);
+        apply_segment_filter (*cloud_ptr,*cloud_seg,seg);
+        //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
+        if (cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
+         //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
 			index_ ++; 
@@ -559,6 +594,7 @@ int main(int argc, char** argv) {
      //   vector<float> features;
         int seg_id = segment_clouds[i].points[1].segment;
         // get color features
+        //cout << "computing color features" << std::endl;
         get_color_features(segment_clouds[i], features[seg_id], num_bin_color);
 
         // get shape features
