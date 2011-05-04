@@ -154,6 +154,28 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         conf.setIT=false;
         doUpdate=true;
         updateUI();
+        double sum=0;
+        double sqrsum=0;
+        double zval;
+        int countGround=0;
+        for(int i=0;i<cloud_mod_ptr->size ();++i)
+          {
+            if(cloud_mod_ptr->points[i].label==2)
+              {
+                zval=cloud_mod_ptr->points[i].z;
+                sum+=zval;
+                sqrsum+=zval;
+                countGround++;
+              }
+          }
+        double meanSqrZ=sqrsum/countGround;
+        double meanZ=sum/countGround;
+        double stdDev=sqrt (meanSqrZ-meanZ);
+        assert(stdDev<0.2);
+        cout<<"std dev of z(ground points)"<<stdDev<<endl;
+        conf.z=-meanZ;
+        
+        
 
     }
 }
@@ -187,7 +209,7 @@ int
 main(int argc, char** argv) {
     ros::init(argc, argv, "transform");
 
-       fn = "transformed_"  + std::string(argv[1])+".pcd";
+       fn = "transformed_"  + std::string(argv[1]);
    viewer.createViewPort(0.0, 0.0, 1.0, 1.0, viewportOrig);
    viewer.addCoordinateSystem (1);
      sensor_msgs::PointCloud2 cloud_blob;
