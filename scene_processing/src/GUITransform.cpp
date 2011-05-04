@@ -150,10 +150,18 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
 
 
 
+    if(conf.update) {
+        conf.update=false;
+        doUpdate=true;
+        updateUI();
+        conf.z=0;
+                
+
+    }
+    
     if(conf.setIT) {
         conf.setIT=false;
         doUpdate=true;
-        updateUI();
         double sum=0;
         double sqrsum=0;
         double zval;
@@ -164,14 +172,13 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
               {
                 zval=cloud_mod_ptr->points[i].z;
                 sum+=zval;
-                sqrsum+=zval;
+                sqrsum+=zval*zval;
                 countGround++;
               }
           }
         double meanSqrZ=sqrsum/countGround;
         double meanZ=sum/countGround;
         double stdDev=sqrt (meanSqrZ-meanZ);
-        assert(stdDev<0.2);
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         conf.z=-meanZ;
         
@@ -229,7 +236,7 @@ main(int argc, char** argv) {
     srv = new dynamic_reconfigure::Server < scene_processing::pcmergerConfig > (global_mutex);
     dynamic_reconfigure::Server < scene_processing::pcmergerConfig >::CallbackType f = boost::bind(&reconfig, _1, _2);
 
-
+        conf.z=0;
     srv->setCallback(f);
     conf.done = false;
     while (true) {
@@ -252,6 +259,25 @@ main(int argc, char** argv) {
     transformFile.close();
 
     
+        double sum=0;
+        double sqrsum=0;
+        double zval;
+        int countGround=0;
+        for(int i=0;i<cloud_mod_ptr->size ();++i)
+          {
+            if(cloud_mod_ptr->points[i].label==2)
+              {
+                zval=cloud_mod_ptr->points[i].z;
+                sum+=zval;
+                sqrsum+=zval*zval;
+                countGround++;
+              }
+          }
+        double meanSqrZ=sqrsum/countGround;
+        double meanZ=sum/countGround;
+        double stdDev=sqrt (meanSqrZ-meanZ);
+        assert(fabs(meanZ)<0.1);
+        assert(stdDev<0.2);
 
    // viewer.removePointCloud("pred");
 
