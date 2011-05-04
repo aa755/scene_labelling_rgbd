@@ -6,14 +6,16 @@ $lablefile = shift;
 
 #%labelmap = ('1','1','2','2','3','3','5','4','10','5','12','6');
 %labelmap = ();
+%invlabelmap = ();
 open(F,$lablefile);
 while(<F>){
   chomp;
   ($a,$b) = split/\s/,$_;
-  $labelmap{$a} = $b;  
+  $labelmap{$a} = $b;
+  $invlabelmap{$b}  = $a;  
 }
 close(F);
-
+$K = scalar keys %invlabelmap;
 open(DAT, $featfile) ;
 %ncount = ();
 while(<DAT>)
@@ -62,7 +64,7 @@ foreach $sn (keys %ncount)
 {
   $ofile = "datas_".$sn.".txt";
   open(DAT,">$ofile");
-  print DAT "$ncount{$sn} $ecount{$sn}\n";
+  print DAT "$ncount{$sn} $ecount{$sn} $K\n";
   foreach $l (keys %{$nodedata{$sn}} )
   {
     print DAT "$nodedata{$sn}{$l}\n";

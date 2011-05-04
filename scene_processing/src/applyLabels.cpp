@@ -35,7 +35,10 @@ int main(int argc, char** argv) {
     pcl::PCDWriter writer;
 
   if(argc!=3)
+    {
     cout<<"usage: "<<argv[1]<<" pointCloudFile segment2labelMappingFile"<<endl;
+    exit(-1);
+    }
   std::map<int,int> label_mapping; 
 
     sensor_msgs::PointCloud2 cloud_blob;
