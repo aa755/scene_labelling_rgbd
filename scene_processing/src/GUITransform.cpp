@@ -276,8 +276,10 @@ main(int argc, char** argv) {
         double meanSqrZ=sqrsum/countGround;
         double meanZ=sum/countGround;
         double stdDev=sqrt (meanSqrZ-meanZ);
-        assert(fabs(meanZ)<0.1);
-        assert(stdDev<0.2);
+                assert(fabs(meanZ)<0.1);
+                assert(stdDev<0.2);
+        cout<<"std dev of z(ground points)"<<stdDev<<endl;
+        cout<<"mean of z(ground points)"<<meanZ<<endl;
 
    // viewer.removePointCloud("pred");
 
