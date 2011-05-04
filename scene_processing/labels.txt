@@ -107,3 +107,5 @@ photoFrame
 sofaFrontBelowSeat
 kitchenPlatformFront
 breadPack
+human
+humidifier

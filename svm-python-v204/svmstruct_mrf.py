@@ -1116,7 +1116,7 @@ def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,y,sm,sparm)
-    l = lp_inference_sum1(x,sm,sparm)
+    l = lp_inference_sum1_IP(x,sm,sparm)
     return l
 
 def areEqualVectors(V1,V2):
