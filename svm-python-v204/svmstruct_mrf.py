@@ -481,7 +481,7 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
                 c.name = 'y_%d_%d_%d_%d' %( ijlk[index,0] , ijlk[index,1],ijlk[index,2],ijlk[index,3] )
                ##print c.name
             c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
-        lp.rows.add(3*E*K*K/2 )# + N) # N stands for sum=1 constraints
+        lp.rows.add(3*E*K*K/2  + N) # N stands for sum=1 constraints
         for r in lp.rows:      # Iterate over all rows
             r.name = 'p%d' %  r.index # Name them
 
@@ -489,8 +489,8 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
             lp.rows[i].bounds = 0, None
         for i in xrange(E*K*K,3*E*K*K/2): #y_i^l + y_j^k \<= 1+y_ij^lk
             lp.rows[i].bounds = None,1
-        #for i in xrange(3*E*K*K/2,3*E*K*K/2 + N): #sum=1
-         #   lp.rows[i].bounds = 1,1
+        for i in xrange(3*E*K*K/2,3*E*K*K/2 + N): #sum=1
+            lp.rows[i].bounds = 1,1
 
         t = []
         for n in xrange(0, E * K * K / 2):
@@ -511,6 +511,13 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
             t.append((ec, a, 1))
             t.append((ec, b, 1))
             t.append((ec, c, -1))
+
+        for n in xrange(0, N):
+            r = 3*E*K*K/2+n
+            for i in xrange(0,K):
+                c = n*K+i
+                t.append((r,c,1))
+
         lp.matrix = t
         print 'new LP 2 created'
         LP_LIST.append(lp)
@@ -537,11 +544,6 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
     ##print lp.obj[:]
 
 
-    '''for n in xrange(0, N):
-        r = 3*E*K*K/2+n
-        for i in xrange(0,K):
-            c = n*K+i
-            t.append((r,c,1))'''
 
     ##print len(t)
     #lp.warm_up();
@@ -550,30 +552,29 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
     ones=bitarray()
     zeros=bitarray()
 
+    if lp.status=='opt':
+        for c in lp.cols:      # Iterate over all columns
+            if (c.index < N*K) :
+                if(c.primal==1):
+                    ones.append(True);
+                else:
+                    ones.append(False);
+                if(c.primal==0):
+                    zeros.append(True);
+                else:
+                    zeros.append(False);
+                c.kind=int
+        retval=lp.integer()
+        assert retval == None
+        for c in lp.cols:      # Iterate over all columns
+            if (c.index < N*K) :
+                if(ones[c.index] and not c.primal==1):
+                    print '#'
+                if(zeros[c.index] and not c.primal==0):
+                    print '@'
+    else:
+        print '&&&'
 
-    for c in lp.cols:      # Iterate over all columns
-        if (c.index < N*K) :
-            if(c.primal==1):
-                ones.append(True);
-            else:
-                ones.append(False);
-            if(c.primal==0):
-                zeros.append(True);
-            else:
-                zeros.append(False);
-            c.kind=int
-
-
-
-    retval=lp.integer()
-    assert retval == None
-    for c in lp.cols:      # Iterate over all columns
-        if (c.index < N*K) :
-            if(c.primal==1 and not ones[c.index]):
-                print '#';
-            if(c.primal==0 and not zeros[c.index]):
-                print '@';
-                
     #----------------------------
     # iter changes.. which are not required with warm restart..
     #if(ITER < 4):
@@ -592,7 +593,7 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
     y_compact = csr_matrix(labeling.T,dtype='d')
     y_uncompact = compactify*y_compact
     ymax = (y_uncompact,N,K,compactify,ijlk)
-    c1 = 0
+    '''c1 = 0
     c0= 0
     ch =0
     cr = 0
@@ -605,7 +606,7 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
             ch += 1
         else:
             cr +=1
-            assert(round (y_uncompact[c,0],2) == 0.00)
+            assert(round (y_uncompact[c,0],2) == 0.00)'''
     #print 'number of 1s: %d' % c1
     #print 'number of 0s: %d' % c0
     #print 'number of 0.5s: %d' % ch

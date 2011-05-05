@@ -21,7 +21,7 @@ while(<F>){
   $f = $_;
   print $_."\n";
   $sn = $f;
-  $sn =~ s/(\.\/[^\/]*\/)([^\d]*)(\d+)(\.txt)/\3/;
+  $sn =~ s/(.*_)(\d+)(\.txt)/\2/;
   $count ++;
   $scenemap{$count} = $sn;
   print "scene:$sn\n";
@@ -71,7 +71,7 @@ close(F);
 
 
 for $sn (keys %map){
-
+print "writing to ./$data/seglabels_$sn.txt\n";
   open(F,">./$data/seglabels_$sn.txt" );
   for $segid (keys %{$map{$sn}})
   {
