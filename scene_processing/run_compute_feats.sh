@@ -7,8 +7,8 @@ num=0
 for file in `ls transformed*.pcd`
 do
   num=`expr $num + 1`
-  echo $file
-  echo $num
+  echo $file,$num >> "data_scene_mapping.txt"
+  
   rosrun scene_processing compute_all_features $file $num #$num_bins_color $num_bins_shape
   
 done

@@ -405,7 +405,7 @@ SVECTOR* add_list_ns(SVECTOR *a)
       }
     }
     sum=create_nvector(totwords);
-    printf("totwords=%ld, %p\n",totwords, (void *)sum);
+    //printf("totwords=%ld, %p\n",totwords, (void *)sum);
 
     clear_nvector(sum,totwords);
     for(f=a;f;f=f->next)  

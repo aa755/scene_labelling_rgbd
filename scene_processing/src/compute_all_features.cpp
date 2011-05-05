@@ -34,7 +34,7 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
 //    outcloud.points = incloud.points;
     outcloud.points.resize ( incloud.points.size() );
 
-    int j = 0;
+    int j = -1;
     for (size_t i = 0; i < incloud.points.size(); ++i) {
 
         if (incloud.points[i].segment == segment) {
@@ -86,13 +86,20 @@ float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::Poin
 	//if (!tree->radiusSearch ((*small_cloud).points[i], tolerance, nn_indices, nn_distances))
 	tree->nearestKSearch (small_cloud->points[i], 2 , nn_indices, nn_distances);
   	
-	    for (size_t j = 0; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
+	for (size_t j = 0; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
       	{
 			
-      		//float distance = pow(cloud1.points[i].x - cloud2.points[j].x,2) + pow(cloud1.points[i].y - cloud2.points[j].y,2) + pow(cloud1.points[i].z - cloud2.points[j].z,2);
-     		// cerr<< "i,j = " << i << "," << j<< " dist = " <<distance << endl;
-      		if (min_distance > nn_distances[j]) min_distance = nn_distances[j];
-		}
+      		//float distance = pow(cloud1.points[i].x - cloud2.points[nn_indices[j]].x,2) + pow(cloud1.points[i].y - cloud2.points[ nn_indices[j]].y,2) + pow(cloud1.points[i].z - cloud2.points[ nn_indices[j]].z,2);
+     		 //cout<< "i,j = " << i << "," << j<< " dist = " <<distance << endl;
+                 //float a = nn_distances[j];
+                 //cout<< nn_distances[j] << " "<< a << endl;
+      		 if (min_distance > nn_distances[j])
+                 {
+                     min_distance = nn_distances[j];
+                  //   cout << "changing min_distance to "  << min_distance<< endl;
+
+                 }
+	}
   }
 
 /*
