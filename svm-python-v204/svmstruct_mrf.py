@@ -12,7 +12,7 @@ from scipy.sparse import lil_matrix
 from scipy.sparse import csr_matrix
 from numpy.ma.core import zeros
 import glpk
-from bitarray import bitarray
+#from bitarray import bitarray
 
 global NUM_CLASSES
 global ITER
@@ -72,9 +72,12 @@ def read_examples(filename,sparm):
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
-
+        xrow = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
+        xcol = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
+        xval = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
         Xn= mat(zeros((max_target * num_node_feats,max_target*N)));
         Yn= mat(zeros((max_target*N,1)))
+
         #XY_test = mat(zeros((max_target*num_node_feats + max_target*max_target*num_edge_feats,1)))
         node_map = {}
         edges = mat(zeros((E,2)))
@@ -96,6 +99,10 @@ def read_examples(filename,sparm):
             for j in xrange(0,max_target):
                 ##print X[j*9:(j+1)*9,j];
                 Xn[j*num_node_feats:(j+1)*num_node_feats,i*max_target+(j)] = f.copy();
+                xval[i*j*num_node_feats:i*(j+1)*num_node_feats] = features.copy();
+                for v in xrange(0,num_node_feats):
+                  xrow[i*j*num_node_feats+v] = j*num_node_feats+v
+                xcol[i*j*num_node_feats:i*(j+1)*num_node_feats] = i*max_target+(j)
             ##print X
         Xe = mat(zeros((max_target*max_target*num_edge_feats,max_target*max_target*E)))
         Ye = mat(zeros((max_target*max_target*E,1)))
@@ -117,9 +124,14 @@ def read_examples(filename,sparm):
             for j in xrange(0,max_target*max_target):
                 ##print X[j*9:(j+1)*9,j];
                 Xe[j*num_edge_feats:(j+1)*num_edge_feats,(i-N)*max_target*max_target+j] = f.copy();
+                xval[N*max_target*num_node_feats + (i-N)*j*num_edge_feats: N*max_target*num_node_feats + (i-N)*(j+1)*num_edge_feats] = features.copy();
+                for v in xrange(0,num_edge_feats):
+                  xrow[N*max_target*num_node_feats+(i-N)*j*num_edge_feats+v] = N*max_target*num_node_feats+ j*num_edge_feats+v
+                xcol[N*max_target*num_node_feats+(i-N)*j*num_node_feats : N*max_target*num_node_feats+(i-N)*(j+1)*num_node_feats] = (i-N)*max_target*max_target+j
 
         ##print Xe.shape[0]
         ##print Xe.shape[1]
+        X_sparse = csr_matrix((xval,(xrow,xcol)),shape=(N*K+E*K*K,N*K+(E*K*K/2)));
         a = concatenate ((Xn, mat(zeros((Xn.shape[0],Xe.shape[1])))),1)
         b = concatenate ((mat(zeros((Xe.shape[0],Xn.shape[1]))),Xe),1)
         X = concatenate ((a,b))
@@ -1293,7 +1305,7 @@ def areEqualVectors(V1,V2):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp_training_sum1_opt_IP_warm(x,y,sm,sparm)
+    l = lp_training_opt_warm(x,y,sm,sparm)
     #l = lp_training_opt(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
