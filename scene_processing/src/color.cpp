@@ -2,6 +2,7 @@
 #include <math.h>
 #include <iostream>
 #include <stdlib.h>
+#include<assert.h>
 using namespace std;
 
 class ColorRGB{
@@ -13,6 +14,16 @@ class ColorRGB{
        int rgbi=*reinterpret_cast<int*>(&rgb);
        parseColorRGB(rgbi);
        convertToHSV();
+   }
+
+   ColorRGB(float r_, float g_, float b_)
+   {
+       r=r_;
+       g=g_;
+       b=b_;
+       assert(r<=1&&r>=0);
+       assert(g<=1&&g>=0);
+       assert(b<=1&&b>=0);
    }
 
    ColorRGB(int rgbi)
