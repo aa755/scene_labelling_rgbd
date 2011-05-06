@@ -2,9 +2,12 @@
 
 import svmapi
 from numpy import *
+global NUM_CLASSES
+NUM_CLASSES=0
 
 def read_examples(filename, sparm):
     """Parses an input file into an example sequence."""
+    global NUM_CLASSES 
     # This reads example files of the type read by SVM^multiclass.
     examples = []
     # Open the file and read each example.
@@ -14,6 +17,7 @@ def read_examples(filename, sparm):
         tokens = line.split()
         # If the line is empty, who cares?
         if not tokens: continue
+        NUM_CLASSES = int(tokens[0])
         # Get the target.
         target = int(tokens[1])
         # Get the features.
@@ -30,8 +34,10 @@ def init_model(sample, sm, sparm):
     # Note that these features will be stored in the model and written
     # when it comes time to write the model to a file, and restored in
     # the classifier when reading the model from the file.
+    global NUM_CLASSES
     sm.num_features = max(max(x) for x,y in sample)[0]+1
-    sm.num_classes = max(y for x,y in sample)
+    sm.num_classes = NUM_CLASSES
+    print sm.num_classes*sm.num_features
     sm.size_psi = sm.num_features * sm.num_classes
     print 'size_psi set to',sm.size_psi
 
@@ -97,6 +103,8 @@ def print_testing_stats(sample, sm, sparm, teststats):
     aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes), dtype='i')
     prec = []
     recall = []
+    ltc = []
+    lpc=[]
     for t in teststats:
         aggConfusionMatrix[t[1]-1,t[0]-1]+=1
     tc = 0;
@@ -106,18 +114,20 @@ def print_testing_stats(sample, sm, sparm, teststats):
             sum+= aggConfusionMatrix[i,j]
         tc += sum
         prec.append(aggConfusionMatrix[i,i]*100.0/sum);
+        ltc.append(sum);
     for i  in xrange(0,sm.num_classes):
         sum = 0;
         for j in xrange(0,sm.num_classes):
             sum+= aggConfusionMatrix[j,i]
         recall.append(aggConfusionMatrix[i,i]*100.0/sum);
+        lpc.append(sum);
     for i in xrange(0,sm.num_classes):
-        print "Class: ", i+1 , " prec: ", prec[i], " recall: ", recall[i]
+        print "label: ", i+1 , " prec: ", prec[i], " recall: ", recall[i], " tp: ", aggConfusionMatrix[i,i], " tc: ",ltc[i], " pc: ",lpc[i]
     match = 0
     for i in xrange(0,sm.num_classes):
         match += aggConfusionMatrix[i,i]
 
-    print "accuracy: ", match*100.0/tc
+    print "prec: ", match*100.0/tc , "recall: ",match*100.0/tc, "tp: ",match, " pc: ", tc, "tc: ".tc
 
     print "confusion matrix:"
     print aggConfusionMatrix;
