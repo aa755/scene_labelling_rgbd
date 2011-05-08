@@ -113,21 +113,27 @@ def print_testing_stats(sample, sm, sparm, teststats):
         for j in xrange(0,sm.num_classes):
             sum+= aggConfusionMatrix[i,j]
         tc += sum
-        prec.append(aggConfusionMatrix[i,i]*100.0/sum);
+        if (sum !=0):
+            prec.append(aggConfusionMatrix[i,i]*100.0/sum);
+        else:
+            prec.append(0);
         ltc.append(sum);
     for i  in xrange(0,sm.num_classes):
         sum = 0;
         for j in xrange(0,sm.num_classes):
             sum+= aggConfusionMatrix[j,i]
-        recall.append(aggConfusionMatrix[i,i]*100.0/sum);
+        if (sum !=0):
+            recall.append(aggConfusionMatrix[i,i]*100.0/sum);
+        else:
+            recall.append(0);
         lpc.append(sum);
     for i in xrange(0,sm.num_classes):
-        print "label: ", i+1 , " prec: ", prec[i], " recall: ", recall[i], " tp: ", aggConfusionMatrix[i,i], " tc: ",ltc[i], " pc: ",lpc[i]
+        print "label ", i+1 , " prec: ", prec[i], " recall: ", recall[i], " tp: ", aggConfusionMatrix[i,i], " tc: ",ltc[i], " pc: ",lpc[i]
     match = 0
     for i in xrange(0,sm.num_classes):
         match += aggConfusionMatrix[i,i]
 
-    print "prec: ", match*100.0/tc , "recall: ",match*100.0/tc, "tp: ",match, " pc: ", tc, "tc: ".tc
+    print "prec: ", match*100.0/tc , "recall: ",match*100.0/tc, "tp: ",match, " pc: ", tc, "tc: ",tc
 
     print "confusion matrix:"
     print aggConfusionMatrix;

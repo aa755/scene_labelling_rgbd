@@ -566,12 +566,16 @@ def lp_training_sum1_opt_IP_warm(X,Y,sm,sparm):
                 c.kind=int
         retval=lp.integer()
         assert retval == None
-        for c in lp.cols:      # Iterate over all columns
-            if (c.index < N*K) :
-                if(ones[c.index] and not c.primal==1):
-                    print '#'
-                if(zeros[c.index] and not c.primal==0):
-                    print '@'
+        if lp.status=='opt':
+            for c in lp.cols:      # Iterate over all columns
+                if (c.index < N*K) :
+                    if(ones[c.index] and not c.primal==1):
+                        print '#'
+                    if(zeros[c.index] and not c.primal==0):
+                        print '@'
+        else:
+            print '^^^'
+
     else:
         print '&&&'
 
@@ -1284,7 +1288,12 @@ def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,y,sm,sparm)
+
+
+
     l = lp_inference_sum1_IP(x,sm,sparm)
+    #l = lp_inference_sum1(x,sm,sparm)
+    #l = lp_inference(x,sm,sparm)
     return l
 
 def areEqualVectors(V1,V2):

@@ -10,11 +10,13 @@
 #include "pcl/features/normal_3d.h"
 #include "descriptors_3d/all_descriptors.h"
 #include <point_cloud_mapping/kdtree/kdtree_ann.h>
+#include <vector>
 #include "sensor_msgs/point_cloud_conversion.h"
 #include "color.cpp"
 #include "pcl/kdtree/kdtree.h"
 #include "pcl/kdtree/tree_types.h"
-
+#include <point_cloud_mapping/geometry/nearest.h>
+//#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
 typedef pcl::PointXYZRGBCamSL PointT;
 
@@ -49,7 +51,9 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
             //     std::cerr<<segment_cloud.points[j].label<<",";
         }
     }
-    outcloud.points.resize ( j );
+   // cout<<j << ","<<segment<<endl;
+    assert(j>=0);
+    outcloud.points.resize ( j+1 );
 }
 
 
@@ -196,6 +200,31 @@ void getCentroid(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &centroid
     centroid[0] = centroid[0]/(cloud.points.size()-1) ;
     centroid[1] = centroid[1]/(cloud.points.size()-1) ;
     centroid[2] = centroid[2]/(cloud.points.size()-1) ;
+}
+
+void getNormal(const pcl::PointCloud<PointT> &cloud, Eigen::Vector3d &normal)
+{
+   Eigen::Matrix3d eigen_vectors;
+   Eigen::Vector3d eigen_values;
+   sensor_msgs::PointCloud2 cloudMsg2;
+   pcl::toROSMsg (cloud,cloudMsg2);
+   sensor_msgs::PointCloud cloudMsg;
+   sensor_msgs::convertPointCloud2ToPointCloud(cloudMsg2,cloudMsg);
+  cloud_geometry::nearest::computePatchEigen (cloudMsg,eigen_vectors,eigen_values);
+  
+  double minEigV=DBL_MAX;
+  
+  for(int i=0;i<3;i++)
+    {
+      
+          cout<<"eig value:"<<eigen_values(i)<<endl;
+      if(minEigV>eigen_values(i))
+        {
+          minEigV=eigen_values(i);
+          cout<<"min eig value:"<<minEigV<<endl;
+          normal=eigen_vectors.col(i);
+        }
+    }  
 }
 
 void get_feature_average(vector<vector<float> > &descriptor_results, vector<float> &avg_feats) {
@@ -362,6 +391,10 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back(centroid[0]);
     features.push_back(centroid[1]);
     features.push_back(centroid[2]);
+    features.push_back(centroid[2]*centroid[2]);
+    //Eigen::Vector3d normal;
+    //getNormal (cloud, normal);
+    //features.push_back (fabs (normal(2)));
 
 }
 
@@ -386,7 +419,7 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     //descriptors_3d.push_back(&o_tangent);
     //descriptors_3d.push_back(&position);
     //descriptors_3d.push_back(&bbox_spectral);
-
+    
     pcl::toROSMsg(cloud, cloud_tmp);
     sensor_msgs::convertPointCloud2ToPointCloud(cloud_tmp, cloud_blob2);
     cloud_kdtree::KdTreeANN pt_cloud_kdtree(cloud_blob2);
