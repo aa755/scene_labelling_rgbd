@@ -1,4 +1,5 @@
 @C = (0.1);
+$e= 0.01;
 for $c (@C)
 {
   print "C= $c\n";
@@ -11,8 +12,8 @@ for $c (@C)
 
 	`git log | head > logs/log.w4.$c.e.01.sum1.warm.IPafter10`;
 	`git diff >> logs/log.w4.$c.e.01.sum1.warm.IPafter10`;
-    my $train = `../../svm_python_learn --m svmstruct_mrf -c $c  -e 0.0001  train$i models/model.w4.$c.e.01.sum1.warm.IPafter10>> logs/log.w4.$c.e.01.sum1.warm.IPafter10 & `;
-   `sleep 300`;
+    my $train = `../../svm_python_learn --m svmstruct_mrf -c $c  -e $e  train$i models/model.w4.c$c.e$e.warm>> logs/log.w4.c$c.e$e.warm & `;
+#   `sleep 300`;
     chdir("../");
   # `sleep 1200`;
   }

@@ -9,10 +9,12 @@ do
 #  rm  fold$i/logs/*
 #  rm  fold$i/pred/*
 #  rm  fold$i/imodels/*
-sed s/data18-warmRestart/data6-printer-baseline/ fold$i/train$i >temp
+#sed s/data18-warmRestart/data6-printer-baseline/ fold$i/train$i >temp
+sed s/data18/data6/ fold$i/train$i >temp
 mv temp fold$i/train$i
 
-sed s/data18-warmRestart/data6-printer-baseline/ fold$i/test$i >temp
+#sed s/data18-warmRestart/data6-printer-baseline/ fold$i/test$i >temp
+sed s/data18/data6/ fold$i/test$i >temp
 mv temp fold$i/test$i
 
 

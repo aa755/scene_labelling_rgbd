@@ -52,8 +52,10 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
         }
     }
    // cout<<j << ","<<segment<<endl;
-    assert(j>=0);
-    outcloud.points.resize ( j+1 );
+    if(j>=0)
+        outcloud.points.resize ( j+1 );
+    else
+       outcloud.points.clear ();
 }
 
 
@@ -612,8 +614,9 @@ int main(int argc, char** argv) {
         //extract.setNegative(false);
         //extract.filter(*cloud_seg);
         apply_segment_filter (*cloud_ptr,*cloud_seg,seg);
+        
         //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
-        if (cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
+        if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
