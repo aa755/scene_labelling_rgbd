@@ -9,8 +9,8 @@ for $c (@C)
     $pwd = `pwd`;
     print "$pwd\n";
 
-	`git log | head > logs/log.w4.$c.e.01.sum1.warm.IPafter10`
-	`git diff >> logs/log.w4.$c.e.01.sum1.warm.IPafter10`
+	`git log | head > logs/log.w4.$c.e.01.sum1.warm.IPafter10`;
+	`git diff >> logs/log.w4.$c.e.01.sum1.warm.IPafter10`;
     my $train = `../../svm_python_learn --m svmstruct_mrf -c $c  -e 0.0001  train$i models/model.w4.$c.e.01.sum1.warm.IPafter10>> logs/log.w4.$c.e.01.sum1.warm.IPafter10 & `;
    `sleep 300`;
     chdir("../");
