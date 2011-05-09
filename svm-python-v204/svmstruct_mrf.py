@@ -1293,7 +1293,7 @@ def areEqualVectors(V1,V2):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp_training_sum1_opt_IP_warm(x,y,sm,sparm)
+    l = lp_training_opt_warm(x,y,sm,sparm)
     #l = lp_training_opt(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
