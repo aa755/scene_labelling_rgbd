@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 
   if(argc!=3)
     {
-    cout<<"usage: "<<argv[1]<<" pointCloudFile segment2labelMappingFile"<<endl;
+    cerr<<"usage: "<<argv[1]<<" pointCloudFile segment2labelMappingFile"<<endl;
     exit(-1);
     }
   std::map<int,int> label_mapping; 

@@ -255,7 +255,7 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
                 c = apply_label_filter(*cloud_colored_pred, labelNum,labelColors[color]->getFloatRep());
                 ROS_INFO("filetered sucessfully");
                 if (c) {
-                    std::cerr << "Pred cloud: List of segments with the label " << labelColors << " : ";
+                    std::cerr << "Pred cloud: List of segments with the label " << labelStr << " : ";
                     for (std::set<int>::iterator it = label_mapping_pred[labelNum].begin(); it != label_mapping_pred[labelNum].end(); it++) {
                         std::cerr << *it << " , ";
                     }
