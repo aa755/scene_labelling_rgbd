@@ -1,6 +1,7 @@
-$labelmapfile = shift;
-$labelsfile = shift;
+$labelmapfile = 'labelmap.txt';
+$labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
 $method = shift;
+$numClasses=6;
 
 %lmap=();
 open(F,$labelmapfile);
@@ -27,8 +28,8 @@ close (F);
 $d = shift; 
 #$i = shift;
 $emap{'1'} = '0.011';
-$emap{'.1'} = '005';
-$emap{'.01'} = '01';
+$emap{'0.1'} = '0.005';
+$emap{'0.01'} = '0.01';
 my %avgP = ();
 my %avgLP = ();
 my %avgLR = ();
@@ -36,6 +37,7 @@ my %LTC = ();
 my %TC = ();
 my %avgR = ();
 @C = ('1');
+$modelFile='model.w4.c0.1.e0.01.warm';
 for $c (@C)
 {
   print "C= $c\n";
@@ -46,7 +48,7 @@ for $c (@C)
   {
     $flag = 0; 
     $count = 0;
-    open(F,"fold$i/pred/out.c$c.e$emap{$c}.$method")   ;
+    open(F,"fold$i/pred/out.$method.$modelFile")   ;
     while(<F>){
       chomp ;
       $line = $_;
@@ -56,7 +58,7 @@ for $c (@C)
        $count = 1;
        next;
       }
-      if($flag ==1 && $count <=18 )
+      if($flag ==1 && $count <=$numClasses )
       {
         $line =~ s/([ \[]*)([^\]]*)(\]*)/\2/;
  #       print $line."\n";
@@ -69,9 +71,9 @@ for $c (@C)
 
   for($i =1 ; $i<= 4; $i++)
   {
-     for ( $k = 1; $k<= 18; $k++) 
+     for ( $k = 1; $k<= $numClasses; $k++) 
      {
-       for ( $l = 0; $l< 18; $l++) 
+       for ( $l = 0; $l<= $numClasses; $l++) 
        {
          $m{$c}{$k}{$l+1} += $mat{$c}{$i}{$k}[$l];
        }
@@ -89,18 +91,18 @@ for $c (@C)
   @ll = ();
   print $c."\n\n";
   printf "%-16s", $blank;
-  for ( $k = 1; $k<= 18; $k++) {
+  for ( $k = 1; $k<= $numClasses; $k++) {
     printf "%-5d\t",  $k ; 
     push(@ll,$labels{$lmap{$k}});
   }
   print F join(",",@ll)."\n";
 
   print "\n\n";
-  for ( $k = 1; $k<= 18; $k++)
+  for ( $k = 1; $k<= $numClasses; $k++)
   {
     @r = ();
     printf "%d:%-12s",  $k,$labels{$lmap{$k}} ; 
-    for ( $l = 1; $l<= 18; $l++) 
+    for ( $l = 1; $l<= $numClasses; $l++) 
     {
       printf "\t%-5s",$m{$c}{$k}{$l};
       push(@r,$m{$c}{$k}{$l})

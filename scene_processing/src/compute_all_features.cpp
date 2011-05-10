@@ -51,6 +51,7 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
             //     std::cerr<<segment_cloud.points[j].label<<",";
         }
     }
+    
    // cout<<j << ","<<segment<<endl;
     if(j>=0)
         outcloud.points.resize ( j+1 );
