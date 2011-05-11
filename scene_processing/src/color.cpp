@@ -90,6 +90,7 @@ class ColorRGB{
 	if (H>=360)
 		H-=360;
 
+        assert(H>=0 && H<=360);
 
 
    }

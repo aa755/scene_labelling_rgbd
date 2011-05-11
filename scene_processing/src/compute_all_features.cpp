@@ -26,6 +26,68 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
 using namespace pcl;
 
+class BinningInfo
+{
+  float max;
+  float min;
+  int numBins;
+  float binSize;
+public:
+  
+  
+  BinningInfo(float min_,float max_,int numBins_)
+  {
+    max=max_;
+    min=min_;
+    numBins=numBins_;
+    assert(max>min);
+    binSize=(max-min)/numBins;
+    
+  }
+
+  int
+  getBinIndex (float value)
+  {
+    assert(value>=min);
+    assert(value<=max);
+    
+    int bin =  ((value -min) / binSize);
+
+    assert (bin <= numBins);
+
+    if (bin == numBins)
+      {
+        bin = numBins - 1;
+      }
+    
+    return bin;
+
+  }
+
+  float
+  GetBinSize () const
+  {
+    return binSize;
+  }
+
+  int
+  GetNumBins () const
+  {
+    return numBins;
+  }
+
+  float
+  GetMin () const
+  {
+    return min;
+  }
+
+  float
+  GetMax () const
+  {
+    return max;
+  }
+};
 
 void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
     //ROS_INFO("applying filter");
@@ -257,20 +319,23 @@ void get_feature_average(vector<vector<float> > &descriptor_results, vector<floa
     std::cerr << std::endl;
 }
 
-void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result, int num_bin) {
+void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< vector<float> > &result, vector<BinningInfo> binningInfos) {
 
     // num_bin = 5;
-    vector<float> min;
-    vector<float> max;
-
     vector<vector<float> >::iterator it = descriptor_results.begin();
+    int count=it->size();
+    result.resize(count);
+    // set size of result vector
+    
+    vector<BinningInfo>::iterator binningInfo = binningInfos.begin();
+    for (vector<vector<float> >::iterator ires = result.begin(); ires < result.end(); ires++,binningInfo++)
+      {
+        ires->resize(binningInfo->GetNumBins ());       
+      }
+/*
     while (it->size() == 0) it++;
     max.resize(it->size(), -FLT_MAX);
     min.resize(it->size(), FLT_MAX);
-    // set size of result vector
-    result.resize(it->size());
-    for (vector<vector<float> >::iterator ires = result.begin(); ires < result.end(); ires++)
-        ires->resize(num_bin);
     int count = 0;
     // find the bin size by finding the max and min of feature value
     for (vector<vector<float> >::iterator it = descriptor_results.begin(); it < descriptor_results.end(); it++) {
@@ -290,27 +355,22 @@ void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< v
         //  std::cerr << std::endl;
     }
 
-
+*/
     // fill the histogram
-    for (vector<vector<float> >::iterator it = descriptor_results.begin(); it < descriptor_results.end(); it++) {
-        vector<float>::iterator imax = max.begin();
-        vector<float>::iterator imin = min.begin();
+  
+    for (vector<vector<float> >::iterator it_point = descriptor_results.begin(); it_point < descriptor_results.end(); it_point++) { // iterate over points
+        vector<BinningInfo>::iterator binningInfo = binningInfos.begin();
+        
         vector<vector<float> >::iterator ires = result.begin();
 
-        if (it->size() > 0) {
-            count++;
-        }
-        for (vector<float>::iterator it2 = it->begin(); it2 < it->end(); it2++, imax++, imin++, ires++) {
+        assert(count==it_point->size ());//missing features NOT allowed for now.
+        
+        for (vector<float>::iterator it_feature = it_point->begin(); it_feature < it_point->end(); it_feature++, binningInfo++, ires++) { // iterate over features of the point
 
-            float bin_size = (*imax - *imin) / 10;
-            int bin = 0;
-            if (bin_size != 0) {
-                bin = (*it2 / bin_size);
-            }
-            if (bin > num_bin - 1) {
-                bin = num_bin - 1;
-            }
+            int bin = binningInfo->getBinIndex (*it_feature);
+            
             //   ROS_INFO("%f %d %d",bin_size,bin,(*ires).size());
+            
             (*ires)[bin] += 1;
         }
     }
@@ -355,8 +415,10 @@ void concat_feats(vector<float> &features, vector<float> &feats) {
     }
 }
 
-void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin) {
-
+void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features) {
+ int num_bin_H=9;
+ int num_bin_S=3;
+ int num_bin_V=3;
     // histogram and average of hue and intensity
 
     vector<vector<float> > hist_features;
@@ -366,9 +428,15 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     for (size_t i = 0; i < cloud.points.size(); ++i, it++) {
         ColorRGB c(cloud.points[i].rgb);
         (*it).push_back(c.H);
+        (*it).push_back(c.S);
         (*it).push_back(c.V);
     }
-    get_feature_histogram(color_features, hist_features, num_bin);
+    
+    vector<BinningInfo> binnigInfos;
+    binnigInfos.push_back (BinningInfo(0,360,num_bin_H));
+    binnigInfos.push_back (BinningInfo(0,1,num_bin_S));
+    binnigInfos.push_back (BinningInfo(0,1,num_bin_V));
+    get_feature_histogram(color_features, hist_features,binnigInfos);
     get_feature_average(color_features, avg_features);
 
   //  concat_feats(features, hist_features);
@@ -394,7 +462,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back(centroid[0]);
     features.push_back(centroid[1]);
     features.push_back(centroid[2]);
-    features.push_back(centroid[2]*centroid[2]);
+    //features.push_back(centroid[2]*centroid[2]);
     //Eigen::Vector3d normal;
     //getNormal (cloud, normal);
     //features.push_back (fabs (normal(2)));
@@ -630,7 +698,6 @@ int main(int argc, char** argv) {
 
 
     // for each segment compute node featuers
-    int num_bin_color = 3;
     int num_bin_shape = 3;
     map < int , vector<float> > features;
     for (size_t i = 0; i< segment_clouds.size(); i++)
@@ -639,7 +706,7 @@ int main(int argc, char** argv) {
         int seg_id = segment_clouds[i].points[1].segment;
         // get color features
         //cout << "computing color features" << std::endl;
-        get_color_features(segment_clouds[i], features[seg_id], num_bin_color);
+        get_color_features(segment_clouds[i], features[seg_id]);
 
         // get shape features
         get_shape_features(segment_clouds[i], features[seg_id], num_bin_shape);
