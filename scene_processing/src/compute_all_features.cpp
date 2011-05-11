@@ -26,6 +26,46 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
 using namespace pcl;
 
+class SpectralProfile
+{
+  
+  vector<float> eigenValues; // sorted in ascending order
+public:
+  geometry_msgs::Point32 centroid;
+  Eigen::Vector3d normal;
+  void setEigValues(Eigen::Vector3d eigenValues_)
+  {
+    eigenValues.clear ();
+    //Assuming the values are sorted
+    assert(eigenValues_(0)<=eigenValues_(1));
+    assert(eigenValues_(1)<=eigenValues_(2));
+            
+    for(int i=0;i<3;i++)
+      eigenValues.push_back (eigenValues_(i));
+  //  std::sort (eigenValues.begin (),eigenValues.end ()); // sorted in ascending order
+  }
+  
+  float getDescendingLambda(int index)
+  {
+    return eigenValues[2-index];
+  }
+  
+  float getScatter()
+  {
+    return getDescendingLambda (0);
+  }
+  
+  float getLinearNess()
+  {
+    return (getDescendingLambda (0)-getDescendingLambda (1));
+  }
+  
+  float getPlanarNess()
+  {
+    return (getDescendingLambda (1)-getDescendingLambda (2));
+  }
+};
+
 class BinningInfo
 {
   float max;
@@ -267,7 +307,7 @@ void getCentroid(const pcl::PointCloud<PointT> &cloud, Eigen::Vector4f &centroid
     centroid[2] = centroid[2]/(cloud.points.size()-1) ;
 }
 
-void getNormal(const pcl::PointCloud<PointT> &cloud, Eigen::Vector3d &normal)
+void getSpectralProfile(const pcl::PointCloud<PointT> &cloud, SpectralProfile &spectralProfile)
 {
    Eigen::Matrix3d eigen_vectors;
    Eigen::Vector3d eigen_values;
@@ -275,10 +315,11 @@ void getNormal(const pcl::PointCloud<PointT> &cloud, Eigen::Vector3d &normal)
    pcl::toROSMsg (cloud,cloudMsg2);
    sensor_msgs::PointCloud cloudMsg;
    sensor_msgs::convertPointCloud2ToPointCloud(cloudMsg2,cloudMsg);
-  cloud_geometry::nearest::computePatchEigen (cloudMsg,eigen_vectors,eigen_values);
+  cloud_geometry::nearest::computePatchEigenNormalized (cloudMsg,eigen_vectors,eigen_values,spectralProfile.centroid);
   
-  double minEigV=DBL_MAX;
-  
+  spectralProfile.setEigValues (eigen_values);
+  float minEigV=FLT_MAX;
+ 
   for(int i=0;i<3;i++)
     {
       
@@ -287,9 +328,10 @@ void getNormal(const pcl::PointCloud<PointT> &cloud, Eigen::Vector3d &normal)
         {
           minEigV=eigen_values(i);
           cout<<"min eig value:"<<minEigV<<endl;
-          normal=eigen_vectors.col(i);
+          spectralProfile.normal=eigen_vectors.col(i);
         }
-    }  
+    }
+  assert(minEigV==spectralProfile.getDescendingLambda (2));
 }
 
 void get_feature_average(vector<vector<float> > &descriptor_results, vector<float> &avg_feats) {
@@ -463,9 +505,16 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back(centroid[1]);
     features.push_back(centroid[2]);
     //features.push_back(centroid[2]*centroid[2]);
-    //Eigen::Vector3d normal;
-    //getNormal (cloud, normal);
-    //features.push_back (fabs (normal(2)));
+    SpectralProfile spectralProfileOfSegment;
+    getSpectralProfile (cloud, spectralProfileOfSegment);
+    cout<<centroid[2]<<","<<spectralProfileOfSegment.centroid.z<<endl;
+    cout<<centroid[1]<<","<<spectralProfileOfSegment.centroid.y<<endl;
+    cout<<centroid[0]<<","<<spectralProfileOfSegment.centroid.x<<endl;
+    assert((int)centroid[2]*10==(int)spectralProfileOfSegment.centroid.z*10);
+    assert((int)centroid[1]*10==(int)spectralProfileOfSegment.centroid.y*10);
+    assert((int)centroid[0]*10==(int)spectralProfileOfSegment.centroid.x*10);
+    
+    features.push_back (fabs (spectralProfileOfSegment.normal(2)));
 
 }
 
