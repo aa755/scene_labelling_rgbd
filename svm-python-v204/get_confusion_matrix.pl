@@ -62,7 +62,7 @@ for $c (@C)
       {
         $line =~ s/([ \[]*)([^\]]*)(\]*)/\2/;
  #       print $line."\n";
-        @{$mat{$c}{$i}{$count}} = split/  /,$line;
+        @{$mat{$c}{$i}{$count}} = split/\s+/,$line;
   #      print join(",",@{$mat{$c}{$i}{$count}})."\n";
         $count++;
       }
@@ -73,8 +73,9 @@ for $c (@C)
   {
      for ( $k = 1; $k<= $numClasses; $k++) 
      {
-       for ( $l = 0; $l<= $numClasses; $l++) 
-       {
+       for ( $l = 0; $l< $numClasses; $l++) 
+       { 
+         print "$i\t$k\t$l\t$mat{$c}{$i}{$k}[$l]\t$m{$c}{$k}{$l+1}\n";
          $m{$c}{$k}{$l+1} += $mat{$c}{$i}{$k}[$l];
        }
      }
