@@ -100,7 +100,7 @@ main (int argc, char** argv)
 
   pcl::fromROSMsg (cloud_blob_merged, *cloud_merged_ptr);
 
-  
+  std::map<int,int> labels;
   for (int i = 0; i < cloud_merged_ptr->size (); i++)
     {
       if (cloud_merged_ptr->points[i].cameraIndex == 0)
@@ -114,7 +114,7 @@ main (int argc, char** argv)
               tmp = cloud_new_ptr->points[j];
               if (src.x == tmp.x && src.y == tmp.y && src.z == tmp.z && src.rgb == tmp.rgb)
                 {
-                  //cloud_new_ptr->points[j].label = src.label;
+                  labels[j] = src.label;
                   count++;
                 }
             }
@@ -128,6 +128,16 @@ main (int argc, char** argv)
   size.width=640;
   IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
   
+        ColorRGB *labelColors[9];
+        labelColors[0]= new ColorRGB(1,0,0);
+        labelColors[1]= new ColorRGB(0,1,0);
+        labelColors[2]= new ColorRGB(0,0,1);
+        labelColors[3]= new ColorRGB(1,1,0);
+        labelColors[4]= new ColorRGB(0,1,1);
+        labelColors[5]= new ColorRGB(1,0,1);
+        labelColors[6]= new ColorRGB(0.5,0,0);
+        labelColors[7]= new ColorRGB(0,0.5,0);
+        labelColors[8]= new ColorRGB(0,0,0.5);  
           pcl::PointXYZRGB tmp;
   for(int x=0;x<size.width;x++)
     for(int y=0;y<size.height;y++)
@@ -135,6 +145,10 @@ main (int argc, char** argv)
         int index=x+y*size.width;
         tmp= cloud_new_ptr->points[index];
         ColorRGB tmpColor(tmp.rgb);
+        if(labels[index]>=1 && labels[index]<=9)
+          {
+            tmpColor=*labelColors[labels[index]-1];
+          }
         CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
         CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
         CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
