@@ -88,6 +88,21 @@ public:
      return (centroid.z - other.centroid.z);    
   }
   
+  float getHDiffAbs(const SpectralProfile & other)
+  {
+     return (avgH - other.avgH);    
+  }
+  
+  float getSDiff(const SpectralProfile & other)
+  {
+     return (avgS - other.avgS);    
+  }
+  
+  float getVDiff(const SpectralProfile & other)
+  {
+     return (avgV - other.avgV);    
+  }
+  
   float getAngleDiffInRadians(const SpectralProfile & other)
   {
         return (getAngleWithVerticalInRadians() - other.getAngleWithVerticalInRadians ());  
@@ -834,6 +849,12 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
+
+        edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral));
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
     }
 
 }
