@@ -160,6 +160,8 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
           outcloud.points[j].rgb = incloud.points[i].rgb;
           outcloud.points[j].segment = incloud.points[i].segment;
           outcloud.points[j].label = incloud.points[i].label;
+          outcloud.points[j].cameraIndex = incloud.points[i].cameraIndex;
+          outcloud.points[j].distance = incloud.points[i].distance;
 
             //     std::cerr<<segment_cloud.points[j].label<<",";
         }
@@ -172,11 +174,93 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
        outcloud.points.clear ();
 }
 
+void apply_notsegment_filter(const pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
+    //ROS_INFO("applying filter");
+
+    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
+
+    outcloud.header.frame_id = incloud.header.frame_id;
+//    outcloud.points = incloud.points;
+    outcloud.points.resize ( incloud.points.size() );
+
+    int j = -1;
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].segment != segment) {
+          j++;
+          outcloud.points[j].x = incloud.points[i].x;
+          outcloud.points[j].y = incloud.points[i].y;
+          outcloud.points[j].z = incloud.points[i].z;
+          outcloud.points[j].rgb = incloud.points[i].rgb;
+          outcloud.points[j].segment = incloud.points[i].segment;
+          outcloud.points[j].label = incloud.points[i].label;
+          outcloud.points[j].cameraIndex = incloud.points[i].cameraIndex;
+          outcloud.points[j].distance = incloud.points[i].distance;
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+        }
+    }
+   // cout<<j << ","<<segment<<endl;
+    assert(j>=0);
+    outcloud.points.resize ( j+1 );
+}
+
+void apply_camera_filter(const pcl::PointCloud<PointT> &incloud,  pcl::PointCloud<PointT> &outcloud, int camera) {
+    //ROS_INFO("applying filter");
+
+    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
+
+    outcloud.header.frame_id = incloud.header.frame_id;
+//    outcloud.points = incloud.points;
+    outcloud.points.resize ( incloud.points.size() );
+
+    int j = -1;
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].cameraIndex == camera) {
+          j++;
+          outcloud.points[j].x = incloud.points[i].x;
+          outcloud.points[j].y = incloud.points[i].y;
+          outcloud.points[j].z = incloud.points[i].z;
+          outcloud.points[j].rgb = incloud.points[i].rgb;
+          outcloud.points[j].segment = incloud.points[i].segment;
+          outcloud.points[j].label = incloud.points[i].label;
+          outcloud.points[j].cameraIndex = incloud.points[i].cameraIndex;
+          outcloud.points[j].distance = incloud.points[i].distance;
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+        }
+    }
+   // cout<<j << ","<<segment<<endl;
+    assert(j>=0);
+    outcloud.points.resize ( j+1 );
+}
 
 
-float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::PointCloud<PointT> &cloud2)
+float getDistanceToBoundary( const pcl::PointCloud<PointT> &cloud1, const pcl::PointCloud<PointT> &cloud2)
+{
+    float max_distance = 0;
+    for(size_t i =0; i< cloud1.points.size(); ++i)
+    {
+        float pdist = 0;
+        for(size_t j =0; j< cloud2.points.size(); ++j){
+            float point_dist = pow((cloud1.points[i].x - cloud2.points[j].x),2) + pow((cloud1.points[i].y - cloud2.points[j].y),2) + pow((cloud1.points[i].z - cloud2.points[j].z),2);
+            float distance = (pow(cloud2.points[j].distance,2 ) - pow(cloud1.points[i].distance,2) - ( point_dist ))/(2*cloud1.points[i].distance);
+            if (pdist < distance) pdist = distance;
+            if (max_distance < distance) max_distance = distance;
+           // cout << distance << " " << pdist<< " " << max_distance<< endl;
+        }
+       // cloud1.points[i].distance = pdist;
+    }
+    return max_distance;
+}
+
+
+
+pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::PointCloud<PointT> &cloud2)
 {
   float min_distance = FLT_MAX;
+  int min_index = 0;
   pcl::PointCloud<PointT>::Ptr small_cloud;
   pcl::PointCloud<PointT>::Ptr big_cloud;
   if (cloud1.points.size() > cloud2.points.size()){
@@ -216,6 +300,7 @@ float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::Poin
       		 if (min_distance > nn_distances[j])
                  {
                      min_distance = nn_distances[j];
+                     min_index = nn_indices[j];
                   //   cout << "changing min_distance to "  << min_distance<< endl;
 
                  }
@@ -233,7 +318,7 @@ float getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,const pcl::Poin
    }
   }
 */
-  return sqrt(min_distance) ;
+  return make_pair(sqrt(min_distance),min_index) ;
 }
 
 
@@ -245,9 +330,9 @@ void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds
     {
       for (size_t j = i+1; j < segment_clouds.size() ; j++)
       { 
-         float dist = getSmallestDistance(segment_clouds[i],segment_clouds[j]);
-         distance_matrix[make_pair(segment_clouds[i].points[1].segment,segment_clouds[j].points[1].segment)] = dist;
-         distance_matrix[make_pair(segment_clouds[j].points[1].segment,segment_clouds[i].points[1].segment)] = dist;
+         pair<float,int> dist_pair = getSmallestDistance(segment_clouds[i],segment_clouds[j]);
+         distance_matrix[make_pair(segment_clouds[i].points[1].segment,segment_clouds[j].points[1].segment)] = dist_pair.first;
+         distance_matrix[make_pair(segment_clouds[j].points[1].segment,segment_clouds[i].points[1].segment)] = dist_pair.first;
       }
  //     std::cerr<< "size of segment " << i << " : " << segment_clouds[i].points.size() << "\t and label is: " << segment_clouds[i].points[1].label <<"\n";
     }
@@ -268,6 +353,50 @@ void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds
     }*/
 }
 
+
+void getSegmentDistanceToBoundary( const pcl::PointCloud<PointT> &cloud , map<int,float> &segment_boundary_distance){
+    pcl::PointCloud<PointT>::Ptr cloud_rest(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<PointT>::Ptr cloud_cam(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+
+    int cnt =0;
+    // find all the camera indices// find the max segment number
+
+    map<int,int> camera_indices;
+    for (size_t i = 0; i < cloud.points.size(); ++i) {
+        camera_indices[(int) cloud.points[i].cameraIndex] = 1;
+    }
+    // for every camera index .. apply filter anf get the point cloud
+    for (map<int,int>::iterator it = camera_indices.begin(); it != camera_indices.end();it++)
+    {
+        int ci = (*it).first;
+        apply_camera_filter(*cloud_ptr,*cloud_cam,ci);
+
+        // find the segment list
+        map<int,int> segments;
+        for (size_t i = 0; i < cloud_cam->points.size(); ++i) {
+            if( cloud_cam->points[i].label != 0)
+                segments[(int) cloud_cam->points[i].segment] = 1;
+        }
+        for (map<int,int>::iterator it2 = segments.begin(); it2 != segments.end();it2++){
+            cnt++;
+            int segnum = (*it2).first;
+            apply_segment_filter(*cloud_cam,*cloud_seg,segnum);
+            apply_notsegment_filter(*cloud_cam,*cloud_rest,segnum);
+            float bdist = getDistanceToBoundary(*cloud_seg,*cloud_rest);
+
+            map<int , float>::iterator segit = segment_boundary_distance.find(segnum);
+            if(segit== segment_boundary_distance.end() || bdist> segment_boundary_distance[segnum]  )
+                segment_boundary_distance[segnum] = bdist;
+            // if(cnt == 1)  outcloud = *cloud_seg;
+            // else outcloud += *cloud_seg;
+        }
+
+    }
+
+    //for(map<int,float>::iterator it = )
+}
 
 void getMinMax(const pcl::PointCloud<PointT> &cloud, const pcl::PointIndices &indices, Eigen::Vector4f &min_p, Eigen::Vector4f &max_p) {
     min_p.setConstant(FLT_MAX);
@@ -501,6 +630,9 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     
     Eigen::Vector4f min_p;
     Eigen::Vector4f max_p;
+
+
+
     // get bounding box features
     SpectralProfile spectralProfileOfSegment;
     getSpectralProfile (cloud, spectralProfileOfSegment);
@@ -526,6 +658,9 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
    
+
+ 
+
 
 }
 
@@ -679,6 +814,16 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(innerness);
     }
 
+}
+
+void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features){
+    map<int,float> segment_boundary_distance;
+    getSegmentDistanceToBoundary(cloud,segment_boundary_distance);
+    for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
+    {
+        int segid = (*it).first;
+        features[segid].push_back((*it).second);
+    }
 }
 
 
