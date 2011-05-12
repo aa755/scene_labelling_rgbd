@@ -28,7 +28,7 @@ using namespace pcl;
 
 class SpectralProfile
 {
-  
+  ColorRGB avgColor;
   vector<float> eigenValues; // sorted in ascending order
 public:
   geometry_msgs::Point32 centroid;
@@ -72,7 +72,7 @@ public:
   
   float getAngleWithVerticalInRadians() const
   {
-    return acos(fabs(normal[2]));
+    return acos(getNormalZComponent());
   }
   
   float getHorzDistanceBwCentroids(const SpectralProfile & other) const
@@ -92,7 +92,7 @@ public:
   
   float getNormalDotProduct(const SpectralProfile & other)
   {
-        return  normal(0)*other.normal(0) +normal(1)*other.normal(1) +normal(2)*other.normal(2) ;
+        return  fabs(normal(0)*other.normal(0) +normal(1)*other.normal(1) +normal(2)*other.normal(2)) ;
   }
   
   float getInnerness(const SpectralProfile & other)
@@ -623,7 +623,7 @@ void concat_feats(vector<float> &features, vector<float> &feats) {
     }
 }
 
-void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features) {
+void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, vector<SpectralProfile> & spectralProfiles) {
  int num_bin_H=9;
  int num_bin_S=3;
  int num_bin_V=3;
@@ -932,7 +932,7 @@ int main(int argc, char** argv) {
         int seg_id = segment_clouds[i].points[1].segment;
         // get color features
         //cout << "computing color features" << std::endl;
-        get_color_features(segment_clouds[i], features[seg_id]);
+        get_color_features(segment_clouds[i], features[seg_id],spectralProfiles);
 
         // get shape features - now in global features
      //   get_shape_features(segment_clouds[i], features[seg_id], num_bin_shape);

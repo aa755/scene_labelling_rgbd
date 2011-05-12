@@ -9,6 +9,10 @@ class ColorRGB{
   public:
    float r,g,b;
    float H,S,V;
+   ColorRGB()
+   {
+     
+   }
    ColorRGB(float rgb)
    {
        int rgbi=*reinterpret_cast<int*>(&rgb);
