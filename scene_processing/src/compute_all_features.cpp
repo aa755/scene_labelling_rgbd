@@ -549,8 +549,8 @@ void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< v
 
     // num_bin = 5;
     vector<vector<float> >::iterator it = descriptor_results.begin();
-    int count=it->size();
-    result.resize(count);
+    int numFeats=it->size();
+    result.resize(numFeats);
     // set size of result vector
     
     vector<BinningInfo>::iterator binningInfo = binningInfos.begin();
@@ -589,7 +589,7 @@ void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< v
         
         vector<vector<float> >::iterator ires = result.begin();
 
-        assert(count==it_point->size ());//missing features NOT allowed for now.
+        assert(numFeats==it_point->size ());//missing features NOT allowed for now.
         
         for (vector<float>::iterator it_feature = it_point->begin(); it_feature < it_point->end(); it_feature++, binningInfo++, ires++) { // iterate over features of the point
 
@@ -603,13 +603,17 @@ void get_feature_histogram(vector<vector<float> > &descriptor_results, vector< v
 
     // normalize and print histogram
  //   std::cerr << "historam \n";
+    
+    int numPoints=descriptor_results.size ();
+    
     int c1 = 0, c2 = 0;
     for (vector< vector<float> >::iterator i = result.begin(); i < result.end(); i++) {
         c1++;
    //     std::cerr << "histogram for feature:" << c1 << "\n";
         for (vector<float>::iterator i2 = i->begin(); i2 < i->end(); i2++) {
             c2++;
-            *i2 = *i2 / count;
+            *i2 = *i2 / numPoints;
+            assert(*i2<=1.0);
           //  std::cerr << c2 << " : " << *i2 << ",\t";
         }
   //      std::cerr << std::endl;
@@ -669,7 +673,7 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     spectralProfileOfSegment.avgS=avg_features[1];
     spectralProfileOfSegment.avgV=avg_features[2];
 
-  //  concat_feats(features, hist_features);
+    concat_feats(features, hist_features);
     concat_feats(features, avg_features);
 
 }
