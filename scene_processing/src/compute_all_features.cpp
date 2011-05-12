@@ -90,7 +90,7 @@ public:
   
   float getHDiffAbs(const SpectralProfile & other)
   {
-     return (avgH - other.avgH);    
+     return fabs(avgH - other.avgH);    
   }
   
   float getSDiff(const SpectralProfile & other)
