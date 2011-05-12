@@ -28,9 +28,12 @@ using namespace pcl;
 
 class SpectralProfile
 {
-  ColorRGB avgColor;
   vector<float> eigenValues; // sorted in ascending order
 public:
+  float avgH;
+  float avgS;
+  float avgV;
+  
   geometry_msgs::Point32 centroid;
   Eigen::Vector3d normal;
   void setEigValues(Eigen::Vector3d eigenValues_)
@@ -623,7 +626,7 @@ void concat_feats(vector<float> &features, vector<float> &feats) {
     }
 }
 
-void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, vector<SpectralProfile> & spectralProfiles) {
+void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, SpectralProfile & spectralProfileOfSegment) {
  int num_bin_H=9;
  int num_bin_S=3;
  int num_bin_V=3;
@@ -646,13 +649,17 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     binnigInfos.push_back (BinningInfo(0,1,num_bin_V));
     get_feature_histogram(color_features, hist_features,binnigInfos);
     get_feature_average(color_features, avg_features);
+    
+    spectralProfileOfSegment.avgH=avg_features[0];
+    spectralProfileOfSegment.avgS=avg_features[1];
+    spectralProfileOfSegment.avgV=avg_features[2];
 
   //  concat_feats(features, hist_features);
     concat_feats(features, avg_features);
 
 }
 
-void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, vector<SpectralProfile> & spectralProfiles) {
+void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, SpectralProfile & spectralProfileOfSegment) {
     
     Eigen::Vector4f min_p;
     Eigen::Vector4f max_p;
@@ -660,9 +667,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
 
 
     // get bounding box features
-    SpectralProfile spectralProfileOfSegment;
     getSpectralProfile (cloud, spectralProfileOfSegment);
-    spectralProfiles.push_back (spectralProfileOfSegment);
     
     getMinMax(cloud, min_p, max_p);
     float xExtent=max_p[0] - min_p[0];
@@ -928,17 +933,18 @@ int main(int argc, char** argv) {
     vector<SpectralProfile> spectralProfiles;
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
+        spectralProfiles.push_back (SpectralProfile()); //node feature generators can store structured data in this class for use in edge features
      //   vector<float> features;
         int seg_id = segment_clouds[i].points[1].segment;
         // get color features
         //cout << "computing color features" << std::endl;
-        get_color_features(segment_clouds[i], features[seg_id],spectralProfiles);
+        get_color_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
 
         // get shape features - now in global features
      //   get_shape_features(segment_clouds[i], features[seg_id], num_bin_shape);
 
         // get bounding box and centroid point features
-        get_global_features(segment_clouds[i], features[seg_id],spectralProfiles);
+        get_global_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
 
     }
   //  vector<pcl::Normal> cloud_normals;
