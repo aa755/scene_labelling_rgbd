@@ -45,35 +45,61 @@ public:
   //  std::sort (eigenValues.begin (),eigenValues.end ()); // sorted in ascending order
   }
   
-  float getDescendingLambda(int index)
+  float getDescendingLambda(int index) const
   {
     return eigenValues[2-index];
   }
   
-  float getScatter()
+  float getScatter() const
   {
     return getDescendingLambda (0);
   }
   
-  float getLinearNess()
+  float getLinearNess() const
   {
     return (getDescendingLambda (0)-getDescendingLambda (1));
   }
   
-  float getPlanarNess()
+  float getPlanarNess() const
   {
     return (getDescendingLambda (1)-getDescendingLambda (2));
   }
   
-  float getNormalZComponent()
+  float getNormalZComponent() const
   {
     return fabs(normal[2]);
   }
   
-  float getHorzDistanceBwCentroids()
+  float getAngleWithVerticalInRadians() const
   {
-        sqrt(pow(features[segment_id][centroid_x_index] - features[seg2_id][centroid_x_index], 2)
-                + pow(features[segment_id][centroid_y_index] - features[seg2_id][centroid_y_index], 2));    
+    return acos(fabs(normal[2]));
+  }
+  
+  float getHorzDistanceBwCentroids(const SpectralProfile & other) const
+  {
+     return sqrt(pow(centroid.x - other.centroid.x, 2) + pow(centroid.y - other.centroid.y, 2));    
+  }
+  
+  float getVertDispCentroids(const SpectralProfile & other)
+  {
+     return (centroid.z - other.centroid.z);    
+  }
+  
+  float getAngleDiffInRadians(const SpectralProfile & other)
+  {
+        return (getAngleWithVerticalInRadians() - other.getAngleWithVerticalInRadians ());  
+  }
+  
+  float getNormalDotProduct(const SpectralProfile & other)
+  {
+        return  normal(0)*other.normal(0) +normal(1)*other.normal(1) +normal(2)*other.normal(2) ;
+  }
+  
+  float getInnerness(const SpectralProfile & other)
+  {
+    float r1=sqrt(centroid.x*centroid.x+centroid.y*centroid.y);
+    float r2=sqrt(other.centroid.x*other.centroid.x+other.centroid.y*other.centroid.y);
+    return r1-r2;
   }
 };
 
@@ -651,9 +677,9 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back(spectralProfileOfSegment.centroid.z);
     
     
-    features.push_back (fabs (spectralProfileOfSegment.normal(2)));
+    features.push_back (spectralProfileOfSegment.getNormalZComponent ());
   
-    //specrtal saliency features
+    //spectral saliency features
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
@@ -776,42 +802,33 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
-						vector<pcl::Normal> &cloud_normals,
-                        map <int, vector<float> >&features,
+                        vector<SpectralProfile> & spectralProfiles,
                         map < int, vector<float> > &edge_features) {
 
-    int centroid_x_index = 9;
-    int centroid_y_index = 10;
-    int centroid_z_index = 11;
-    int normal_angle_index = 3;
-    int segment_index=segment_num_index_map[segment_id];
+    SpectralProfile segment1Spectral=spectralProfiles[segment_num_index_map[segment_id]];
 
     for (vector<int>::iterator it = neighbor_list.begin(); it != neighbor_list.end(); it++) {
 
         int seg2_id = *it;
-        int seg2_index=segment_num_index_map[seg2_id];
+        SpectralProfile segment2Spectral=spectralProfiles[segment_num_index_map[seg2_id]];
         // horizontal distance between centroids:
-        float centroid_dist_horz = sqrt(pow(features[segment_id][centroid_x_index] - features[seg2_id][centroid_x_index], 2)
-                + pow(features[segment_id][centroid_y_index] - features[seg2_id][centroid_y_index], 2));
         
-        edge_features[seg2_id].push_back(centroid_dist_horz);
+        edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));
         // difference in z coordinates of the centroids
-        edge_features[seg2_id].push_back((features[segment_id][centroid_z_index ] - features[seg2_id][centroid_z_index ]));
+        edge_features[seg2_id].push_back(segment1Spectral.getVertDispCentroids (segment2Spectral));
         //cerr << "edge feature for edge (" << seg1_id << "," << seg2_id << ")  = " << centroid_z_diff << endl;
         
         // distance between closest points
         edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);
 
         // difference of angles with vertical
-        edge_features[seg2_id].push_back((acos(features[segment_id][normal_angle_index]) - acos(features[seg2_id][normal_angle_index])));
+        edge_features[seg2_id].push_back(segment1Spectral.getAngleDiffInRadians (segment2Spectral));
 		
 		// dot product of normals
-	edge_features[seg2_id].push_back( cloud_normals[segment_num_index_map[segment_id]].normal[0]*cloud_normals[segment_num_index_map[seg2_id]].normal[0] + cloud_normals[segment_num_index_map[segment_id]].normal[1]*cloud_normals[segment_num_index_map[seg2_id]].normal[1]  + cloud_normals[segment_num_index_map[segment_id]].normal[2]*cloud_normals[segment_num_index_map[seg2_id]].normal[2] );
+        edge_features[seg2_id].push_back(segment1Spectral.getNormalDotProduct (segment2Spectral));
 
-        float innerness = sqrt(pow(features[segment_id][centroid_x_index],2) + pow(features[segment_id][centroid_y_index], 2))
-                - sqrt(pow(features[seg2_id][centroid_x_index],2) + pow(features[seg2_id][centroid_y_index], 2));
         
-        edge_features[seg2_id].push_back(innerness);
+        edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
     }
 
 }
@@ -944,7 +961,7 @@ int main(int argc, char** argv) {
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
-        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , cloud_normals, features, edge_features);
+        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features);
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
             cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";

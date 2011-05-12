@@ -52,7 +52,7 @@ class ColorRGB{
        b=bi/255.0;
    }
 
-   float convertToHSV()
+   void convertToHSV()
    {
     double maxC = b;
 	if (maxC < g) maxC = g;
