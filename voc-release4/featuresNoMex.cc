@@ -41,22 +41,22 @@ mxArray *process(const mxArray *mximage, const mxArray *mxsbin) {
       mxGetClassID(mximage) != mxDOUBLE_CLASS)
     mexErrMsgTxt("Invalid input");
 
-  int sbin = (int)mxGetScalar(mxsbin);
+  int sbin = (int)mxGetScalar(mxsbin); // image is divide into sbin*sbin squares(blocks)
 
   // memory for caching orientation histograms & their norms
   int blocks[2];
-  blocks[0] = (int)round((double)dims[0]/(double)sbin);
+  blocks[0] = (int)round((double)dims[0]/(double)sbin); 
   blocks[1] = (int)round((double)dims[1]/(double)sbin);
-  double *hist = (double *)mxCalloc(blocks[0]*blocks[1]*18, sizeof(double));
-  double *norm = (double *)mxCalloc(blocks[0]*blocks[1], sizeof(double));
+  double *hist = (double *)mxCalloc(blocks[0]*blocks[1]*18, sizeof(double)); // stores histogram of gradients along each direction in a block
+  double *norm = (double *)mxCalloc(blocks[0]*blocks[1], sizeof(double)); // stores for the norm for each block
 
   // memory for HOG features
   int out[3];
-  out[0] = max(blocks[0]-2, 0);
+  out[0] = max(blocks[0]-2, 0); // ignore the boundary blocks ?
   out[1] = max(blocks[1]-2, 0);
-  out[2] = 27+4+1;
+  out[2] = 27+4+1; //32 dimensional feature for each block
   mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
-  double *feat = (double *)mxGetPr(mxfeat);
+  double *feat = (double *)mxGetPr(mxfeat); // get access to underlying double array
   
   int visible[2];
   visible[0] = blocks[0]*sbin;
