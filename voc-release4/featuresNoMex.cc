@@ -1,6 +1,6 @@
 #include <math.h>
-#include "mex.h"
-
+//#include "mex.h"
+#include <stdlib.h>
 // small value, used to avoid division by zero
 #define eps 0.0001
 
@@ -33,30 +33,23 @@ static inline int max(int x, int y) { return (x <= y ? y : x); }
 // main function:
 // takes a double color image and a bin size 
 // returns HOG features
-mxArray *process(const mxArray *mximage, const mxArray *mxsbin) {
-  double *im = (double *)mxGetPr(mximage);
-  const int *dims = mxGetDimensions(mximage);
-  if (mxGetNumberOfDimensions(mximage) != 3 ||
-      dims[2] != 3 ||
-      mxGetClassID(mximage) != mxDOUBLE_CLASS)
-    mexErrMsgTxt("Invalid input");
-
-  int sbin = (int)mxGetScalar(mxsbin); // image is divide into sbin*sbin squares(blocks)
+double *process(const double *im, const int *dims, int sbin) {
 
   // memory for caching orientation histograms & their norms
   int blocks[2];
   blocks[0] = (int)round((double)dims[0]/(double)sbin); 
   blocks[1] = (int)round((double)dims[1]/(double)sbin);
-  double *hist = (double *)mxCalloc(blocks[0]*blocks[1]*18, sizeof(double)); // stores histogram of gradients along each direction in a block
-  double *norm = (double *)mxCalloc(blocks[0]*blocks[1], sizeof(double)); // stores for the norm for each block
+  double *hist = (double *)calloc(blocks[0]*blocks[1]*18, sizeof(double)); // stores histogram of gradients along each direction in a block
+  double *norm = (double *)calloc(blocks[0]*blocks[1], sizeof(double)); // stores for the norm for each block
 
   // memory for HOG features
   int out[3];
   out[0] = max(blocks[0]-2, 0); // ignore the boundary blocks ?
   out[1] = max(blocks[1]-2, 0);
   out[2] = 27+4+1; //32 dimensional feature for each block
-  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
-  double *feat = (double *)mxGetPr(mxfeat); // get access to underlying double array
+//  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
+//  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
+  double *feat = (double *)calloc(out[0]*out[1]*out[2],sizeof(double));
   
   int visible[2];
   visible[0] = blocks[0]*sbin;
@@ -65,7 +58,7 @@ mxArray *process(const mxArray *mximage, const mxArray *mxsbin) {
   for (int x = 1; x < visible[1]-1; x++) {
     for (int y = 1; y < visible[0]-1; y++) {
       // first color channel
-      double *s = im + min(x, dims[1]-2)*dims[0] + min(y, dims[0]-2);
+      const double *s = im + min(x, dims[1]-2)*dims[0] + min(y, dims[0]-2);
       double dy = *(s+1) - *(s-1);
       double dx = *(s+dims[0]) - *(s-dims[0]);
       double v = dx*dx + dy*dy;
@@ -218,11 +211,12 @@ mxArray *process(const mxArray *mximage, const mxArray *mxsbin) {
     }
   }
 
-  mxFree(hist);
-  mxFree(norm);
-  return mxfeat;
+  free(hist);
+  free(norm);
+  return feat;
 }
 
+/*
 // matlab entry point
 // F = features(image, bin)
 // image should be color with double values
@@ -234,5 +228,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   plhs[0] = process(prhs[0], prhs[1]);
 }
 
-
+*/
 
