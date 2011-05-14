@@ -16,6 +16,7 @@
 #include "pcl/kdtree/kdtree.h"
 #include "pcl/kdtree/tree_types.h"
 #include <point_cloud_mapping/geometry/nearest.h>
+#include "HOG.cpp"
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
 typedef pcl::PointXYZRGBCamSL PointT;

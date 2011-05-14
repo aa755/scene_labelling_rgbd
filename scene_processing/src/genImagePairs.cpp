@@ -51,7 +51,7 @@ main (int argc, char** argv)
 {
   std::string fn;
 
-
+  int frameNumber=0;
 
   //sensor_msgs::PointCloud2 cloud_blob_new;
   //sensor_msgs::PointCloud2 cloud_blob_prev;
@@ -80,14 +80,17 @@ main (int argc, char** argv)
 
   scene_processing::pcmergerConfig InitialTransformConfig;
   char *topic = "/camera/rgb/points";
-  if (argc > 2)
-    topic = argv[2];
+  if (argc > 3)
+    frameNumber = atoi(argv[3]);
 
   if (!reader.open (argv[1], "/rgbdslam/my_clouds"))
     {
       cout << "Couldn't read bag file on topic" << (topic);
       return (-1);
     }
+  for(int i=0;i<5*frameNumber;i++)
+    reader.getNextCloud ();
+  
   cloud_blob_new = reader.getNextCloud ();
   pcl::fromROSMsg (*cloud_blob_new, *cloud_new_ptr);
 
@@ -103,7 +106,7 @@ main (int argc, char** argv)
   std::map<int,int> labels;
   for (int i = 0; i < cloud_merged_ptr->size (); i++)
     {
-      if (cloud_merged_ptr->points[i].cameraIndex == 0)
+      if (cloud_merged_ptr->points[i].cameraIndex == frameNumber)
         {
           PointT src;
           pcl::PointXYZRGB tmp;
@@ -114,7 +117,7 @@ main (int argc, char** argv)
               tmp = cloud_new_ptr->points[j];
               if (src.x == tmp.x && src.y == tmp.y && src.z == tmp.z && src.rgb == tmp.rgb)
                 {
-                  labels[j] = src.label;
+                  labels[j] = 1;//src.label;
                   count++;
                 }
             }

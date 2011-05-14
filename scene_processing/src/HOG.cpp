@@ -4,52 +4,122 @@
 // small value, used to avoid division by zero
 #define eps 0.0001
 
-// unit vectors used to compute gradient orientation
-double uu[9] = {1.0000, 
-		0.9397, 
-		0.7660, 
-		0.500, 
-		0.1736, 
-		-0.1736, 
-		-0.5000, 
-		-0.7660, 
-		-0.9397};
-double vv[9] = {0.0000, 
-		0.3420, 
-		0.6428, 
-		0.8660, 
-		0.9848, 
-		0.9848, 
-		0.8660, 
-		0.6428, 
-		0.3420};
+// originally obtained from http://people.cs.uchicago.edu/~pff/
+// modified by Abhishek Anand (abhishek.anand.iitg@gmail.com)
 
+class Point2D
+{
+public:
+  int x;
+  int y;
+};
+
+
+class HOGFeaturesOfBlock
+{
+public:
+  static int const numFeats=27+4+1;
+  double feats[numFeats];
+  static void aggregateFeatsOfBlocks(vector<HOGFeaturesOfBlock> & featsOfBlocks, HOGFeaturesOfBlock & aggFeats)
+  {
+    
+  }
+};
+
+class HOG
+{
+static  double const uu[9];
+static double const vv[9];
+// unit vectors used to compute gradient orientation
+  double *feat;
+  int numBlocksOutX;
+  int numBlocksOutY;
+  
+  int numBlocksInX;
+  int numBlocksInY;
+
+public :
+  HOG()
+  {
+    feat=NULL;
+  }
+  ~HOG()
+  {
+    free( feat);
+  }
+  
+  double getFeatVal(int blockX, int blockY, int featIndex)
+  {
+    return *feat + featIndex*numBlocksOutX*numBlocksOutY + blockX*numBlocksOutY+ blockY;
+  }
+  
+  void getFeatValForPixels(vector<Point2D> & interestPointsInImage, HOGFeaturesOfBlock & hogFeats)
+  {
+    // bin pixels into blocksOuts()
+    int numPointsInBlock[numBlocksOutY][numBlocksOutX];
+    for(int y=0;i<numBlocksInY;y++)
+        for(int x=0;x<numBlocksInX;x++)
+          numPointsInBlock[y][x]=0;
+    Point2D outBlock;
+    for(int i=0;i<interestPointsInImage.size();i++)
+      {
+        pixel2BlockOut (interestPointsInImage[i],outBlock);
+        if(outBlock.x!=-1)
+          numPointsInBlock[outBlock.y][outBlock.x]++;
+      }
+    
+    int max=-1;
+    for(int y=0;i<numBlocksInY;y++)
+        for(int x=0;x<numBlocksInX;x++)
+          {
+            if(max<numPointsInBlock[y][x])
+                max=numPointsInBlock[y][x];
+          }
+    
+    //push all out blocks with max to a vector and aggregate
+  }
+  
+  void pixel2BlockOut(Point2D & p,Point2D  & b )
+  {
+    //return -1 if out of range block
+    b.x=((int)round((float)p.x/(float)sbin)) -1 ;
+    b.y=((int)round((float)p.y/(float)sbin)) -1;
+    if(b.x<0 || b.x>=numBlocksOutX ||b.y<0 || b.y>=numBlocksOutY )
+      b.x=-1;
+  }
+  
 static inline double min(double x, double y) { return (x <= y ? x : y); }
 static inline double max(double x, double y) { return (x <= y ? y : x); }
 
 static inline int min(int x, int y) { return (x <= y ? x : y); }
 static inline int max(int x, int y) { return (x <= y ? y : x); }
 
+int sbin=8;
 // main function:
 // takes a double color image and a bin size 
 // returns HOG features
-double *process(const double *im, const int *dims, int sbin) {
+void process(const double *im, const int *dims) {
 
   // memory for caching orientation histograms & their norms
   int blocks[2];
   blocks[0] = (int)round((double)dims[0]/(double)sbin); 
+  numBlocksInY=blocks[0];
   blocks[1] = (int)round((double)dims[1]/(double)sbin);
+  numBlocksInX=blocks[1];
+  
   double *hist = (double *)calloc(blocks[0]*blocks[1]*18, sizeof(double)); // stores histogram of gradients along each direction in a block
   double *norm = (double *)calloc(blocks[0]*blocks[1], sizeof(double)); // stores for the norm for each block
 
   // memory for HOG features
   int out[3];
   out[0] = max(blocks[0]-2, 0); // ignore the boundary blocks ?
+  numBlocksOutY=out[0];
   out[1] = max(blocks[1]-2, 0);
-  out[2] = 27+4+1; //32 dimensional feature for each block
+  numBlocksOutX=out[1];
+  out[2] = HOGFeaturesOfBlock::numFeats ;//32 dimensional feature for each block
 //  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
 //  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
-  double *feat = (double *)calloc(out[0]*out[1]*out[2],sizeof(double));
+   feat = (double *)calloc(out[0]*out[1]*out[2],sizeof(double));
   
   int visible[2];
   visible[0] = blocks[0]*sbin;
@@ -101,7 +171,7 @@ double *process(const double *im, const int *dims, int sbin) {
 	}
       }
       
-      // add to 4 histograms around pixel using linear interpolation
+      // add to 4 histograms(blocks) around pixel using linear interpolation
       double xp = ((double)x+0.5)/(double)sbin - 0.5;
       double yp = ((double)y+0.5)/(double)sbin - 0.5;
       int ixp = (int)floor(xp);
@@ -213,9 +283,28 @@ double *process(const double *im, const int *dims, int sbin) {
 
   free(hist);
   free(norm);
-  return feat;
+//  return feat;
 }
 
+int
+getNumFeatsPerBlock () const
+{
+  return HOGFeaturesOfBlock::numFeats;
+}
+
+int
+getNumBlocksY () const
+{
+  return numBlocksOutY;
+}
+
+int
+getNumBlocksX () const
+{
+  return numBlocksOutX;
+}
+
+};
 /*
 // matlab entry point
 // F = features(image, bin)
@@ -230,3 +319,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 */
 
+double const HOG::uu[9] = {1.0000, 
+		0.9397, 
+		0.7660, 
+		0.500, 
+		0.1736, 
+		-0.1736, 
+		-0.5000, 
+		-0.7660, 
+		-0.9397};
+double const HOG::vv[9] = {0.0000, 
+		0.3420, 
+		0.6428, 
+		0.8660, 
+		0.9848, 
+		0.9848, 
+		0.8660, 
+		0.6428, 
+		0.3420};
