@@ -12,6 +12,14 @@ class Point2D
 public:
   int x;
   int y;
+  Point2D(int x_,int y_)
+  {
+    x=x_;
+    y=y_;
+  }
+  Point2D()
+  {
+  }
 };
 
 
@@ -20,9 +28,18 @@ class HOGFeaturesOfBlock
 public:
   static int const numFeats=27+4+1;
   double feats[numFeats];
-  static void aggregateFeatsOfBlocks(vector<HOGFeaturesOfBlock> & featsOfBlocks, HOGFeaturesOfBlock & aggFeats)
+  static void aggregateFeatsOfBlocks(std::vector<HOGFeaturesOfBlock> & featsOfBlocks, HOGFeaturesOfBlock & aggFeats)
   {
-    
+    cout<<"here goes the HOG feats"<<endl;
+    size_t numBlocks=featsOfBlocks.size();
+    for(size_t f=0;f<numFeats;f++)
+      {
+        aggFeats.feats[f]=0;
+        for(size_t b=0;b<numBlocks;b++)
+          aggFeats.feats[f]+=featsOfBlocks[b].feats[f];
+        aggFeats.feats[f]/=numBlocks;
+        cout<<aggFeats.feats[f]<<endl;
+      } 
   }
 };
 
@@ -48,34 +65,91 @@ public :
     free( feat);
   }
   
-  double getFeatVal(int blockX, int blockY, int featIndex)
+  void getFeatVec(int blockY, int blockX, HOGFeaturesOfBlock & featsB)
   {
-    return *feat + featIndex*numBlocksOutX*numBlocksOutY + blockX*numBlocksOutY+ blockY;
+    for(int featIndex=0;featIndex<HOGFeaturesOfBlock::numFeats;featIndex++)
+        featsB.feats[featIndex]=*(feat + featIndex*numBlocksOutX*numBlocksOutY + blockX*numBlocksOutY+ blockY);
+  }
+  void saveFloatImage ( const char* filename, const IplImage * image )
+{
+  IplImage * saveImage = cvCreateImage ( cvGetSize ( image ),
+                                             IPL_DEPTH_32F, 3 );
+  cvConvertScale ( image, saveImage, 255, 0 );
+  cvSaveImage( filename, saveImage);
+  cvReleaseImage ( &saveImage );
+}
+
+  void saveFeatAsImages()
+  {
+    IplImage *featImages[HOGFeaturesOfBlock::numFeats];
+    HOGFeaturesOfBlock feats[numBlocksOutY][numBlocksOutX];
+    for(size_t y=0;y<numBlocksOutY;y++)
+       for(size_t x=0;x<numBlocksOutX;x++)
+         {
+           getFeatVec (y,x,feats[y][x]);
+         }
+    
+    for(size_t f=0;f<=HOGFeaturesOfBlock::numFeats;f++)
+      {
+        featImages[f] = cvCreateImage (cvSize (numBlocksOutX, numBlocksOutY), IPL_DEPTH_32F, 3);
+    for(size_t y=0;y<numBlocksOutY;y++)
+       for(size_t x=0;x<numBlocksOutX;x++)
+         {
+        CvScalar s;
+        s.val[0] = feats[y][x].feats[f];
+        s.val[1] = feats[y][x].feats[f];
+        s.val[2] = feats[y][x].feats[f];        
+           cvSet2D(featImages[f],y,x,s); // set the (i,j) pixel value
+         }
+        char filename[20];
+        sprintf (filename,"feat%d.png",f);
+       saveFloatImage (filename,featImages[f]); 
+      }
+    
+    std::vector<Point2D> inPoints;
+    inPoints.push_back(Point2D(420,350));
+    inPoints.push_back(Point2D(422,351));
+    HOGFeaturesOfBlock temp;
+    getFeatValForPixels (inPoints,temp);
   }
   
-  void getFeatValForPixels(vector<Point2D> & interestPointsInImage, HOGFeaturesOfBlock & hogFeats)
+  void getFeatValForPixels(std::vector<Point2D> & interestPointsInImage, HOGFeaturesOfBlock & hogFeats)
   {
     // bin pixels into blocksOuts()
     int numPointsInBlock[numBlocksOutY][numBlocksOutX];
-    for(int y=0;i<numBlocksInY;y++)
+    for(int y=0;y<numBlocksInY;y++)
         for(int x=0;x<numBlocksInX;x++)
           numPointsInBlock[y][x]=0;
     Point2D outBlock;
     for(int i=0;i<interestPointsInImage.size();i++)
       {
         pixel2BlockOut (interestPointsInImage[i],outBlock);
-        if(outBlock.x!=-1)
+        if(outBlock.x!=-1) // not out of range ... boundary blocks are out of range
           numPointsInBlock[outBlock.y][outBlock.x]++;
       }
     
     int max=-1;
-    for(int y=0;i<numBlocksInY;y++)
+    //find the block(s) where most pixels lie 
+    for(int y=0;y<numBlocksInY;y++)
         for(int x=0;x<numBlocksInX;x++)
           {
             if(max<numPointsInBlock[y][x])
                 max=numPointsInBlock[y][x];
           }
-    
+    HOGFeaturesOfBlock temp;
+    std::vector<HOGFeaturesOfBlock> maxBlockFeats;
+    for(int y=0;y<numBlocksInY;y++)
+        for(int x=0;x<numBlocksInX;x++)
+          {
+            if(max==numPointsInBlock[y][x])
+              {
+                cout <<"out block selected" <<x <<","<<y<<endl;
+                getFeatVec (y,x,temp);
+                maxBlockFeats.push_back(temp);
+                return;
+              }
+          }
+    HOGFeaturesOfBlock::aggregateFeatsOfBlocks (maxBlockFeats,hogFeats);
     //push all out blocks with max to a vector and aggregate
   }
   
@@ -94,7 +168,30 @@ static inline double max(double x, double y) { return (x <= y ? y : x); }
 static inline int min(int x, int y) { return (x <= y ? x : y); }
 static inline int max(int x, int y) { return (x <= y ? y : x); }
 
-int sbin=8;
+static  int const sbin=8;
+
+void computeHog(IplImage * img)
+{
+  assert(img->nChannels==3);
+  double * matlabImage= (double *)calloc(img->width*img->height*img->nChannels,sizeof(double));
+  cout<<"processing an image of size"<<img->width<<","<<img->height<<endl;
+  int ndims[3]={img->height,img->width,3};
+  for(size_t y=0;y<img->height;y++)
+     for(size_t x=0;x<img->width;x++)
+       {
+         CvScalar s;
+         s=cvGet2D(img,y,x); // get the (i,j) pixel value
+         for(size_t ch=0;ch<img->nChannels;ch++)
+                matlabImage[getOffsetInMatlabImage (y,x,ch,img->height,img->width)]=s.val[ch];
+       }
+  process (matlabImage,ndims);
+  free(matlabImage);
+}
+
+size_t getOffsetInMatlabImage(size_t y, size_t x, size_t channel,size_t dimY, size_t dimX)
+{
+  return channel*dimX*dimY+x*dimY+y;
+}
 // main function:
 // takes a double color image and a bin size 
 // returns HOG features
@@ -114,8 +211,10 @@ void process(const double *im, const int *dims) {
   int out[3];
   out[0] = max(blocks[0]-2, 0); // ignore the boundary blocks ?
   numBlocksOutY=out[0];
+  
   out[1] = max(blocks[1]-2, 0);
   numBlocksOutX=out[1];
+  cout <<"HOG block dims"<<numBlocksOutX<<","<<numBlocksOutY<<endl;
   out[2] = HOGFeaturesOfBlock::numFeats ;//32 dimensional feature for each block
 //  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
 //  mxArray *mxfeat = mxCreateNumericArray(3, out, mxDOUBLE_CLASS, mxREAL);
@@ -136,7 +235,7 @@ void process(const double *im, const int *dims) {
       // second color channel
       s += dims[0]*dims[1];
       double dy2 = *(s+1) - *(s-1);
-      double dx2 = *(s+dims[0]) - *(s-dims[0]);
+      double dx2 = *(s+dims[0]) - *(s-dims[0]); //dims[0]=dimY
       double v2 = dx2*dx2 + dy2*dy2;
 
       // third color channel
@@ -305,19 +404,6 @@ getNumBlocksX () const
 }
 
 };
-/*
-// matlab entry point
-// F = features(image, bin)
-// image should be color with double values
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) { 
-  if (nrhs != 2)
-    mexErrMsgTxt("Wrong number of inputs"); 
-  if (nlhs != 1)
-    mexErrMsgTxt("Wrong number of outputs");
-  plhs[0] = process(prhs[0], prhs[1]);
-}
-
-*/
 
 double const HOG::uu[9] = {1.0000, 
 		0.9397, 

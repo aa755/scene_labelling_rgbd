@@ -9,16 +9,17 @@ do
 
 
 #sed s/data18-warmRestart/data6-printer-baseline/ fold$i/train$i >temp
-cp ../data6-zSquared/fold$i/train$i fold$i/
-cp ../data6-zSquared/fold$i/test$i fold$i/
-sed s/zSquared/printer-rectified/ fold$i/train$i >temp
-mv temp fold$i/train$i
+#cp ../data6-zSquared/fold$i/train$i fold$i/
+#cp ../data6-zSquared/fold$i/test$i fold$i/
+#sed s/zSquared/printer-rectified/ fold$i/train$i >temp
+#mv temp fold$i/train$i
 
 #sed s/data18-warmRestart/data6-printer-rectified/ fold$i/test$i >temp
 #sed s/data18/data6/ fold$i/test$i >temp
-sed s/zSquared/printer-rectified/ fold$i/test$i >temp
-mv temp fold$i/test$i
+#sed s/zSquared/printer-rectified/ fold$i/test$i >temp
+#mv temp fold$i/test$i
 
+ls -rt fold$i/imodels/*c0.1* | tail -1
 
 done
 

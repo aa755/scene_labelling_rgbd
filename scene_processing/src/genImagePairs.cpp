@@ -28,7 +28,7 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include "color.cpp"
-
+#include "HOG.cpp"
 
 typedef pcl::PointXYZRGBCamSL PointT;
 //#include "CombineUtils.h"
@@ -150,7 +150,7 @@ main (int argc, char** argv)
         ColorRGB tmpColor(tmp.rgb);
         if(labels[index]>=1 && labels[index]<=9)
           {
-            tmpColor=*labelColors[labels[index]-1];
+           // tmpColor=*labelColors[labels[index]-1];
           }
         CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
         CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
@@ -158,6 +158,9 @@ main (int argc, char** argv)
       }
 
 saveFloatImage ( "snapshot.png", image );
+HOG hog;
+hog.computeHog (image);
+hog.saveFeatAsImages ();
   return 0;
 }
 
