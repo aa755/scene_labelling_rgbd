@@ -16,7 +16,8 @@
 #include "pcl/kdtree/kdtree.h"
 #include "pcl/kdtree/tree_types.h"
 #include <point_cloud_mapping/geometry/nearest.h>
-//#include "HOG.cpp"
+#include <pcl_ros/io/bag_io.h>
+#include "HOG.cpp"
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
 typedef pcl::PointXYZRGBCamSL PointT;
@@ -26,6 +27,44 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
 
 using namespace pcl;
+
+class OriginalFrameInfo
+{
+   pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
+  HOG hogDescriptors;
+public:
+  OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame_)
+  {
+    RGBDSlamFrame=RGBDSlamFrame_;
+  CvSize size;
+  size.height=480;
+  size.width=640;
+  cout<<"RGBslam size:"<<RGBDSlamFrame->size ()<<endl;
+  assert(RGBDSlamFrame->size ()==size.width*size.height);
+  
+  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
+  
+          pcl::PointXYZRGB tmp;
+          
+  for(int x=0;x<size.width;x++)
+    for(int y=0;y<size.height;y++)
+      {
+        int index=x+y*size.width;
+        tmp= RGBDSlamFrame->points[index];
+        ColorRGB tmpColor(tmp.rgb);
+        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+      }
+          
+          hogDescriptors.computeHog (image);
+          
+          cvReleaseImage (&image);
+  }
+};
+
+vector<OriginalFrameInfo*> originalFrames;
+
 
 class SpectralProfile
 {
@@ -873,11 +912,49 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
         features[segid].push_back((*it).second);
     }
 }
+    pcl::PointCloud<PointT> cloudUntransformed;
 
+void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamBag)
+{
+       sensor_msgs::PointCloud2 cloud_blob;
+    if (pcl::io::loadPCDFile(unTransformedPCDFile, cloud_blob) == -1) {
+        ROS_ERROR("Couldn't read argv[3]");
+        exit(-1);
+    }
+    pcl::fromROSMsg(cloud_blob, cloudUntransformed);
+  pcl_ros::BAGReader reader;
+  char *topic = "/camera/rgb/points";
+  if (!reader.open (RGBDSlamBag, "/rgbdslam/my_clouds"))
+    {
+      cout << "Couldn't open RGBDSLAM topic" << (topic);
+      exit(-1);
+    }
+  
+       sensor_msgs::PointCloud2ConstPtr cloud_blob_new;
+       sensor_msgs::PointCloud2ConstPtr cloud_blob_old;
+       
+     do
+    {
+      cloud_blob_new = reader.getNextCloud ();
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZRGB> ());
+      pcl::fromROSMsg (*cloud_blob_new, *cloud_temp);
+      OriginalFrameInfo * temp=new OriginalFrameInfo(cloud_temp);
+      originalFrames.push_back (temp);
+
+      cloud_blob_old=cloud_blob_new;
+      for (int i = 0; i < 5; i++)
+        cloud_blob_new=reader.getNextCloud ();
+    }
+  while (cloud_blob_new != cloud_blob_old);
+//    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
+  
+}
 
 int main(int argc, char** argv) {
-
+  
     int scene_num = atoi(argv[2]);
+    std::string unTransformedPCD=argv[3];
+    std::string rgbdslamBag=argv[4];
     sensor_msgs::PointCloud2 cloud_blob;
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, nfeatfile, efeatfile;
@@ -894,11 +971,15 @@ int main(int argc, char** argv) {
     }
     ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
 
+    
     // convert to templated message type
 
     pcl::fromROSMsg(cloud_blob, cloud);
 
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    
+    gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
+    return 0;
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());
