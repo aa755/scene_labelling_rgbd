@@ -69,7 +69,7 @@ public :
     for(int featIndex=0;featIndex<HOGFeaturesOfBlock::numFeats;featIndex++)
         featsB.feats[featIndex]=*(feat + featIndex*numBlocksOutX*numBlocksOutY + blockX*numBlocksOutY+ blockY);
   }
-  void saveFloatImage ( const char* filename, const IplImage * image )
+  static void saveFloatImage ( const char* filename, const IplImage * image )
 {
   IplImage * saveImage = cvCreateImage ( cvGetSize ( image ),
                                              IPL_DEPTH_32F, 3 );
@@ -114,7 +114,7 @@ public :
     HOGFeaturesOfBlock temp;
     getFeatValForPixels (inPoints,temp);
   }
-  
+ 
   void getFeatValForPixels(const std::vector<Point2DAbhishek> & interestPointsInImage, HOGFeaturesOfBlock & hogFeats)
   {
     // bin pixels into blocksOuts()
@@ -164,7 +164,7 @@ public :
     //return -1 if out of range block
     b.x=((int)round((float)p.x/(float)sbin)) -1 ;
     b.y=((int)round((float)p.y/(float)sbin)) -1;
-    cout <<"block selected"<< b.x<<","<<b.y<<" for pixel "<<p.x<<","<<p.y<<endl;
+    //cout <<"block selected"<< b.x<<","<<b.y<<" for pixel "<<p.x<<","<<p.y<<endl;
     if(b.x<0 || b.x>=numBlocksOutX ||b.y<0 || b.y>=numBlocksOutY )
       b.x=-1;
   }

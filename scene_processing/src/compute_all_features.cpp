@@ -33,7 +33,46 @@ class OriginalFrameInfo
 {
    pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
   HOG hogDescriptors;
+  
 public:
+  void saveImage(int segmentId,int label,vector<Point2DAbhishek>points)
+  {
+  CvSize size;
+  size.height=480;
+  size.width=640;
+  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
+  
+          pcl::PointXYZRGB tmp;
+  for(int x=0;x<size.width;x++)
+    for(int y=0;y<size.height;y++)
+      {
+        int index=x+y*size.width;
+        tmp= RGBDSlamFrame->points[index];
+        ColorRGB tmpColor(tmp.rgb);
+        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+      }
+          
+        ColorRGB tmpColor(0.0,1.0,0.0);
+          for(int i=0;i<points.size ();i++)
+            {
+              int x=points[i].x;
+              int y=points[i].y;
+              
+                CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+                CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+                CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+              
+            }
+
+          char filename[30];
+          sprintf(filename,"s%d_l%d.png",segmentId,label);
+HOG::saveFloatImage ( filename, image );
+cvReleaseImage (&image);
+
+    
+  }
   OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame_)
   {
     RGBDSlamFrame=RGBDSlamFrame_;
@@ -99,14 +138,15 @@ public:
             ColorRGB temp(targetFrame->RGBDSlamFrame->points[indices[nb]].rgb);
             if(ColorRGB::distance (temp,targetColor)<0.01)
               pointsInImageLyingOnSegment.push_back (getPixelFromIndex (indices[nb]));
-            else
-              cout<<"rejected :"<<rejectCout++<<endl;
+            //else
+              //cout<<"rejected :"<<rejectCout++<<endl;
             
           }
      
       }
     assert(pointsInImageLyingOnSegment.size ()>0);
     targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
+    targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
     
   }
   
