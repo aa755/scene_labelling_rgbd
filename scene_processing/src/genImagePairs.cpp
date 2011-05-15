@@ -159,6 +159,7 @@ main (int argc, char** argv)
 
 saveFloatImage ( "snapshot.png", image );
 HOG hog;
+//Point2D
 hog.computeHog (image);
 hog.saveFeatAsImages ();
   return 0;
