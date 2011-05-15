@@ -24,6 +24,7 @@ typedef pcl::PointXYZRGBCamSL PointT;
 
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
+    pcl::PointCloud<PointT> cloudUntransformed;
 
 
 using namespace pcl;
@@ -61,6 +62,54 @@ public:
           
           cvReleaseImage (&image);
   }
+  
+  static Point2DAbhishek getPixelFromIndex(int index)
+  {
+    //assuming size is 640*480;
+    int width=640;
+    Point2DAbhishek ret;
+    ret.y=index/width;
+    ret.x=index%width;
+    assert(index==ret.x+ret.y*width);
+    return ret;
+  }
+  
+  static void findHog(size_t frameIndex,vector<size_t> & pointIndices,pcl::PointCloud<PointT> &incloud, HOGFeaturesOfBlock &hogSegment, vector<OriginalFrameInfo*> & originalFrames)
+  {
+    static int rejectCout=0;
+    OriginalFrameInfo * targetFrame=originalFrames[frameIndex];
+    pcl::KdTreeFLANN<pcl::PointXYZRGB>::Ptr nnFinder(new pcl::KdTreeFLANN<pcl::PointXYZRGB>);
+    nnFinder->setInputCloud((targetFrame->RGBDSlamFrame));
+    
+    vector<int> indices;
+    vector<float> distances;
+    pcl::PointXYZRGB searchPoint;
+    vector<Point2DAbhishek> pointsInImageLyingOnSegment;
+    for(size_t i=0;i<pointIndices.size ();i++)
+      {
+        searchPoint.x=cloudUntransformed.points[pointIndices[i]].x;
+        searchPoint.y=cloudUntransformed.points[pointIndices[i]].y;
+        searchPoint.z=cloudUntransformed.points[pointIndices[i]].z;
+        assert(incloud.points[pointIndices[i]].rgb==cloudUntransformed.points[pointIndices[i]].rgb); // x,y,z are transformed but color should remain same
+        ColorRGB targetColor(incloud.points[pointIndices[i]].rgb);
+        nnFinder->radiusSearch (searchPoint,0.0001,indices,distances,2);
+        for(size_t nb=0;nb<indices.size ();nb++)
+          {
+            // this point could correspond to some other physical point nearby
+            ColorRGB temp(targetFrame->RGBDSlamFrame->points[indices[nb]].rgb);
+            if(ColorRGB::distance (temp,targetColor)<0.01)
+              pointsInImageLyingOnSegment.push_back (getPixelFromIndex (indices[nb]));
+            else
+              cout<<"rejected :"<<rejectCout++<<endl;
+            
+          }
+     
+      }
+    assert(pointsInImageLyingOnSegment.size ()>0);
+    targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
+    
+  }
+  
 };
 
 vector<OriginalFrameInfo*> originalFrames;
@@ -70,6 +119,7 @@ class SpectralProfile
 {
   vector<float> eigenValues; // sorted in ascending order
 public:
+  HOGFeaturesOfBlock avgHOGFeatsOfSegment;
   float avgH;
   float avgS;
   float avgV;
@@ -256,6 +306,71 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
         outcloud.points.resize ( j+1 );
     else
        outcloud.points.clear ();
+}
+
+/** it also discards unlabeled segments
+ */
+void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment,SpectralProfile & feats) {
+    //ROS_INFO("applying filter");
+
+    outcloud.points.erase(outcloud.points.begin(), outcloud.points.end());
+
+    outcloud.header.frame_id = incloud.header.frame_id;
+//    outcloud.points = incloud.points;
+    outcloud.points.resize ( incloud.points.size() );
+
+    assert(originalFrames.size ()>0);
+    int numFrames=originalFrames.size ();
+    
+    int sceneIndexCounts[numFrames];
+    
+    for(size_t f=0;f<numFrames;f++)
+      sceneIndexCounts[f]=0;
+    
+    vector<size_t> indices;
+    int j = -1;
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].segment == segment && incloud.points[i].label>0) {
+          j++;
+          outcloud.points[j].x = incloud.points[i].x;
+          outcloud.points[j].y = incloud.points[i].y;
+          outcloud.points[j].z = incloud.points[i].z;
+          outcloud.points[j].rgb = incloud.points[i].rgb;
+          outcloud.points[j].segment = incloud.points[i].segment;
+          outcloud.points[j].label = incloud.points[i].label;
+          outcloud.points[j].cameraIndex = incloud.points[i].cameraIndex;
+          outcloud.points[j].distance = incloud.points[i].distance;
+        //  cerr<<incloud.points[i].cameraIndex<<","<<numFrames<<endl;
+          assert(incloud.points[i].cameraIndex<numFrames);
+          sceneIndexCounts[incloud.points[i].cameraIndex]+=1;
+          indices.push_back (i);
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+        }
+    }
+    
+   // cout<<j << ","<<segment<<endl;
+    if(j>=0)
+        outcloud.points.resize ( j+1 );
+    else
+      {
+        outcloud.points.clear ();
+        return;
+      }
+    int max=-1;
+    size_t maxIndex;
+    
+    for(size_t f=0;f<numFrames;f++)
+      if(max<sceneIndexCounts[f])
+        {
+           max=sceneIndexCounts[f];
+           maxIndex=f;
+        }
+    assert(max>=0);
+    cout<<"segment index:"<<segment<<"with "<<indices.size ()<<" points"<<" main frame "<<maxIndex<<" with numMax="<<max<<endl;
+    OriginalFrameInfo::findHog (maxIndex, indices, incloud, feats.avgHOGFeatsOfSegment,originalFrames);
+    
 }
 
 void apply_notsegment_filter(const pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
@@ -912,7 +1027,6 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
         features[segid].push_back((*it).second);
     }
 }
-    pcl::PointCloud<PointT> cloudUntransformed;
 
 void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamBag)
 {
@@ -933,9 +1047,9 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
        sensor_msgs::PointCloud2ConstPtr cloud_blob_new;
        sensor_msgs::PointCloud2ConstPtr cloud_blob_old;
        
+      cloud_blob_new = reader.getNextCloud ();
      do
     {
-      cloud_blob_new = reader.getNextCloud ();
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZRGB> ());
       pcl::fromROSMsg (*cloud_blob_new, *cloud_temp);
       OriginalFrameInfo * temp=new OriginalFrameInfo(cloud_temp);
@@ -979,7 +1093,7 @@ int main(int argc, char** argv) {
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
     gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
-    return 0;
+    assert(cloudUntransformed.size()==cloud.size ());
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());
@@ -1001,6 +1115,7 @@ int main(int argc, char** argv) {
     ExtractIndices<PointT> extract;
 
     int index_ = 0;
+    vector<SpectralProfile> spectralProfiles;
     for (int seg = 1; seg <= max_segment_num; seg++) {
         //vector<float> features;
         //int label;
@@ -1019,12 +1134,14 @@ int main(int argc, char** argv) {
         //extract.setIndices(segment_indices);
         //extract.setNegative(false);
         //extract.filter(*cloud_seg);
-        apply_segment_filter (*cloud_ptr,*cloud_seg,seg);
+        SpectralProfile temp;
+        apply_segment_filter_and_compute_HOG (*cloud_ptr,*cloud_seg,seg,temp);
         
         //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
         if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
+                        spectralProfiles.push_back (temp);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
 			index_ ++; 
         }
@@ -1037,10 +1154,8 @@ int main(int argc, char** argv) {
     // for each segment compute node featuers
     int num_bin_shape = 3;
     map < int , vector<float> > features;
-    vector<SpectralProfile> spectralProfiles;
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
-        spectralProfiles.push_back (SpectralProfile()); //node feature generators can store structured data in this class for use in edge features
      //   vector<float> features;
         int seg_id = segment_clouds[i].points[1].segment;
         // get color features
