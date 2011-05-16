@@ -146,7 +146,7 @@ cvReleaseImage (&image);
       }
     assert(pointsInImageLyingOnSegment.size ()>0);
     targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
-    targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
+    //targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
     
   }
   
@@ -868,8 +868,9 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     spectralProfileOfSegment.avgS=avg_features[1];
     spectralProfileOfSegment.avgV=avg_features[2];
 
-    concat_feats(features, hist_features);
+ //   concat_feats(features, hist_features);
     concat_feats(features, avg_features);
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
 
 }
 
@@ -902,11 +903,11 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
+    
+    
    
 
  
-
-
 }
 
 void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {

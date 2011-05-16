@@ -26,6 +26,7 @@ public:
 class HOGFeaturesOfBlock
 {
 public:
+  static int const numDirections=9;
   static int const numFeats=27+4+1;
   double feats[numFeats];
   static void aggregateFeatsOfBlocks(std::vector<HOGFeaturesOfBlock> & featsOfBlocks, HOGFeaturesOfBlock & aggFeats)
@@ -40,6 +41,18 @@ public:
         aggFeats.feats[f]/=numBlocks;
         cout<<aggFeats.feats[f]<<endl;
       } 
+  }
+  
+  void pushBackAllFeats(vector<float> & feats)
+  {
+    for(size_t i=0;i<numFeats;i++)
+      feats.push_back(feats[i]);
+  }
+  
+  void pushNonContrastFeats(vector<float> & feats)
+  {
+    for(size_t i=numDirections*2;i<numFeats;i++)
+      feats.push_back(feats[i]);
   }
 };
 
@@ -145,6 +158,7 @@ public :
           }
     HOGFeaturesOfBlock temp;
     std::vector<HOGFeaturesOfBlock> maxBlockFeats;
+    cout<<"max= "<<max<<endl;
     for(int y=0;y<numBlocksOutY;y++)
         for(int x=0;x<numBlocksOutX;x++)
           {
