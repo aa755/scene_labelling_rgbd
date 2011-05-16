@@ -43,16 +43,16 @@ public:
       } 
   }
   
-  void pushBackAllFeats(vector<float> & feats)
+  void pushBackAllFeats(std::vector<float> & featureVector)
   {
     for(size_t i=0;i<numFeats;i++)
-      feats.push_back(feats[i]);
+      featureVector.push_back(feats[i]);
   }
   
-  void pushNonContrastFeats(vector<float> & feats)
+  void pushNonContrastFeats(std::vector<float> & featureVector)
   {
     for(size_t i=numDirections*2;i<numFeats;i++)
-      feats.push_back(feats[i]);
+      featureVector.push_back(feats[i]);
   }
 };
 

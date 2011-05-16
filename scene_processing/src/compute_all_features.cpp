@@ -870,7 +870,6 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
 
  //   concat_feats(features, hist_features);
     concat_feats(features, avg_features);
-    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
 
 }
 
@@ -903,6 +902,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
     
     
    
