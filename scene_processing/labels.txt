@@ -109,3 +109,6 @@ kitchenPlatformFront
 breadPack
 human
 humidifier
+printerSide
+sofaWall
+shelfSide
