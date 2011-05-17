@@ -9,6 +9,10 @@ class ColorRGB{
   public:
    float r,g,b;
    float H,S,V;
+   ColorRGB()
+   {
+     
+   }
    ColorRGB(float rgb)
    {
        int rgbi=*reinterpret_cast<int*>(&rgb);
@@ -52,7 +56,7 @@ class ColorRGB{
        b=bi/255.0;
    }
 
-   float convertToHSV()
+   void convertToHSV()
    {
     double maxC = b;
 	if (maxC < g) maxC = g;
@@ -90,6 +94,7 @@ class ColorRGB{
 	if (H>=360)
 		H-=360;
 
+        assert(H>=0 && H<=360);
 
 
    }

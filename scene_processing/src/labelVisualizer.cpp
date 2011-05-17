@@ -196,30 +196,44 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
     bool c = false;
 
+    int NUM_CLASSES_TO_SHOW=9;
     int labelNum = 0;
 
     if (conf.showLabel) {
         conf.showLabel = false;
+        viewer.setBackgroundColor (0.5,0.5,0.5);
         doUpdate = true;
-        string selLabels[6];
+        string selLabels[NUM_CLASSES_TO_SHOW];
         selLabels[0]=conf.red_label;
         selLabels[1]=conf.green_label;
         selLabels[2]=conf.blue_label;
         selLabels[3]=conf.yellow_label;
         selLabels[4]=conf.cyan_label;
         selLabels[5]=conf.magenta_label;
+        selLabels[6]=conf.dark_red_label;
+        selLabels[7]=conf.dark_green_label;
+        selLabels[8]=conf.dark_blue_label;
 
-        ColorRGB *labelColors[6];
+        ColorRGB *labelColors[NUM_CLASSES_TO_SHOW];
         labelColors[0]= new ColorRGB(1,0,0);
         labelColors[1]= new ColorRGB(0,1,0);
         labelColors[2]= new ColorRGB(0,0,1);
         labelColors[3]= new ColorRGB(1,1,0);
         labelColors[4]= new ColorRGB(0,1,1);
         labelColors[5]= new ColorRGB(1,0,1);
+        labelColors[6]= new ColorRGB(0.5,0,0);
+        labelColors[7]= new ColorRGB(0,0.5,0);
+        labelColors[8]= new ColorRGB(0,0,0.5);
 
          *cloud_colored_orig=*orig_cloud_ptr;
          *cloud_colored_pred=*pred_cloud_ptr;
-        for (size_t color = 0; color < 6; color++) {
+         int charCount=0.4;
+        for (size_t color = 0; color < NUM_CLASSES_TO_SHOW; color++) {
+            //cout<<labelColors[color]->r*255.0<<labelColors[color]->g*255.0<<labelColors[color]->b*255.0<<endl;
+            viewer.addText (selLabels[color],charCount*11,50,labelColors[color]->r,labelColors[color]->g,labelColors[color]->b);
+            charCount=charCount+selLabels[color].size ()+0.9;
+        
+            
         bool found = false;
         std::string labelStr(selLabels[color]);
             for (size_t li = 0; li < labels.size(); li++) {

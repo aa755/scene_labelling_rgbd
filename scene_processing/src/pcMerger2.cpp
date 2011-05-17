@@ -256,6 +256,13 @@ conf.setIT = false;
         int count = 0;
         cloud_blob_prev = cloud_blob_new;
         cloud_blob_new = reader.getNextCloud();
+        cout<<"header"<<cloud_blob_new->header<<endl;
+//        cloud_blob_new->
+        ros::M_string::iterator iter;
+        //for(iter=cloud_blob_new->__connection_header->begin ();iter!=cloud_blob_new->__connection_header->end ();iter++)
+         // cout<<iter->first<<","<<iter->second<<endl;
+        
+        
         while(count < skipNum && cloud_blob_prev != cloud_blob_new)
         {
             cloud_blob_prev = cloud_blob_new;
@@ -264,12 +271,14 @@ conf.setIT = false;
         }
         if (cloud_blob_prev != cloud_blob_new) {
             pcl::fromROSMsg(*cloud_blob_new, *cloud_temp_ptr);
+            cloud_temp_ptr->header;
+            cout<<"numPoints="<<cloud_temp_ptr->size ()<<endl;
             appendCamIndexAndDistance (cloud_temp_ptr,cloud_new_ptr,globalFrameCount,VectorG(0,0,0));
             globalFrameCount++;
             writer.write (std::string("tempAppend.pcd"),*cloud_new_ptr,true);
   if (pcl::io::loadPCDFile (std::string("tempAppend.pcd"), cloud_blobc_new) == -1)
   {
-    ROS_ERROR ("Couldn't read file ");
+    ROS_ERROR ("Couldn't read temp file ");
     return ;
   }
 //  ROS_INFO ("Loaded %d data points from %s with the following fields: %s", (int)(cloud_blob.width * cloud_blob.height), argv[1] ,pcl::getFieldsList (cloud_blob).c_str ());
@@ -332,10 +341,13 @@ main(int argc, char** argv) {
        fn = "transformed_"  + std::string(argv[1])+".pcd";
 
   ros::init(argc, argv, "pcmerger");
+  char *topic="/camera/rgb/points";
+  if(argc>2)
+    topic=argv[2];
 
-  if (!reader.open (argv[1], "/camera/rgb/points"))
+  if (!reader.open (argv[1], topic))
   {
-    ROS_ERROR ("Couldn't read file ");
+    cout <<"Couldn't read bag file on topic" <<(topic);
     return (-1);
   }
 //  skipNum = atoi(argv[2]);
