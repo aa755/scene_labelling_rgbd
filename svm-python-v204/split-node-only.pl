@@ -2,6 +2,7 @@
 for($i=1;$i<=4;$i++)
 {
   open(F,"fold$i/train$i");
+ # open(F,"train$i");
   open(OF,">traindata$i");
   while(<F>){
    chomp();
@@ -23,6 +24,7 @@ for($i=1;$i<=4;$i++)
 for($i=1;$i<=4;$i++)
 {
   open(F,"fold$i/test$i");
+  #open(F,"test$i");
   open(OF,">testdata$i");
   while(<F>){
    chomp();

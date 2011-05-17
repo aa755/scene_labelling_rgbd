@@ -522,7 +522,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
   nn_indices.resize(2);
   std::vector<float> nn_distances;
   nn_distances.resize(2);
-  float tolerance = 0.3;
+  //float tolerance = 0.3;
   
   for (size_t i = 0; i < small_cloud->points.size (); ++i)
   {
@@ -564,7 +564,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =0.3;
+   float tolerance =0.6;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -907,7 +907,6 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     
     
    
-
  
 }
 
@@ -1227,6 +1226,7 @@ int main(int argc, char** argv) {
         get_global_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
 
     }
+   // add_distance_features(cloud,features);
   //  vector<pcl::Normal> cloud_normals;
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
