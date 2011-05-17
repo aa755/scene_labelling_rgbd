@@ -45,13 +45,18 @@ public:
   
   void pushBackAllFeats(std::vector<float> & featureVector)
   {
-    for(size_t i=0;i<numFeats;i++)
+    for(size_t i=0;i<numFeats-1;i++) // the last one always seems to be 0
       featureVector.push_back(feats[i]);
   }
   
-  void pushNonContrastFeats(std::vector<float> & featureVector)
+  void pushNonContrastFeats(std::vector<float> & featureVector) // the last one always seems to be 0
   {
-    for(size_t i=numDirections*2;i<numFeats;i++)
+    for(size_t i=numDirections*2;i<numFeats-1;i++)
+      featureVector.push_back(feats[i]);
+  }
+  void pushTextureFeats(std::vector<float> & featureVector) // the last one always seems to be 0
+  {
+    for(size_t i=numDirections*3;i<numFeats-1;i++)
       featureVector.push_back(feats[i]);
   }
 };

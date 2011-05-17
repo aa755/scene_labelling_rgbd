@@ -84,7 +84,8 @@ int main(int argc, char** argv) {
   labeled_cloud.points = cloud.points;
   for (size_t i = 0; i< labeled_cloud.points.size(); i++)
   {
-    labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
+     if(label_mapping[labeled_cloud.points[i].segment]!=0)
+        labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
 
   }
 std::string      fn = "pred_labeled_"  + std::string(argv[1]);

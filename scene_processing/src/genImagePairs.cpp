@@ -88,6 +88,7 @@ main (int argc, char** argv)
       cout << "Couldn't read bag file on topic" << (topic);
       return (-1);
     }
+  cout<<frameNumber<<endl;
   for(int i=0;i<5*frameNumber;i++)
     reader.getNextCloud ();
   
@@ -104,7 +105,7 @@ main (int argc, char** argv)
   pcl::fromROSMsg (cloud_blob_merged, *cloud_merged_ptr);
 
   std::map<int,int> labels;
-  for (int i = 0; i < cloud_merged_ptr->size (); i++)
+ /* for (int i = 0; i < cloud_merged_ptr->size (); i++)
     {
       if (cloud_merged_ptr->points[i].cameraIndex == frameNumber)
         {
@@ -125,7 +126,7 @@ main (int argc, char** argv)
           assert (count == 1);
         }   
     }
-
+*/
   CvSize size;
   size.height=480;
   size.width=640;
@@ -160,8 +161,8 @@ main (int argc, char** argv)
 saveFloatImage ( "snapshot.png", image );
 HOG hog;
 //Point2D
-hog.computeHog (image);
-hog.saveFeatAsImages ();
+//hog.computeHog (image);
+//hog.saveFeatAsImages ();
   return 0;
 }
 

@@ -201,7 +201,7 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
 
     if (conf.showLabel) {
         conf.showLabel = false;
-        viewer.setBackgroundColor (0.5,0.5,0.5);
+        viewer.setBackgroundColor (0.9,0.9,0.9);
         doUpdate = true;
         string selLabels[NUM_CLASSES_TO_SHOW];
         selLabels[0]=conf.red_label;

@@ -25,6 +25,7 @@ typedef pcl::PointXYZRGBCamSL PointT;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
     pcl::PointCloud<PointT> cloudUntransformed;
+    pcl::PointCloud<PointT> cloudUntransformedUnfiltered;
 
 
 using namespace pcl;
@@ -841,9 +842,9 @@ void concat_feats(vector<float> &features, vector<float> &feats) {
 }
 
 void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, SpectralProfile & spectralProfileOfSegment) {
- int num_bin_H=9;
- int num_bin_S=3;
- int num_bin_V=3;
+ int num_bin_H=6;
+ int num_bin_S=2;
+ int num_bin_V=2;
     // histogram and average of hue and intensity
 
     vector<vector<float> > hist_features;
@@ -868,7 +869,7 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     spectralProfileOfSegment.avgS=avg_features[1];
     spectralProfileOfSegment.avgV=avg_features[2];
 
- //   concat_feats(features, hist_features);
+    concat_feats(features, hist_features);
     concat_feats(features, avg_features);
 
 }
@@ -902,7 +903,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
-    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushTextureFeats (features);
     
     
    
@@ -1076,7 +1077,22 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
         ROS_ERROR("Couldn't read argv[3]");
         exit(-1);
     }
+//    pcl::fromROSMsg(cloud_blob, cloudUntransformedUnfiltered);
     pcl::fromROSMsg(cloud_blob, cloudUntransformed);
+    /*
+      pcl::PointCloud<PointT>::Ptr cloud_temp_ptr (new pcl::PointCloud<PointT > (cloudUntransformedUnfiltered));
+
+          pcl::PassThrough<PointT> pass;
+          pass.setInputCloud (cloud_temp_ptr);
+          pass.setFilterFieldName ("z");
+          pass.setFilterLimits (0, 10);
+          pass.filter (cloudUntransformed);
+          
+          cout<<cloudUntransformedUnfiltered.size ()<<endl;
+          cout<<"untransformed sizzes:"<<endl;
+          cout<<cloudUntransformed.size ()<<endl;
+    */
+    
   pcl_ros::BAGReader reader;
   char *topic = "/camera/rgb/points";
   if (!reader.open (RGBDSlamBag, "/rgbdslam/my_clouds"))
@@ -1133,6 +1149,7 @@ int main(int argc, char** argv) {
 
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
+          cout<<cloud.size ()<<endl;
     gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
     assert(cloudUntransformed.size()==cloud.size ());
 
