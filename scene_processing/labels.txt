@@ -1,9 +1,9 @@
 wall
 floor
-table
-shelf
+tableTop
+shelfRack
 chairBackRest
-cpu
+cpuFront
 monitor
 clutter
 paper
@@ -19,7 +19,7 @@ jacket
 multiple
 sofaBase
 waterDispenser
-printer
+printerFront
 sofaBackRest
 pillar
 ACVent
