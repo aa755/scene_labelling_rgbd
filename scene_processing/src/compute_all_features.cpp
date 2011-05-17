@@ -54,8 +54,10 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
         }
     }
    // cout<<j << ","<<segment<<endl;
-    assert(j>=0);
-    outcloud.points.resize ( j+1 );
+if(j>=0)
+       outcloud.points.resize ( j+1 );
+   else
+      outcloud.points.clear ();
 }
 
 void apply_notsegment_filter(const pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
@@ -166,7 +168,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
   nn_indices.resize(2);
   std::vector<float> nn_distances;
   nn_distances.resize(2);
-  float tolerance = 0.3;
+  //float tolerance = 0.3;
   
   for (size_t i = 0; i < small_cloud->points.size (); ++i)
   {
@@ -208,7 +210,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =0.3;
+   float tolerance =0.6;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -523,7 +525,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back(centroid[0]);
     features.push_back(centroid[1]);
     features.push_back(centroid[2]);
-    features.push_back(centroid[2]*centroid[2]);
+   // features.push_back(centroid[2]*centroid[2]);
     //Eigen::Vector3d normal;
     //getNormal (cloud, normal);
     //features.push_back (fabs (normal(2)));
@@ -758,7 +760,7 @@ int main(int argc, char** argv) {
         //extract.filter(*cloud_seg);
         apply_segment_filter (*cloud_ptr,*cloud_seg,seg);
         //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
-        if (cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
+        if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
@@ -789,7 +791,7 @@ int main(int argc, char** argv) {
         get_global_features(segment_clouds[i], features[seg_id]);
 
     }
-    add_distance_features(cloud,features);
+   // add_distance_features(cloud,features);
     vector<pcl::Normal> cloud_normals;
     get_avg_normals(segment_clouds,cloud_normals);
     // print the node features

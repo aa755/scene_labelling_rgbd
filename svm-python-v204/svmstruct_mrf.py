@@ -13,6 +13,7 @@ from scipy.sparse import csr_matrix
 from numpy.ma.core import zeros
 import glpk
 from bitarray import bitarray
+from graphcut import *
 
 global NUM_CLASSES
 global ITER
@@ -1154,18 +1155,118 @@ def lp_training(X,Y,sm,sparm):
             ch += 1
         else:
             cr +=1
-    #print 'number of 1s: %d' % c1
-    #print 'number of 0s: %d' % c0
-    #print 'number of 0.5s: %d' % ch
+    print "LP Counts:"
+    print 'number of 1s: %d' % c1
+    print 'number of 0s: %d' % c0
+    print 'number of 0.5s: %d' % ch
     #print 'number of 0s: %d' % cr
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
     #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
-    #print 'score : ' , round(score,2), ' score2: ',score2;
+    print 'score : ' , round(score+loss(Y,ymax,sparm),2) #, ' score2: ',score2;
     #print 'loss: ',loss(Y,ymax,sparm)
     #print '\n'
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
+    return ymax
+
+def lp_training_qpbo(X,Y,sm,sparm):
+    y = Y[0]
+    K = sm.num_classes
+    w = sm.w
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+    qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
+    qpbo.add_node(N*K)
+
+    x = X[0]
+    #x = (X[0]).todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+
+    w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
+    #print w_list
+    ##print (asarray(w*x)[0]).tolist()
+    coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
+    for index in xrange(0,N*K):
+        if(y[index,0] == 1):
+            coeff_list[index] = coeff_list[index]-(1.0/(N*K))
+        else:
+            coeff_list[index] = coeff_list[index]+(1.0/(N*K))
+    
+
+    for index in xrange(0,N*K):
+        qpbo.add_term(index,0,-coeff_list[index]);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        n1 = int(u*K + l)
+        n2 = int(v*K + k)
+        qpbo.add_term(n1,n2,0,0,0,-coeff_list[index+N*K])
+    ##print lp.obj[:]
+    qpbo.solve();
+    qpbo.compute_weak_persistencies();
+
+    labellist = [];
+    for n in xrange(0,N*K):
+        l = qpbo.get_label(n);
+        #print n,l
+        if(l == 0):
+            labellist.append(0);
+        elif(l ==1):
+            labellist.append(1);
+        else:
+            labellist.append(0.5);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        l1 = labellist[int(u*K + l)]
+        l2 = labellist[int(v*K + k)]
+        if(l1*l2 == 0.25):
+            if(coeff_list[index+N*K]>0):
+                labellist.append(0.5)
+            else:
+                labellist.append(0)
+        else:
+            labellist.append(l1*l2);
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
+    labeling = asmatrix(array([labellist]))
+    #print labeling.T.shape[0],labeling.T.shape[1]
+    ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
+    c1 = 0
+    c0= 0
+    ch =0
+    
+    for c in labellist:
+        if (c == 1):
+            c1 += 1
+        elif(c ==0):
+            c0 += 1
+        else:
+            ch +=1
+    #print "QPBO counts:"
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    
+    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score+loss(Y,ymax,sparm),2)
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
+    
+    #assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
 
 def lp_inference(X,sm,sparm):
@@ -1287,7 +1388,7 @@ def classification_score(x,y,sm,sparm):
 def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
-    #l = lp_inference(x,y,sm,sparm)
+    #l = lp_inference(x,sm,sparm)
 
 
 
@@ -1303,12 +1404,24 @@ def areEqualVectors(V1,V2):
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
-    l = lp_training_opt_warm(x,y,sm,sparm)
+    #print
+    #print "MOST VIOLATED Constraint"
+   # l1 = lp_training(x,y,sm,sparm)
+    l2 = lp_training_qpbo(x,y,sm,sparm)
+    #print "l1:"
+    #for i in xrange(l1[1]*sm.num_classes):
+        #print l1[0][i,0],l2[0][i,0]
+     #   assert l1[0][i,0] == l2[0][i,0]
+    #print "l2"
+    #print l2[0]
+
+    #print
+    #assert (l1[0] == l2[0])
     #l = lp_training_opt(x,y,sm,sparm)
     #l = lp_training(x,y,sm,sparm)
 
     ##print l.T
-    return l
+    return l2
 
 def psi(x, y, sm, sparm):
     

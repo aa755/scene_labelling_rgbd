@@ -22,6 +22,7 @@ while(<DAT>)
 {
   chomp();
   ($snum,$sn,$l,@feats) = split/\t/,$_;
+#  delete $feats[12]; # remove the zsquare feature
   if( exists $labelmap{$l} )
   {
   $c = 0; 
@@ -29,6 +30,7 @@ while(<DAT>)
   foreach $f (@feats)
   {
      $c++;
+    
      $fstring = $fstring." $c:$f"; 
   }
   $ncount{$snum} ++;
