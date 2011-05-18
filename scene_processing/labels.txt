@@ -112,3 +112,7 @@ humidifier
 printerSide
 sofaWall
 shelfSide
+shelfBack
+typewriter
+printerTop
+keyboardTray
