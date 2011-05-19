@@ -81,8 +81,11 @@ cvReleaseImage (&image);
   size.height=480;
   size.width=640;
   cout<<"RGBslam size:"<<RGBDSlamFrame->size ()<<endl;
-  assert(RGBDSlamFrame->size ()==size.width*size.height);
-  
+    if(RGBDSlamFrame->size ()==0)
+      return;// can be 0 for dummy pcds of manually transformed
+
+  assert(RGBDSlamFrame->size ()==size.width*size.height); // can be 0 for dummy pcds of manually transformed
+
   IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
   
           pcl::PointXYZRGB tmp;
@@ -118,6 +121,7 @@ cvReleaseImage (&image);
   {
     static int rejectCout=0;
     OriginalFrameInfo * targetFrame=originalFrames[frameIndex];
+    assert(targetFrame->RGBDSlamFrame->size ()>0);
     pcl::KdTreeFLANN<pcl::PointXYZRGB>::Ptr nnFinder(new pcl::KdTreeFLANN<pcl::PointXYZRGB>);
     nnFinder->setInputCloud((targetFrame->RGBDSlamFrame));
     
@@ -903,7 +907,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
-    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushTextureFeats (features);
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
     
     
    

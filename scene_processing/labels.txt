@@ -116,3 +116,8 @@ shelfBack
 typewriter
 printerTop
 keyboardTray
+tableKeyboard
+cupboard
+cupboardSide
+cupboardTop
+printerTray
