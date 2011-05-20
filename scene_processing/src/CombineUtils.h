@@ -1,3 +1,5 @@
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 /* 
  * File:   CombineUtils.h
  * Author: aa755
@@ -234,7 +236,23 @@ public:
     {
         transformMat = transformAsMatrix(bt);
     }
+    
+    TransformG multiply(TransformG multiplicand)
+    {
+        TransformG out;
+        out.transformMat=boost::numeric::ublas::prod(transformMat, multiplicand.transformMat);        
+    }
 
+    TransformG()
+    {
+    }
+    
+    
+    btTransform  getAsRosMsg()
+    {
+        
+    }
+    
     float getDistanceFromOrigin(VectorG point)
     {
         return point.eucliedianDistance(getOrigin());

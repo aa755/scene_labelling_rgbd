@@ -18,9 +18,11 @@
 #include <point_cloud_mapping/geometry/nearest.h>
 #include <pcl_ros/io/bag_io.h>
 #include "HOG.cpp"
+typedef pcl::PointXYZRGBCamSL PointT;
+#include "CombineUtils.h"
+
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
-typedef pcl::PointXYZRGBCamSL PointT;
 
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
@@ -34,8 +36,11 @@ class OriginalFrameInfo
 {
    pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
   HOG hogDescriptors;
+  TransformG cameraTrans;
+  bool cameraTransSet;
   
 public:
+  
   void saveImage(int segmentId,int label,vector<Point2DAbhishek>points)
   {
   CvSize size;
@@ -76,6 +81,7 @@ cvReleaseImage (&image);
   }
   OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame_)
   {
+    cameraTransSet=false;
     RGBDSlamFrame=RGBDSlamFrame_;
   CvSize size;
   size.height=480;
@@ -122,6 +128,7 @@ cvReleaseImage (&image);
     static int rejectCout=0;
     OriginalFrameInfo * targetFrame=originalFrames[frameIndex];
     assert(targetFrame->RGBDSlamFrame->size ()>0);
+	assert(targetFrame->cameraTransSet);
     pcl::KdTreeFLANN<pcl::PointXYZRGB>::Ptr nnFinder(new pcl::KdTreeFLANN<pcl::PointXYZRGB>);
     nnFinder->setInputCloud((targetFrame->RGBDSlamFrame));
     
@@ -153,6 +160,20 @@ cvReleaseImage (&image);
     targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
     //targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
     
+  }
+
+  void
+  setCameraTrans (TransformG cameraTrans)
+  {
+    this->cameraTrans = cameraTrans;
+    cameraTransSet=true;
+  }
+
+  TransformG
+  getCameraTrans () const
+  {
+    assert(cameraTransSet);
+    return cameraTrans;
   }
   
 };
@@ -1080,6 +1101,7 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
         ROS_ERROR("Couldn't read argv[3]");
         exit(-1);
     }
+     
 //    pcl::fromROSMsg(cloud_blob, cloudUntransformedUnfiltered);
     pcl::fromROSMsg(cloud_blob, cloudUntransformed);
     /*
@@ -1103,6 +1125,9 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
       cout << "Couldn't open RGBDSLAM topic" << (topic);
       exit(-1);
     }
+      rosbag::Bag bag;
+    std::cerr << "opening " << RGBDSlamBag << std::endl;
+    bag.open(RGBDSlamBag, rosbag::bagmode::Read);
   
        sensor_msgs::PointCloud2ConstPtr cloud_blob_new;
        sensor_msgs::PointCloud2ConstPtr cloud_blob_old;
@@ -1113,8 +1138,41 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZRGB> ());
       pcl::fromROSMsg (*cloud_blob_new, *cloud_temp);
       OriginalFrameInfo * temp=new OriginalFrameInfo(cloud_temp);
-      originalFrames.push_back (temp);
+        ros::Time ptime = cloud_blob_new->header.stamp;
 
+
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"), ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        //std::cerr<<(view_tf.size())<<endl;
+        std::cerr << ptime << std::endl;
+        //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+            //  transG.print();
+            if (ptime == bt[0].header.stamp)
+            {
+                tf_count++;
+                std::cerr << "tf qid:" << bt[0].header.seq << std::endl;
+                final_tft = tft;
+            }
+            assert(tf_count <= 1);
+        }
+
+        if(tf_count == 1)
+          {
+                TransformG transG(final_tft);
+                temp->setCameraTrans (transG);
+          }
+	originalFrames.push_back (temp);
       cloud_blob_old=cloud_blob_new;
       for (int i = 0; i < 5; i++)
         cloud_blob_new=reader.getNextCloud ();
