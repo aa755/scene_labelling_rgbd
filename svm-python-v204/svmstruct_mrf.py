@@ -73,9 +73,12 @@ def read_examples(filename,sparm):
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
-
+        xrow = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
+        xcol = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
+        xval = zeros(N*max_target * num_node_feats+E*max_target*max_target*num_edge_feats)
         Xn= mat(zeros((max_target * num_node_feats,max_target*N)));
         Yn= mat(zeros((max_target*N,1)))
+
         #XY_test = mat(zeros((max_target*num_node_feats + max_target*max_target*num_edge_feats,1)))
         node_map = {}
         edges = mat(zeros((E,2)))
@@ -97,6 +100,13 @@ def read_examples(filename,sparm):
             for j in xrange(0,max_target):
                 ##print X[j*9:(j+1)*9,j];
                 Xn[j*num_node_feats:(j+1)*num_node_feats,i*max_target+(j)] = f.copy();
+                #print features.A
+                #print num_node_feats
+                #print (i*(j+1)*num_node_feats) - (i*j*num_node_feats)
+                xval[(i*max_target+j)*num_node_feats:(i*max_target+j+1)*num_node_feats] = features.A[0];
+                for v in xrange(0,num_node_feats):
+                  xrow[(i*max_target+j)*num_node_feats+v] = j*num_node_feats+v
+                xcol[(i*max_target+j)*num_node_feats:(i*max_target+j+1)*num_node_feats] = i*max_target+(j)
             ##print X
         Xe = mat(zeros((max_target*max_target*num_edge_feats,max_target*max_target*E)))
         Ye = mat(zeros((max_target*max_target*E,1)))
@@ -118,14 +128,27 @@ def read_examples(filename,sparm):
             for j in xrange(0,max_target*max_target):
                 ##print X[j*9:(j+1)*9,j];
                 Xe[j*num_edge_feats:(j+1)*num_edge_feats,(i-N)*max_target*max_target+j] = f.copy();
-
-        ##print Xe.shape[0]
-        ##print Xe.shape[1]
+                xval[N*max_target*num_node_feats + ((i-N)*max_target*max_target+j)*num_edge_feats: N*max_target*num_node_feats + ((i-N)*max_target*max_target+(j+1))*num_edge_feats] = features.copy();
+                for v in xrange(0,num_edge_feats):
+                  xrow[N*max_target*num_node_feats+((i-N)*max_target*max_target+j)*num_edge_feats+v] = max_target*num_node_feats+ j*num_edge_feats+v
+                xcol[N*max_target*num_node_feats + ((i-N)*max_target*max_target+j)*num_edge_feats: N*max_target*num_node_feats + ((i-N)*max_target*max_target+(j+1))*num_edge_feats] = N*max_target +(i-N)*max_target*max_target+j
+        #print Xn.shape[0], num_node_feats*K
+        #print Xn.shape[1] , N*K
+        #print Xe.shape[0], num_edge_feats*K*K
+        #print Xe.shape[1] , E*K*K
+        #print xval
+        #print xrow
+        #print xcol
+        X_sparse = csr_matrix((xval,(xrow,xcol)),shape=(num_node_feats*K+num_edge_feats*K*K,N*K+(E*K*K)),dtype='d');
         a = concatenate ((Xn, mat(zeros((Xn.shape[0],Xe.shape[1])))),1)
         b = concatenate ((mat(zeros((Xe.shape[0],Xn.shape[1]))),Xe),1)
         X = concatenate ((a,b))
         Y = concatenate ((Yn,Ye))
         X_s = csr_matrix(X,dtype='d')
+        #print sum(X_s.todense() - X_sparse.todense())
+        #assert (sum(X_s.todense() - X_sparse.todense()) == 0)
+        assert ((X_s - X_sparse).sum() == 0)
+
         Y_s = csr_matrix(Y,dtype='d')
         K = max_target
         row = zeros(N*K+E*K*K)
