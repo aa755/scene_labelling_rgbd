@@ -1,7 +1,7 @@
 $labelmapfile = 'labelmap.txt';
 $labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
 $method = shift;
-$numClasses=6;
+$numClasses=18;
 
 %lmap=();
 open(F,$labelmapfile);
@@ -47,8 +47,9 @@ for $c (@C)
   for ( $i = 1; $i<= 4; $i++) 
   {
     $flag = 0; 
+$outFile=`cat fold$i/lastout.txt`;
     $count = 0;
-    open(F,"fold$i/pred/out.$method.$modelFile")   ;
+    open(F,"fold$i/pred/$outFile")   ;
     while(<F>){
       chomp ;
       $line = $_;
@@ -75,7 +76,7 @@ for $c (@C)
      {
        for ( $l = 0; $l< $numClasses; $l++) 
        { 
-         print "$i\t$k\t$l\t$mat{$c}{$i}{$k}[$l]\t$m{$c}{$k}{$l+1}\n";
+     #    print "$i\t$k\t$l\t$mat{$c}{$i}{$k}[$l]\t$m{$c}{$k}{$l+1}\n";
          $m{$c}{$k}{$l+1} += $mat{$c}{$i}{$k}[$l];
        }
      }
