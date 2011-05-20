@@ -240,17 +240,27 @@ public:
     TransformG multiply(TransformG multiplicand)
     {
         TransformG out;
-        out.transformMat=boost::numeric::ublas::prod(transformMat, multiplicand.transformMat);        
+        out.transformMat=boost::numeric::ublas::prod(transformMat, multiplicand.transformMat); 
+        return out;
     }
 
     TransformG()
     {
+        transformMat=boost::numeric::ublas::matrix<double>(4,4);
     }
     
     
-    btTransform  getAsRosMsg()
+    tf::Transform  getAsRosMsg()
     {
-        
+        btTransform out;
+        btMatrix3x3 m_basis(transformMat(0,0),transformMat(0,1),transformMat(0,2),
+                            transformMat(1,0),transformMat(1,1),transformMat(1,2),
+                            transformMat(2,0),transformMat(2,1),transformMat(2,2));
+
+         btVector3 origin(transformMat(0,3),transformMat(1,3),transformMat(2,3));
+         out.setBasis(m_basis);
+        out.setOrigin(origin);
+        return out;
     }
     
     float getDistanceFromOrigin(VectorG point)

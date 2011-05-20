@@ -1161,7 +1161,7 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
         ros::Time ptime = cloud_blob_new->header.stamp;
 
 
-        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"), ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
         //std::cerr<<(view_tf.size())<<endl;
         std::cerr << ptime << std::endl;
         //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
@@ -1190,6 +1190,7 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
         if(tf_count == 1)
           {
                 TransformG transG(final_tft);
+                transG.print ();
                 temp->setCameraTrans (transG);
           }
 	originalFrames.push_back (temp);

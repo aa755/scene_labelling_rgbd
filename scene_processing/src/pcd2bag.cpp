@@ -77,6 +77,30 @@ typedef pcl::PointXYZRGBCamSL PointT;
 #include "CombineUtils.h"
 using namespace std;
 
+    sensor_msgs::PointCloud2Ptr cloud_out_blob(new sensor_msgs::PointCloud2());
+          TransformG frameTrans;
+   int cur_frame_num=0;
+    rosbag::Bag bag_;
+
+void writeToBag()
+{
+          ros::Time ftime=ros::Time::now ();
+          cloud_out_blob->header.stamp=ftime;
+          cloud_out_blob->header.seq=cur_frame_num;
+          
+          bag_.write ("/rgbdslam/my_clouds", ftime, cloud_out_blob);
+          geometry_msgs::TransformStamped gmMsg;
+          tf::transformStampedTFToMsg (tf::StampedTransform(frameTrans.getAsRosMsg (), ftime,"/openni_camera", "/batch_transform"),gmMsg);
+          tf::tfMessage tfMsg;
+          tfMsg.set_transforms_size (1);
+                      std::vector<geometry_msgs::TransformStamped> bt;
+                      bt.push_back (gmMsg);
+
+          tfMsg.set_transforms_vec (bt);
+          bag_.write("/tf",ftime,tfMsg);
+         // tf::tfMessage
+  
+}
 /*
  * 
  */
@@ -84,9 +108,7 @@ int
 main (int argc, char** argv)
 {
   ros::Time::init();
-    rosbag::Bag bag_;
     sensor_msgs::PointCloud2 cloud_blob;
-    sensor_msgs::PointCloud2Ptr cloud_out_blob(new sensor_msgs::PointCloud2());
    // sensor_msgs::PointCloud2Ptr cloud_out_blob;
     pcl::PointCloud<PointT> cloud;
     pcl::PointCloud<PointT> frame_cloud;
@@ -130,7 +152,6 @@ main (int argc, char** argv)
    assert(cloud.size ()==cloud.points.size ());
    frame_cloud.points.clear ();
    int i=0;
-   int cur_frame_num=0;
    int frame_num;
    int out_frame_count=0;
    
@@ -141,7 +162,6 @@ main (int argc, char** argv)
         frame_cloud.points.push_back (cloud.points[i]);
       else
         {
-          TransformG frameTrans;
           if(out_frame_count>0)
             {
               TransformG relativeTrans;
@@ -154,15 +174,21 @@ main (int argc, char** argv)
                       relativeTrans.transformMat (c, r) = matEntry; //matrix was originally written in transposed form
                     }
                 }
+              cout<<"-----"<<endl;
+           //   relativeTrans.print ();
               frameTrans=initialTransform.multiply (relativeTrans);
+              frameTrans.print ();
             }
           else
             frameTrans=initialTransform;
 
           
           out_frame_count++;
+          //ROS SUCKS ... SO MUCH WORK TO JUST INCLUDE A TRANSFORM IN BAG :( ... NO BLODDY DOCUMENTATION
           pcl::toROSMsg (frame_cloud, *cloud_out_blob);
-          bag_.write ("/rgbdslam/my_clouds", ros::Time::now (), cloud_out_blob);
+          writeToBag ();
+          
+          
           cur_frame_num++;
           frame_cloud.points.clear ();
           //write more dummy frames to simulate visibilityVerged algo's requirement of skipping 4 frames
@@ -189,10 +215,31 @@ main (int argc, char** argv)
        i++;
      }while(i<cloud.size ());
      assert(frame_cloud.size ()==0 || frame_cloud.size ()==307200);
+     
      if(frame_cloud.size ()==307200)
        {
+          if(out_frame_count>0)
+            {
+              TransformG relativeTrans;
+              for (int r = 0; r < 4; r++)
+                {
+                  for (int c = 0; c < 4; c++)
+                    {
+                      transformFile >> matEntry;
+                      assert (transformFile.good ());
+                      relativeTrans.transformMat (c, r) = matEntry; //matrix was originally written in transposed form
+                    }
+                }
+              cout<<"-----"<<endl;
+        //      relativeTrans.print ();
+              frameTrans=initialTransform.multiply (relativeTrans);
+              frameTrans.print ();
+            }
+          else
+            frameTrans=initialTransform;
+          
                    pcl::toROSMsg (frame_cloud,*cloud_out_blob);
-                   bag_.write ( "/rgbdslam/my_clouds" , ros::Time::now (), cloud_out_blob );  
+                   writeToBag ();
          
        }
        
