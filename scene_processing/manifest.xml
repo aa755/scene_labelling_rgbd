@@ -16,6 +16,7 @@
  <depend package="descriptors_3d"/>
  <!-- 
 -  <depend package="tf"/>
+ <depend package="octomap_ros"/>
 -  <depend package="tf2"/>
 -  <depend package="pcl"/>
 -  <depend package="rospy"/>

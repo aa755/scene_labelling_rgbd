@@ -254,6 +254,17 @@ public:
     float r2=sqrt(other.centroid.x*other.centroid.x+other.centroid.y*other.centroid.y);
     return r1-r2;
   }
+
+
+  float getCoplanarity(const SpectralProfile & other)
+  {
+    float dotproduct = getNormalDotProduct( other);
+    if (dotproduct >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
+        return (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+    else  // else return -1
+        return -1;
+  }
+
 };
 
 class BinningInfo
@@ -713,6 +724,14 @@ void getSpectralProfile(const pcl::PointCloud<PointT> &cloud, SpectralProfile &s
           minEigV=eigen_values(i);
           cout<<"min eig value:"<<minEigV<<endl;
           spectralProfile.normal=eigen_vectors.col(i);
+          // check the angle with line joining the centroid to origin
+          if (spectralProfile.normal[0]*spectralProfile.centroid.x + spectralProfile.normal[1]*spectralProfile.centroid.y + spectralProfile.normal[2]*spectralProfile.centroid.z > 0)
+          {
+              // flip the sign of the normal
+              spectralProfile.normal[0] = -spectralProfile.normal[0];
+              spectralProfile.normal[1] = -spectralProfile.normal[1];
+              spectralProfile.normal[2] = -spectralProfile.normal[2];
+          }
         }
     }
   assert(minEigV==spectralProfile.getDescendingLambda (2));
@@ -1059,6 +1078,7 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
         
         edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
     }
 
 }

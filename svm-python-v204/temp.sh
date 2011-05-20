@@ -1,6 +1,6 @@
 for i in `seq 1 4` 
 do
-  grep "Setting"  fold$i/logs/log.w4.c2.e0.01.* | tail -1
+  grep "Setting"  fold$i/logs/log.w4.c4.e0.01.* | tail -1
 #  echo "train$i"
 #  grep "22"  fold$i/train$i
 #  echo "test$i"
