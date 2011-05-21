@@ -8,7 +8,10 @@
 #include "pcl/filters/extract_indices.h"
 #include "pcl/features/intensity_spin.h"
 #include "pcl/features/normal_3d.h"
-#include "descriptors_3d/all_descriptors.h"
+//#include "descriptors_3d/all_descriptors.h"
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
 #include <point_cloud_mapping/kdtree/kdtree_ann.h>
 #include <vector>
 #include "sensor_msgs/point_cloud_conversion.h"
@@ -27,8 +30,10 @@ typedef pcl::PointXYZRGBCamSL PointT;
 #include <boost/numeric/bindings/traits/ublas_vector2.hpp>
 namespace ublas = boost::numeric::ublas;
 namespace lapack= boost::numeric::bindings::lapack;
-//typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
-//typedef ColorHandler::Ptr ColorHandlerPtr;
+#include "pcl_visualization/pcl_visualizer.h"
+typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
+typedef ColorHandler::Ptr ColorHandlerPtr;
+
 
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
@@ -191,6 +196,18 @@ cvReleaseImage (&image);
   {
     assert(cameraTransSet);
     return cameraTrans;
+  }
+
+  void
+  setCameraTransSet (bool cameraTransSet)
+  {
+    this->cameraTransSet = cameraTransSet;
+  }
+
+  bool
+  isCameraTransSet () const
+  {
+    return cameraTransSet;
   }
   
 };
@@ -971,7 +988,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
  
 }
 
-void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {
+/*void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {
 
 
     sensor_msgs::PointCloud cloud_blob2;
@@ -1049,9 +1066,9 @@ void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
         get_feature_average(all_avg_descriptor_results[i], avg_feats[i]);
         concat_feats(features, avg_feats[i]);
     }
-*/
-}
 
+}
+*/
 /*void get_avg_normals(vector<pcl::PointCloud<PointT> > &segment_clouds, vector<pcl::Normal> &normalsOut )
 {
  
@@ -1172,7 +1189,7 @@ void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z a
         {
              double lhs=combined_cloud_orig.points[i].x*b(0)+combined_cloud_orig.points[i].y*b(1)+combined_cloud_orig.points[i].z*b(2)+b(3);
              double rhs=combined_cloud_trans.points[i].data[cr];
-             cout<<lhs<<","<<rhs<<endl;
+         //    cout<<lhs<<","<<rhs<<endl;
              assert(fabs(lhs-rhs)<0.01);
         }
     
@@ -1272,7 +1289,7 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
 }
 
 int main(int argc, char** argv) {
-  
+  bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
     std::string unTransformedPCD=argv[3];
     std::string rgbdslamBag=argv[4];
@@ -1303,11 +1320,28 @@ int main(int argc, char** argv) {
     gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
     TransformG globalTransform;
     computeGlobalTransform (cloud,cloudUntransformed,globalTransform);
-    
+
     for(unsigned int i=0;i<originalFrames.size ();i++)
       originalFrames[i]->applyPostGlobalTrans (globalTransform);
-//  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
-    
+      
+    if(SHOW_CAM_POS_IN_VIEWER)
+      {
+      ColorHandlerPtr color_handler;
+  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
+          color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
+  
+    for(unsigned int i=0;i<originalFrames.size ();i++)
+      {
+        if(originalFrames[i]->isCameraTransSet ())
+          {
+            VectorG cam=originalFrames[i]->getCameraTrans ().getOrigin ();
+                viewer.addCoordinateSystem (1,cam.v[0],cam.v[1],cam.v[2]);
+          }
+      }
+          
+          viewer.spin ();
+      }
     assert(cloudUntransformed.size()==cloud.size ());
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());

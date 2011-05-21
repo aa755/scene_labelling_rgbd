@@ -52,8 +52,8 @@ sqrG(float y)
 
 class VectorG
 {
-    double v[3];
 public:
+    double v[3];
 
     VectorG()
     {
