@@ -237,10 +237,17 @@ public:
         transformMat = transformAsMatrix(bt);
     }
     
-    TransformG multiply(TransformG multiplicand)
+    TransformG postMultiply(TransformG multiplicand)
     {
         TransformG out;
         out.transformMat=boost::numeric::ublas::prod(transformMat, multiplicand.transformMat); 
+        return out;
+    }
+    
+    TransformG preMultiply(TransformG multiplicand)
+    {
+        TransformG out;
+        out.transformMat=boost::numeric::ublas::prod( multiplicand.transformMat,transformMat); 
         return out;
     }
 

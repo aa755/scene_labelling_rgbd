@@ -176,7 +176,7 @@ main (int argc, char** argv)
                 }
               cout<<"-----"<<endl;
            //   relativeTrans.print ();
-              frameTrans=initialTransform.multiply (relativeTrans);
+              frameTrans=initialTransform.preMultiply (relativeTrans);
               frameTrans.print ();
             }
           else
@@ -232,7 +232,11 @@ main (int argc, char** argv)
                 }
               cout<<"-----"<<endl;
         //      relativeTrans.print ();
-              frameTrans=initialTransform.multiply (relativeTrans);
+              //first we applied the initial transform and then the relative one
+              //the point is post-multipied
+              //so 1st transfform should be rightmost
+              
+              frameTrans=initialTransform.preMultiply (relativeTrans);
               frameTrans.print ();
             }
           else

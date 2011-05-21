@@ -20,6 +20,15 @@
 #include "HOG.cpp"
 typedef pcl::PointXYZRGBCamSL PointT;
 #include "CombineUtils.h"
+#include<boost/numeric/ublas/matrix.hpp>
+#include<boost/numeric/ublas/io.hpp>
+#include<boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include<boost/numeric/bindings/lapack/gels.hpp>
+#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
+namespace ublas = boost::numeric::ublas;
+namespace lapack= boost::numeric::bindings::lapack;
+//typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
+//typedef ColorHandler::Ptr ColorHandlerPtr;
 
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
@@ -167,6 +176,14 @@ cvReleaseImage (&image);
   {
     this->cameraTrans = cameraTrans;
     cameraTransSet=true;
+  }
+  
+  void
+  applyPostGlobalTrans (TransformG globalTrans)
+  {
+    //post => premultiply coz point is towards right;
+    if(cameraTransSet)
+    cameraTrans=cameraTrans.preMultiply (globalTrans);
   }
 
   TransformG
@@ -1114,6 +1131,57 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
     }
 }
 
+void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z aligned and possibly axis aligned*/,pcl::PointCloud<PointT> & combined_cloud_orig,TransformG & globalTrans)
+{
+  int numPoints=combined_cloud_orig.size ()-1;// semantics of first point not known
+    ublas::matrix<float,ublas::column_major> A(numPoints,4);
+    ublas::vector<float> b(numPoints);
+    
+
+
+    globalTrans.transformMat(3,0)=0;
+    globalTrans.transformMat(3,1)=0;
+    globalTrans.transformMat(3,2)=0;
+    globalTrans.transformMat(3,3)=1;
+    int row;
+    for(unsigned int cr=0;cr<3;cr++)
+      {
+        
+    for(unsigned i=0;i < numPoints;i++)
+        {
+        
+             A(i,0)=combined_cloud_orig.points[i+1].x;
+             A(i,1)=combined_cloud_orig.points[i+1].y;
+             A(i,2)=combined_cloud_orig.points[i+1].z;
+//             assert(combined_cloud_orig.points[i].x==combined_cloud_orig.points[i].data[0]);
+//             assert(combined_cloud_orig.points[i].y==combined_cloud_orig.points[i].data[1]);
+//             assert(combined_cloud_orig.points[i].z==combined_cloud_orig.points[i].data[2]);
+             A(i,3)=1;
+             b(i)=combined_cloud_trans.points[i+1].data[cr];
+        }
+    lapack::optimal_workspace works;
+    lapack::gels('N',A,b,works);
+    
+    for(unsigned int col=0;col<4;col++)
+        globalTrans.transformMat(cr,col)=b(col);
+    
+    cout<<"row="<<cr<<endl;
+    
+    //check that the solution is almost correct
+    for(unsigned int i=1;i < numPoints;i++)
+        {
+             double lhs=combined_cloud_orig.points[i].x*b(0)+combined_cloud_orig.points[i].y*b(1)+combined_cloud_orig.points[i].z*b(2)+b(3);
+             double rhs=combined_cloud_trans.points[i].data[cr];
+             cout<<lhs<<","<<rhs<<endl;
+             assert(fabs(lhs-rhs)<0.01);
+        }
+    
+
+      }
+    globalTrans.print ();
+
+}
+
 void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamBag)
 {
        sensor_msgs::PointCloud2 cloud_blob;
@@ -1233,6 +1301,13 @@ int main(int argc, char** argv) {
     
           cout<<cloud.size ()<<endl;
     gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
+    TransformG globalTransform;
+    computeGlobalTransform (cloud,cloudUntransformed,globalTransform);
+    
+    for(unsigned int i=0;i<originalFrames.size ();i++)
+      originalFrames[i]->applyPostGlobalTrans (globalTransform);
+//  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
+    
     assert(cloudUntransformed.size()==cloud.size ());
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
