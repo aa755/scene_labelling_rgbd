@@ -117,7 +117,7 @@ def print_testing_stats(sample, sm, sparm, teststats):
             prec.append(aggConfusionMatrix[i,i]*100.0/sum);
         else:
             prec.append(0);
-        ltc.append(sum);
+        lpc.append(sum);
     for i  in xrange(0,sm.num_classes):
         sum = 0;
         for j in xrange(0,sm.num_classes):
@@ -126,7 +126,7 @@ def print_testing_stats(sample, sm, sparm, teststats):
             recall.append(aggConfusionMatrix[i,i]*100.0/sum);
         else:
             recall.append(0);
-        lpc.append(sum);
+        ltc.append(sum);
     for i in xrange(0,sm.num_classes):
         print "label ", i+1 , " prec: ", prec[i], " recall: ", recall[i], " tp: ", aggConfusionMatrix[i,i], " tc: ",ltc[i], " pc: ",lpc[i]
     match = 0

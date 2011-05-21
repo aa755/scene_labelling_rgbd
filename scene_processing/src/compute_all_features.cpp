@@ -260,7 +260,7 @@ public:
   
   float getNormalZComponent() const
   {
-    return fabs(normal[2]);
+    return normal[2];
   }
   
   float getAngleWithVerticalInRadians() const
@@ -314,10 +314,31 @@ public:
   float getCoplanarity(const SpectralProfile & other)
   {
     float dotproduct = getNormalDotProduct( other);
-    if (dotproduct >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
-        return (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+    if (fabs(dotproduct) >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
+    {
+        float distance = (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+        if(distance == 0 || fabs(distance) < (1/1000) ) {return 1000;}
+        return fabs(1/distance);
+    }
     else  // else return -1
         return -1;
+  }
+
+  float getConvexity(const SpectralProfile & other)
+  {
+    VectorG centroid1(centroid.x,centroid.y,centroid.z);
+    VectorG centroid2(other.centroid.x,other.centroid.y,other.centroid.z);
+    
+    VectorG c1c2=centroid1.subtract(centroid2);
+    VectorG c2c1=centroid2.subtract(centroid1);
+    VectorG normal1(normal[0],normal[1],normal[2]);
+    VectorG normal2(other.normal[0],other.normal[1],other.normal[2]);
+    if ((normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) // refer local convexity criterion paper
+    {
+        return 1;
+    }
+     // else return 0
+    return 0;
   }
 
 };
@@ -780,7 +801,11 @@ void getSpectralProfile(const pcl::PointCloud<PointT> &cloud, SpectralProfile &s
           cout<<"min eig value:"<<minEigV<<endl;
           spectralProfile.normal=eigen_vectors.col(i);
           // check the angle with line joining the centroid to origin
-          if (spectralProfile.normal[0]*spectralProfile.centroid.x + spectralProfile.normal[1]*spectralProfile.centroid.y + spectralProfile.normal[2]*spectralProfile.centroid.z > 0)
+          VectorG centroid(spectralProfile.centroid.x,spectralProfile.centroid.y,spectralProfile.centroid.z);
+          VectorG camera=originalFrames[cloud.points[1].cameraIndex]->getCameraTrans().getOrigin();
+          VectorG cent2cam=camera.subtract(centroid);
+          VectorG normal(spectralProfile.normal[0],spectralProfile.normal[1],spectralProfile.normal[2]);
+          if (normal.dotProduct(cent2cam) < 0)
           {
               // flip the sign of the normal
               spectralProfile.normal[0] = -spectralProfile.normal[0];
@@ -1133,9 +1158,12 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
         
         edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
-        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
-    }
 
+        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
+
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral));
+    }
+    
 }
 
 void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features){
