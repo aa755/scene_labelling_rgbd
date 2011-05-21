@@ -201,7 +201,7 @@ public:
   
   float getNormalZComponent() const
   {
-    return fabs(normal[2]);
+    return normal[2];
   }
   
   float getAngleWithVerticalInRadians() const
@@ -255,8 +255,12 @@ public:
   float getCoplanarity(const SpectralProfile & other)
   {
     float dotproduct = getNormalDotProduct( other);
-    if (dotproduct >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
-        return (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+    if (fabs(dotproduct) >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
+    {
+        float distance = (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+        if(distance == 0 || fabs(distance) < (1/1000) ) {return 1000;}
+        return fabs(1/distance);
+    }
     else  // else return -1
         return -1;
   }
@@ -922,7 +926,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     features.push_back ((spectralProfileOfSegment.getLinearNess ()));
     features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
     features.push_back ((spectralProfileOfSegment.getScatter ()));
-    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushTextureFeats (features);
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
     
     
    
@@ -1076,7 +1080,7 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
         edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
     }
-
+    
 }
 
 void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features){
