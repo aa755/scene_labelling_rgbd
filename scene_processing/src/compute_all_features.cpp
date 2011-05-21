@@ -324,16 +324,16 @@ public:
         return -1;
   }
 
-  float getConvexity(const SpectralProfile & other)
+  int getConvexity(const SpectralProfile & other, float mindistance)
   {
     VectorG centroid1(centroid.x,centroid.y,centroid.z);
     VectorG centroid2(other.centroid.x,other.centroid.y,other.centroid.z);
     
-    VectorG c1c2=centroid1.subtract(centroid2);
-    VectorG c2c1=centroid2.subtract(centroid1);
+    VectorG c1c2=centroid2.subtract(centroid1);
+    VectorG c2c1=centroid1.subtract(centroid2);
     VectorG normal1(normal[0],normal[1],normal[2]);
     VectorG normal2(other.normal[0],other.normal[1],other.normal[2]);
-    if ((normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) // refer local convexity criterion paper
+    if ( mindistance < 0.02 && ( (normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) ) // refer local convexity criterion paper
     {
         return 1;
     }
@@ -1161,7 +1161,7 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
 
-        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));
     }
     
 }
