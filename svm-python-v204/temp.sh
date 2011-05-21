@@ -20,7 +20,7 @@ do
 #sed s/zSquared/printer-rectified/ fold$i/test$i >temp
 #mv temp fold$i/test$i
 
-#ls -rt fold$i/imodels/*c0.1* | tail -1
+ls -rtlh fold$i/imodels/*.c4.* | tail -1
 
 done
 

@@ -1415,8 +1415,8 @@ def classify_example(x, sm, sparm):
 
 
 
-    l = lp_inference_sum1_IP(x,sm,sparm)
-    #l = lp_inference_sum1(x,sm,sparm)
+    #l = lp_inference_sum1_IP(x,sm,sparm)
+    l = lp_inference_sum1(x,sm,sparm)
     #l = lp_inference(x,sm,sparm)
     return l
 

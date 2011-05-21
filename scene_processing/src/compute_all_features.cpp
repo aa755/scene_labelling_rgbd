@@ -333,7 +333,7 @@ public:
     VectorG c2c1=centroid1.subtract(centroid2);
     VectorG normal1(normal[0],normal[1],normal[2]);
     VectorG normal2(other.normal[0],other.normal[1],other.normal[2]);
-    if ( mindistance < 0.02 && ( (normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) ) // refer local convexity criterion paper
+    if ( mindistance < 0.04 && ( (normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) ) // refer local convexity criterion paper
     {
         return 1;
     }
