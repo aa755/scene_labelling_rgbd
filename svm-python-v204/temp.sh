@@ -1,6 +1,7 @@
 for i in `seq 1 4` 
 do
-#  grep "Setting"  fold$i/logs/log.w4.0.1.e.01.sum1.warm.IPafter10
+  grep "Setting"  fold$i/logs/log.w4.c4.e0.01.* | tail -1
+#  grep "^prec:"  fold$i/pred/out.c.1.e005.opt.infer.sum1 
 #  echo "train$i"
 #  grep "22"  fold$i/train$i
 #  echo "test$i"
@@ -19,7 +20,7 @@ do
 #sed s/zSquared/printer-rectified/ fold$i/test$i >temp
 #mv temp fold$i/test$i
 
-ls -rt fold$i/imodels/*c0.1* | tail -1
+#ls -rt fold$i/imodels/*c0.1* | tail -1
 
 done
 

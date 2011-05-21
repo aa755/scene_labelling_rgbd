@@ -40,7 +40,7 @@ my %avgR = ();
 @C = ('0.1');
 for $c (@C)
 {
-  print "C= $c\n";
+#  print "C= $c\n";
   %pr = ();
   %lpr = ();
   %tc = ();
@@ -52,10 +52,13 @@ for $c (@C)
   %rc = ();
   %lrc = ();
   # read all info
-$modelFile='model.w4.c0.1.e0.01.warm';
+#$modelFile='model.w4.c0.1.e0.01.warm';
+#$outFile='model.w4.c0.1.e0.01.warm';
   for ( $i = 1; $i<= 4; $i++) 
   {
-    $line =  `grep "^prec: " fold$i/pred/out.$method.$modelFile`   ;
+$outFile=`cat fold$i/lastout.txt`;
+	print "outputfile=$outFile\n";
+    $line =  `grep "^prec: " fold$i/pred/$outFile`   ;
     chomp ($line);
 
     #print "\n$line\n";
@@ -66,7 +69,7 @@ $modelFile='model.w4.c0.1.e0.01.warm';
     $tp{$i} = $6;
     $tc{$i} = $10;
     $pc{$i} = $8;
-    $labellines = `grep "^label " fold$i/pred/out.$method.$modelFile`; 
+    $labellines = `grep "^label " fold$i/pred/$outFile`; 
     @labells = split/\n/,$labellines;
     foreach $label (@labells){
      chomp($label);

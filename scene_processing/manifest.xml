@@ -14,9 +14,9 @@
   <depend package="eigen"/>
  <depend package="stereo_msgs"/>
  <depend package="descriptors_3d"/>
- <depend package="octomap_ros"/>
  <!-- 
 -  <depend package="tf"/>
+ <depend package="octomap_ros"/>
 -  <depend package="tf2"/>
 -  <depend package="pcl"/>
 -  <depend package="rospy"/>

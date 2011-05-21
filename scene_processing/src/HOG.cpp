@@ -87,6 +87,7 @@ public :
     for(int featIndex=0;featIndex<HOGFeaturesOfBlock::numFeats;featIndex++)
         featsB.feats[featIndex]=*(feat + featIndex*numBlocksOutX*numBlocksOutY + blockX*numBlocksOutY+ blockY);
   }
+  
   static void saveFloatImage ( const char* filename, const IplImage * image )
 {
   IplImage * saveImage = cvCreateImage ( cvGetSize ( image ),
