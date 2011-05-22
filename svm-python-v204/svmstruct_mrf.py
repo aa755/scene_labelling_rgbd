@@ -39,6 +39,7 @@ def read_examples(filename,sparm):
     max_target=0
     num_node_feats=0
     num_edge_feats=0
+    num_ass_edge_feats = 4
 
     # Open the file and read each example.
     for input_file in file(filename):
@@ -65,6 +66,38 @@ def read_examples(filename,sparm):
     #print 'number of classes: ', max_target
     #print 'number of node features: ', num_node_feats
     #print 'number of edge features: ',num_edge_feats
+
+    #######################################
+    # computing C matrix
+    num_nonass_edge_feats = num_edge_feats - num_ass_edge_feats;
+    num_ones = num_node_feats*max_target + num_ass_edge_feats*max_target + num_nonass_edge_feats*max_target*max_target;
+    crow = zeros(num_ones)
+    ccol = zeros(num_ones)
+    cval = ones(num_ones)
+
+    index = 0;
+    for l in xrange(0,num_node_feats*max_target):
+        crow[index] = l
+        ccol[index] = l
+        index = index + 1
+
+    for l in xrange(0,max_target):
+        for i in xrange(0,num_ass_edge_feats):
+            crow[index] = (num_ass_edge_feats*l + i) + num_node_feats*max_target
+            ccol[index] = (num_edge_feats*(l*max_target+l) + i) +  num_node_feats*max_target
+            index += 1
+
+    for l in xrange(0,max_target):
+        for k in xrange(0, max_target):
+            for i in xrange(0,num_nonass_edge_feats):
+                crow[index] =   num_node_feats*max_target+ (num_ass_edge_feats*max_target + num_nonass_edge_feats*(l*max_target+k)+i )
+                ccol[index] =   num_node_feats*max_target+ (num_edge_feats*(l*max_target+k) + num_ass_edge_feats + i)
+                index +=1
+
+
+    C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*K + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
+    #########################################
+    savetxt('C.txt',C,fmt='%d');
 
     example_num=-1
     for input_file in file(filename):
@@ -184,12 +217,14 @@ def read_examples(filename,sparm):
 
 
         Compactify=csr_matrix((values,(row,cols)),shape=(N*K+E*K*K,N*K+(E*K*K/2)));
-        Yc = concatenate ((Yn,Yec))
-        Yuc_reconstructed=Compactify*Yc;
-        areEqualVectors(Y, Yuc_reconstructed)
-        # Add the example to the list
+        #Yc = concatenate ((Yn,Yec))
+        #Yuc_reconstructed=Compactify*Yc;
+        #areEqualVectors(Y, Yuc_reconstructed)
 
-        examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
+        #X with associative and non-associative features filled correctly
+        X_small = C*X_sparse
+        # Add the example to the list
+        examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     # #print out some very useful statistics.
     #print len(examples),'examples read'

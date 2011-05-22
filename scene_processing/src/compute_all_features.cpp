@@ -1121,7 +1121,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
 		normalsOut.push_back(avgNormal);
 	}
 } */
-
+int NUM_ASSOCIATIVE_FEATS=4;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
@@ -1134,7 +1134,23 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         int seg2_id = *it;
         SpectralProfile segment2Spectral=spectralProfiles[segment_num_index_map[seg2_id]];
-        // horizontal distance between centroids:
+        
+        
+        //here goes the associative features:
+
+        edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral));
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
+
+        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
+
+        assert(edge_features[seg2_id].size ()==NUM_ASSOCIATIVE_FEATS);
+        
+        //here goes the non-associative features
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));
         
         edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));
         // difference in z coordinates of the centroids
@@ -1152,16 +1168,6 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
-
-        edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral));
-        
-        edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
-        
-        edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
-
-        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
-
-        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));
     }
     
 }
