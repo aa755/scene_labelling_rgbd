@@ -1452,7 +1452,7 @@ int main(int argc, char** argv) {
         get_global_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
 
     }
-  //  add_distance_features(cloud,features);
+    add_distance_features(cloud,features);
   //  vector<pcl::Normal> cloud_normals;
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features

@@ -224,7 +224,7 @@ def read_examples(filename,sparm):
         #X with associative and non-associative features filled correctly
         X_small = C*X_sparse
         # Add the example to the list
-        examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
+        examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     # #print out some very useful statistics.
     #print len(examples),'examples read'
