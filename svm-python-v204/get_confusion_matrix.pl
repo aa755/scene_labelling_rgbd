@@ -1,7 +1,7 @@
 $labelmapfile = 'labelmap.txt';
 $labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
 $method = shift;
-$numClasses=18;
+$numClasses=`cut -f 2 -d ' ' labelmap.txt | sort -n | tail -1`;
 
 %lmap=();
 open(F,$labelmapfile);

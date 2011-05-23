@@ -63,9 +63,9 @@ def read_examples(filename,sparm):
                 if(num_edge_feats<int(k)):
                     num_edge_feats=int(k)
     max_target = K # use the max number of classes read from the file
-    #print 'number of classes: ', max_target
-    #print 'number of node features: ', num_node_feats
-    #print 'number of edge features: ',num_edge_feats
+    print 'number of classes: ', max_target
+    print 'number of node features: ', num_node_feats
+    print 'number of edge features: ',num_edge_feats
 
     #######################################
     # computing C matrix
@@ -97,7 +97,7 @@ def read_examples(filename,sparm):
 
     C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*K + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
     #########################################
-    savetxt('C.txt',C,fmt='%d');
+    #savetxt('C.txt',C.todense(),fmt='%d');
 
     example_num=-1
     for input_file in file(filename):
