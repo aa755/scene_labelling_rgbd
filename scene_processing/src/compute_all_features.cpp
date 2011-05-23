@@ -172,7 +172,7 @@ cvReleaseImage (&image);
       }
     assert(pointsInImageLyingOnSegment.size ()>0);
     targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
-    //targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
+    targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
     
   }
 
@@ -1452,7 +1452,7 @@ int main(int argc, char** argv) {
         get_global_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
 
     }
-    add_distance_features(cloud,features);
+  //  add_distance_features(cloud,features);
   //  vector<pcl::Normal> cloud_normals;
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
