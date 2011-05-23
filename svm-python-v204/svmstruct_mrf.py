@@ -39,7 +39,7 @@ def read_examples(filename,sparm):
     max_target=0
     num_node_feats=0
     num_edge_feats=0
-    num_ass_edge_feats = 4
+    num_ass_edge_feats = 0
 
     # Open the file and read each example.
     for input_file in file(filename):
@@ -48,6 +48,7 @@ def read_examples(filename,sparm):
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
         K = int(input[0][2].strip());
+        num_ass_edge_feats = int(input[0][3].strip()); 
         # find the max class and number of node features -- will work for sparse representation
         for i in xrange(0,N):
             target = int(input[i+1][0]);
@@ -1450,8 +1451,8 @@ def classify_example(x, sm, sparm):
 
 
 
-    #l = lp_inference_sum1_IP(x,sm,sparm)
-    l = lp_inference_sum1(x,sm,sparm)
+    l = lp_inference_sum1_IP(x,sm,sparm)
+    #l = lp_inference_sum1(x,sm,sparm)
     #l = lp_inference(x,sm,sparm)
     return l
 
