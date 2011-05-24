@@ -5,6 +5,7 @@ from numpy import random
 import time
 from operator import concat
 import svmapi, array
+import commands
 from numpy import *
 import scipy as Sci
 import scipy.linalg
@@ -103,6 +104,9 @@ def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objM
     return C
 
 def read_examples(filename,sparm):
+    print commands.getoutput('git log | head')
+    print commands.getoutput('git diff --color')
+
     global NUM_CLASSES
     print sparm
     # Helper function for reading from files.
