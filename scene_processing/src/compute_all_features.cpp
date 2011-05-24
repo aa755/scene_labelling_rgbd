@@ -310,6 +310,10 @@ public:
     return r1-r2;
   }
 
+  float pushHogDiffFeats(const SpectralProfile & other, vector<float> & feats)
+  {
+    avgHOGFeatsOfSegment.pushBackAllDiffFeats (other.avgHOGFeatsOfSegment,feats);
+  }
 
   float getCoplanarity(const SpectralProfile & other)
   {
@@ -1168,6 +1172,8 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
+        
+        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]);
     }
     
 }
