@@ -121,3 +121,4 @@ cupboard
 cupboardSide
 cupboardTop
 printerTray
+fridgeSide

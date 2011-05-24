@@ -247,7 +247,8 @@ main (int argc, char** argv)
          
        }
        
-     
+     transformFile >> matEntry;
+     assert(transformFile.failbit);
              
              
 
