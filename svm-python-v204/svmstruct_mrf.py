@@ -860,6 +860,7 @@ def lp_training_sum1(X,Y,sm,sparm):
     return ymax
 
 def lp_inference_sum1(X,sm,sparm):
+    start = time.clock() 
 
     K = sm.num_classes
     w = sm.w
@@ -933,6 +934,8 @@ def lp_inference_sum1(X,sm,sparm):
     ##print len(t)
     lp.matrix = t
     lp.simplex()
+    lpFin = time.clock()
+    print "Time for LP:", (lpFin-start)
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
@@ -965,6 +968,7 @@ def lp_inference_sum1(X,sm,sparm):
     return ymax
 
 def lp_inference_sum1_IP(X,sm,sparm):
+    start = time.clock() 
 
     K = sm.num_classes
     w = sm.w
@@ -1038,6 +1042,10 @@ def lp_inference_sum1_IP(X,sm,sparm):
     ##print len(t)
     lp.matrix = t
     retval=lp.simplex();
+
+    lpFin = time.clock()
+    print "Time for LP:", (lpFin-start)
+
     assert retval == None
     
     for c in lp.cols:      # Iterate over all columns
@@ -1046,6 +1054,11 @@ def lp_inference_sum1_IP(X,sm,sparm):
 
 
     retval=lp.integer()
+
+
+    MIPFin = time.clock()
+    print "Time for MIP:", (MIPFin-lpFin)
+
     assert retval == None
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
