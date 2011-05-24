@@ -49,6 +49,12 @@ public:
       featureVector.push_back(feats[i]);
   }
   
+  void pushBackAllDiffFeats(const HOGFeaturesOfBlock & other,std::vector<float> & featureVector)
+  {
+    for(size_t i=0;i<numFeats-1;i++) // the last one always seems to be 0
+      featureVector.push_back(abs(feats[i]-other.feats[i]));
+  }
+
   void pushNonContrastFeats(std::vector<float> & featureVector) // the last one always seems to be 0
   {
     for(size_t i=numDirections*2;i<numFeats-1;i++)
