@@ -5,6 +5,7 @@ from numpy import random
 import time
 from operator import concat
 import svmapi, array
+import commands
 from numpy import *
 import scipy as Sci
 import scipy.linalg
@@ -23,6 +24,9 @@ ITER = 0
 NUM_CLASSES = 0
 
 def read_examples(filename,sparm):
+    print commands.getoutput('git log | head')
+    print commands.getoutput('git diff --color')
+
     global NUM_CLASSES
     print sparm
     # Helper function for reading from files.
