@@ -158,7 +158,7 @@ def read_examples(filename,sparm):
     # computing C matrix
     C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
    
-    savetxt('C.txt',C.todense(),fmt='%d');
+    #savetxt('C.txt',C.todense(),fmt='%d');
 
     example_num=-1
     for input_file in file(filename):
