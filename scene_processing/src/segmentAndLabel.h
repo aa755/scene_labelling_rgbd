@@ -573,14 +573,11 @@ void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &ou
     pcl::NormalEstimation<PointT, pcl::Normal> n3d_;
     pcl::PointCloud<PointT>::Ptr cloud_ptr (new pcl::PointCloud<PointT> (cloud));
     std::vector<pcl::PointIndices> clusters;
-    pcl::PassThrough<PointT> pass_;
-    pcl::PointCloud<PointT>::Ptr  cloud_filtered (new pcl::PointCloud<PointT> ());
-    pass_.setInputCloud (cloud_ptr);
-    pass_.filter (*cloud_filtered);
+
 
     clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
     initTree (0, clusters_tree_);
-    clusters_tree_->setInputCloud (cloud_filtered);
+    clusters_tree_->setInputCloud (cloud_ptr);
 
     normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
     n3d_.setKSearch (number_neighbours);

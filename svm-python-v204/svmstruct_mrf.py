@@ -133,6 +133,7 @@ def read_examples(filename,sparm):
 
     # Open the file and read each example.
     for input_file in file(filename):
+        print input_file
         input = [line.split() for line in line_reader(file(input_file.strip()))]
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
@@ -160,7 +161,7 @@ def read_examples(filename,sparm):
     print 'number of associative features: ',num_ass_edge_feats
     
     # computing C matrix
-    C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
+    #C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
    
     #savetxt('C.txt',C.todense(),fmt='%d');
 
@@ -287,7 +288,7 @@ def read_examples(filename,sparm):
         #areEqualVectors(Y, Yuc_reconstructed)
 
         #X with associative and non-associative features filled correctly
-        X_small = C*X_sparse
+        #X_small = C*X_sparse
         # Add the example to the list
         examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
