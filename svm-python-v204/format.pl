@@ -1,8 +1,8 @@
-$featfile = shift;
-$edgefile = shift;
-$lablefile = shift;
-$binned = shift;
-if(scalar @ARGV < 4) {$binned =0;}
+$featfile = $ARGV[0];
+$edgefile = $ARGV[1];
+$lablefile = $ARGV[2];
+$binned = 0;
+if(scalar @ARGV == 4) {$binned =$ARGV[3];}
 %nodedata = ();
 %edgedata = ();
 
