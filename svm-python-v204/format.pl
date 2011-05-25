@@ -1,8 +1,12 @@
-$featfile = shift;
-$edgefile = shift;
-$lablefile = shift;
+$featfile = $ARGV[0];
+$edgefile = $ARGV[1];
+$lablefile = $ARGV[2];
+$binned = 0;
+if(scalar @ARGV == 4) {$binned =$ARGV[3];}
 %nodedata = ();
 %edgedata = ();
+
+$numassfeats = 0;
 
 #%labelmap = ('1','1','2','2','3','3','5','4','10','5','12','6');
 %labelmap = ();
@@ -18,11 +22,15 @@ close(F);
 $K = scalar keys %invlabelmap;
 open(DAT, $featfile) ;
 %ncount = ();
+$flag = 0;
 while(<DAT>)
 {
   chomp();
+  if($_ =~ m/\@DATA/) { $flag = 1; print "start\n"; next;} 
+  if($flag == 0) {next;}
+  if($_ =~ m/^\#/) {next;} 
+  #print "here\n";
   ($snum,$sn,$l,@feats) = split/\t/,$_;
-#  delete $feats[12]; # remove the zsquare feature
   if( exists $labelmap{$l} )
   {
   $c = 0; 
@@ -30,7 +38,6 @@ while(<DAT>)
   foreach $f (@feats)
   {
      $c++;
-    
      $fstring = $fstring." $c:$f"; 
   }
   $ncount{$snum} ++;
@@ -43,9 +50,16 @@ close(DAT);
 
 open(DAT, $edgefile) ;
 %ecount = ();
+$flag = 0;
+$read = 0;
 while(<DAT>)
 {
   chomp();
+  if($_ =~ m/\@DATA/) { $flag = 1; $read = 1; next;}
+  if($flag == 0) {next;}
+  if ($read == 1) { $numassfeats=$_; $numassfeats =~ s/#(\d+)(.*)/\1/;  $read=0 ; next;}
+  if($_ =~ m/^#/) {next;}
+  
   ($sn,$sn1,$sn2,$l1,$l2,@feats) = split/\t/,$_;
   if( exists $labelmap{$l1} && exists $labelmap{$l2} )
   {
@@ -62,11 +76,14 @@ while(<DAT>)
 }
 close(DAT);
 
+if($binned == 1){ $NUMASSFEATS = $numassfeats*10;}
+else { $NUMASSFEATS = $numassfeats;}
+
 foreach $sn (keys %ncount)
 {
   $ofile = "datas_".$sn.".txt";
   open(DAT,">$ofile");
-  print DAT "$ncount{$sn} $ecount{$sn} $K\n";
+  print DAT "$ncount{$sn} $ecount{$sn} $K $NUMASSFEATS\n";
   foreach $l (keys %{$nodedata{$sn}} )
   {
     print DAT "$nodedata{$sn}{$l}\n";
