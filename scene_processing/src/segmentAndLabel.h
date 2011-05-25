@@ -61,7 +61,7 @@ void apply_segment_filter_frame(pcl::PointCloud<PointT> &incloud, pcl::PointClou
        outcloud.points.clear ();
 }
 
-
+const int AMBIGOUS_LABEL=125; 
 int getMajorityLabel(const pcl::PointCloud<PointT> &cloud){
     map<int,int> label_count_map;
     int max_count=0;
@@ -83,8 +83,10 @@ int getMajorityLabel(const pcl::PointCloud<PointT> &cloud){
     //cout << "max_count:" << max_count << " second_max_count:" << second_max_count << " segment_size:" << cloud.points.size() << endl;
     if (max_count > cloud.points.size()/10 )
     {
-        assert( (max_count - second_max_count)> max_count/50 );
-        return max_label;
+        if( (max_count - second_max_count)> max_count/2 )
+             return max_label;
+        else
+            return AMBIGOUS_LABEL;//ambigous label
     }
     return 0;
 }
@@ -111,6 +113,8 @@ void findConsistentLabels (const pcl::PointCloud<PointT> &incloud,   pcl::PointC
         // find majority label segment
 
         segment_label_map[segnum] = getMajorityLabel(*cloud_seg);
+        if(segment_label_map[segnum]==AMBIGOUS_LABEL)
+            cerr<<"segment "<<segnum<<" is ambigous"<<endl;
     }
 
     segment_label_map[0] = 0;

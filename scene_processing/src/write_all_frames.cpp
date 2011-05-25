@@ -51,6 +51,7 @@ vector<OriginalFrameInfo*> originalFrames;
                 pcl::PointCloud<PointT>::Ptr cloud_temp (new pcl::PointCloud<PointT> ());
                 findlabel (cloudUntransformed,*originalFrames[i]->RGBDSlamFrame,temp1,originalFrames[i]->getCameraTrans ().getOrigin (),i);
                 segment (temp1, temp2);
+                cerr<<"ambiguities of "<<outClouds.size()<<endl;
                 findConsistentLabels (temp2,*cloud_temp);
                 globalTransform.transformPointCloudInPlaceAndSetOrigin (*cloud_temp);
                 outClouds.push_back (cloud_temp);
