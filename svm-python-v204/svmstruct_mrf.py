@@ -5,6 +5,7 @@ from numpy import random
 import time
 from operator import concat
 import svmapi, array
+import commands
 from numpy import *
 import scipy as Sci
 import scipy.linalg
@@ -22,7 +23,90 @@ LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
 
+
+def get_C_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K ):
+    num_nonass_edge_feats = num_edge_feats - num_ass_edge_feats;
+    num_ones = num_node_feats*K + num_ass_edge_feats*K + num_nonass_edge_feats*K*K;
+    crow = zeros(num_ones)
+    ccol = zeros(num_ones)
+    cval = ones(num_ones)
+
+    index = 0;
+    for l in xrange(0,num_node_feats*K):
+        crow[index] = l
+        ccol[index] = l
+        index = index + 1
+
+    for l in xrange(0,K):
+        for i in xrange(0,num_ass_edge_feats):
+            crow[index] = (num_ass_edge_feats*l + i) + num_node_feats*K
+            ccol[index] = (num_edge_feats*(l*K+l) + i) +  num_node_feats*K
+            index += 1
+
+    for l in xrange(0,K):
+        for k in xrange(0, K):
+            for i in xrange(0,num_nonass_edge_feats):
+                crow[index] =   num_node_feats*K+ (num_ass_edge_feats*K + num_nonass_edge_feats*(l*K+k)+i )
+                ccol[index] =   num_node_feats*K+ (num_edge_feats*(l*K+k) + num_ass_edge_feats + i)
+                index +=1
+
+
+    C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*K + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
+    return C
+
+def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList ):
+
+    partialSums = [0]
+
+    num_ass_terms = 0;
+    for l in objMapList:
+        num_ass_terms += len(l)*len(l)
+        partialSums.append(num_ass_terms)
+
+    num_nonass_edge_feats = num_edge_feats - num_ass_edge_feats;
+    num_ones = num_node_feats*K + num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*K*K;
+    crow = zeros(num_ones)
+    ccol = zeros(num_ones)
+    cval = ones(num_ones)
+
+    index = 0;
+    for l in xrange(0,num_node_feats*K):
+        crow[index] = l
+        ccol[index] = l
+        index = index + 1
+    
+    objCnt = -1
+    for o in objMapList:
+        objCnt +=1;
+        num_parts = len(o)
+        for pl in xrange(0,num_parts):
+            for pk in xrange(0,num_parts):
+                for i in xrange(0,num_ass_edge_feats):
+                    crow[index] = num_ass_edge_feats*(partialSums[objCnt] + pl*num_parts + pk) + i + num_node_feats*K
+                    #print pl , pl , num_parts, partialSums[objCnt], objCnt, crow[index]
+                    assert crow[index] < num_ones
+                    
+                    ccol[index] = num_edge_feats*( (int(o[pl])-1)*K+ (int(o[pk])-1) ) + i +  num_node_feats*K
+                    index += 1
+
+    for l in xrange(0,K):
+        for k in xrange(0, K):
+            for i in xrange(0,num_nonass_edge_feats):
+                crow[index] =   num_node_feats*K+ (num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*(l*K+k)+i )
+                
+                assert crow[index] < num_ones
+                ccol[index] =   num_node_feats*K+ (num_edge_feats*(l*K+k) + num_ass_edge_feats + i)
+                index +=1
+
+    
+
+    C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
+    return C
+
 def read_examples(filename,sparm):
+    print commands.getoutput('git log | head')
+    print commands.getoutput('git diff --color')
+
     global NUM_CLASSES
     print sparm
     # Helper function for reading from files.
@@ -33,6 +117,12 @@ def read_examples(filename,sparm):
             i = l.find('#')
             if i == -1: yield l.strip()
 
+    ################
+    # read the object label map file
+
+    objMapList = [line.split() for line in line_reader(file('/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt'))]
+    
+    #################
     """Parses an input file into an example sequence."""
     # This reads example files of the type read by SVM^multiclass.
     examples = []
@@ -67,37 +157,11 @@ def read_examples(filename,sparm):
     print 'number of classes: ', max_target
     print 'number of node features: ', num_node_feats
     print 'number of edge features: ',num_edge_feats
-
-    #######################################
+    print 'number of associative features: ',num_ass_edge_feats
+    
     # computing C matrix
-    num_nonass_edge_feats = num_edge_feats - num_ass_edge_feats;
-    num_ones = num_node_feats*max_target + num_ass_edge_feats*max_target + num_nonass_edge_feats*max_target*max_target;
-    crow = zeros(num_ones)
-    ccol = zeros(num_ones)
-    cval = ones(num_ones)
-
-    index = 0;
-    for l in xrange(0,num_node_feats*max_target):
-        crow[index] = l
-        ccol[index] = l
-        index = index + 1
-
-    for l in xrange(0,max_target):
-        for i in xrange(0,num_ass_edge_feats):
-            crow[index] = (num_ass_edge_feats*l + i) + num_node_feats*max_target
-            ccol[index] = (num_edge_feats*(l*max_target+l) + i) +  num_node_feats*max_target
-            index += 1
-
-    for l in xrange(0,max_target):
-        for k in xrange(0, max_target):
-            for i in xrange(0,num_nonass_edge_feats):
-                crow[index] =   num_node_feats*max_target+ (num_ass_edge_feats*max_target + num_nonass_edge_feats*(l*max_target+k)+i )
-                ccol[index] =   num_node_feats*max_target+ (num_edge_feats*(l*max_target+k) + num_ass_edge_feats + i)
-                index +=1
-
-
-    C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*K + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
-    #########################################
+    C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
+   
     #savetxt('C.txt',C.todense(),fmt='%d');
 
     example_num=-1
@@ -800,6 +864,7 @@ def lp_training_sum1(X,Y,sm,sparm):
     return ymax
 
 def lp_inference_sum1(X,sm,sparm):
+    start = time.clock() 
 
     K = sm.num_classes
     w = sm.w
@@ -873,6 +938,8 @@ def lp_inference_sum1(X,sm,sparm):
     ##print len(t)
     lp.matrix = t
     lp.simplex()
+    lpFin = time.clock()
+    print "Time for LP:", (lpFin-start)
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
@@ -905,6 +972,7 @@ def lp_inference_sum1(X,sm,sparm):
     return ymax
 
 def lp_inference_sum1_IP(X,sm,sparm):
+    start = time.clock() 
 
     K = sm.num_classes
     w = sm.w
@@ -978,6 +1046,10 @@ def lp_inference_sum1_IP(X,sm,sparm):
     ##print len(t)
     lp.matrix = t
     retval=lp.simplex();
+
+    lpFin = time.clock()
+    print "Time for LP:", (lpFin-start)
+
     assert retval == None
     
     for c in lp.cols:      # Iterate over all columns
@@ -986,6 +1058,11 @@ def lp_inference_sum1_IP(X,sm,sparm):
 
 
     retval=lp.integer()
+
+
+    MIPFin = time.clock()
+    print "Time for MIP:", (MIPFin-lpFin)
+
     assert retval == None
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)

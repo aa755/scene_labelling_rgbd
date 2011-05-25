@@ -162,7 +162,7 @@ std::cerr<<topic<<std::endl;
     ss << cnt;
     std::string fn = "test"+ ss.str() + ".pcd";
 
-    pcl::io::savePCDFile (fn, *cloud_filtered, false);
+    pcl::io::savePCDFile (fn, *cloud_filtered, true);
     ROS_INFO ("Saved %d data points to file.", (int)cloud_filtered->points.size ());
 
   }
