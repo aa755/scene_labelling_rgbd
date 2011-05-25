@@ -5,8 +5,41 @@ vector<OriginalFrameInfo*> originalFrames;
     pcl::PointCloud<PointT> cloudUntransformed;
     pcl::PointCloud<PointT> cloudUntransformedUnfiltered;
 
+    bool addNodeHeader=true;;
+    bool addEdgeHeader=true;
+    
+    vector<std::string> nodeFeatNames;
+    vector<std::string> edgeFeatNames;
 
-
+    void addToNodeHeader(std::string featName,size_t numTimes=1)
+    {
+      //char featNameBuf[50];
+     // assert(featName.length ()<40);
+      if(addNodeHeader)
+        {
+          for(size_t i=0;i<numTimes;i++)
+            {
+       //       sprintf (featNameBuf,"%s%d",featName,i);
+                nodeFeatNames.push_back (featName+boost::lexical_cast<std::string>(i));
+            }
+        }
+    }
+    
+    inline void addToEdgeHeader(std::string featName,size_t numTimes=1)
+    {
+      //char featNameBuf[50];
+      //assert(featName.length ()<40);
+      if(addEdgeHeader)
+        {
+          for(size_t i=0;i<numTimes;i++)
+            {
+              //sprintf (featNameBuf,"%s%d",featName,i);
+                edgeFeatNames.push_back (featName+boost::lexical_cast<std::string>(i));
+            }
+        }
+    }
+    
+    
 class BinningInfo
 {
   float max;
@@ -319,7 +352,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =0.6;
+   float tolerance =1.0;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -636,9 +669,9 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
     spectralProfileOfSegment.avgS=avg_features[1];
     spectralProfileOfSegment.avgV=avg_features[2];
 
-    concat_feats(features, hist_features);
-    concat_feats(features, avg_features);
-
+    concat_feats(features, hist_features);addToNodeHeader ("H_hist",num_bin_H);addToNodeHeader ("S_hist",num_bin_S);addToNodeHeader ("V_hist",num_bin_V);
+    
+    concat_feats(features, avg_features);addToNodeHeader ("HAvg");addToNodeHeader ("SAvg");addToNodeHeader ("VAvg");
 }
 
 void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, SpectralProfile & spectralProfileOfSegment) {
@@ -657,20 +690,20 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     float horizontalExtent=sqrt(xExtent*xExtent+yExtent*yExtent);
     float zExtent=max_p[2] - min_p[2];
     
-    features.push_back(horizontalExtent);
+    features.push_back(horizontalExtent);addToNodeHeader ("horizontalExtent");
     
-    features.push_back(zExtent);
+    features.push_back(zExtent);addToNodeHeader ("zExtent");
 
-    features.push_back(spectralProfileOfSegment.centroid.z);
+    features.push_back(spectralProfileOfSegment.centroid.z);addToNodeHeader ("centroid_z");
     
     
-    features.push_back (spectralProfileOfSegment.getNormalZComponent ());
+    features.push_back (spectralProfileOfSegment.getNormalZComponent ());addToNodeHeader ("normal_z");
   
     //spectral saliency features
-    features.push_back ((spectralProfileOfSegment.getLinearNess ()));
-    features.push_back ((spectralProfileOfSegment.getPlanarNess ()));
-    features.push_back ((spectralProfileOfSegment.getScatter ()));
-    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);
+    features.push_back ((spectralProfileOfSegment.getLinearNess ()));addToNodeHeader ("linearness");
+    features.push_back ((spectralProfileOfSegment.getPlanarNess ()));addToNodeHeader ("planarness");
+    features.push_back ((spectralProfileOfSegment.getScatter ()));addToNodeHeader ("scatter");
+    spectralProfileOfSegment.avgHOGFeatsOfSegment.pushBackAllFeats (features);addToNodeHeader ("HOG",31);
     
     
    
@@ -801,39 +834,43 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         
         
         //here goes the associative features:
+        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]); addToEdgeHeader ("HOGDiff",31);
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral)); addToEdgeHeader ("HDiffAbs");
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral)); addToEdgeHeader ("SDiff");
+        
+        edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral)); addToEdgeHeader ("Viff");
 
-        edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral)); addToEdgeHeader ("Coplanarity");
         
-        edge_features[seg2_id].push_back(segment1Spectral.getSDiff (segment2Spectral));
-        
-        edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
-
-        edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
-        
-        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]); // 31 features
 
         assert(edge_features[seg2_id].size ()==NUM_ASSOCIATIVE_FEATS);
         
         //here goes the non-associative features
         
-        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));addToEdgeHeader ("convexity");
         
-        edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));addToEdgeHeader ("centroid_horz_diff");
         // difference in z coordinates of the centroids
-        edge_features[seg2_id].push_back(segment1Spectral.getVertDispCentroids (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getVertDispCentroids (segment2Spectral));addToEdgeHeader ("centroid_z_diff");
         //cerr << "edge feature for edge (" << seg1_id << "," << seg2_id << ")  = " << centroid_z_diff << endl;
         
         // distance between closest points
-        edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);
+        edge_features[seg2_id].push_back(distance_matrix[make_pair(segment_id,seg2_id)]);addToEdgeHeader ("dist_closest");
 
         // difference of angles with vertical
-        edge_features[seg2_id].push_back(segment1Spectral.getAngleDiffInRadians (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getAngleDiffInRadians (segment2Spectral));addToEdgeHeader ("AngleDiff");
 		
 		// dot product of normals
-        edge_features[seg2_id].push_back(segment1Spectral.getNormalDotProduct (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getNormalDotProduct (segment2Spectral));addToEdgeHeader ("NormalDotProduct");
 
         
-        edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
+        edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));addToEdgeHeader ("Innerness");
+    
+        
+// this line should be in the end
+        addEdgeHeader=false;
     }
     
 }
@@ -1028,45 +1065,57 @@ int main(int argc, char** argv) {
 
         // get bounding box and centroid point features
         get_global_features(segment_clouds[i], features[seg_id],spectralProfiles[i]);
+          addNodeHeader=false;
 
     }
-    add_distance_features(cloud,features);
+    add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
   //  vector<pcl::Normal> cloud_normals;
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
+ //   assert(nodeFeatNames.size ()<100); // some error in setting flag can cause trouble
+    for(size_t i=0;i<nodeFeatNames.size ();i++)
+      nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
+    
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
-        
-        cerr << (*it).first << ":\t";
+        assert(nodeFeatNames.size ()==(*it).second.size ());
+        //cerr << (*it).first << ":\t";
         nfeatfile <<  scene_num << "\t" << (*it).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t";
         for (vector<float>::iterator it2 = (*it).second.begin(); it2 != (*it).second.end(); it2++) {
-           cerr << *it2 << "\t";
+           //cerr << *it2 << "\t";
            nfeatfile <<  *it2 << "\t";
         }
-        cerr << endl;
+        //cerr << endl;
         nfeatfile << "\n";
     }
     cerr << "\n";
     map < int, vector <float> > edge_features;
     // find pairwise features
+   // assert(edgeFeatNames.size ()<100); // some error in setting flag can cause trouble
+    efeatfile<<"#"<<NUM_ASSOCIATIVE_FEATS<<endl;
+    for(size_t i=0;i<edgeFeatNames.size ();i++)
+      efeatfile<<"#"<<edgeFeatNames[i]<<endl;
+    
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
         get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features);
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
-            cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
+          //  cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
             efeatfile << scene_num << "\t" << (*it).first << "\t" << (*it2).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t" << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label ;
+                    assert(edgeFeatNames.size ()==(*it2).second.size ());
+
             for (vector<float>::iterator it3 = (*it2).second.begin(); it3 != (*it2).second.end(); it3++) {
-                cerr << *it3 << "\t";
+            //    cerr << *it3 << "\t";
                 efeatfile << "\t" <<*it3 ;
             }
-            cerr << endl;
+            //cerr << endl;
             efeatfile << endl;
         }
 
     }
   
-
+    
     cout << "DONE!!\n";
     // write features to file
 /*    for (vector<float>::iterator it = features.begin(); it < features.end(); it++) {
