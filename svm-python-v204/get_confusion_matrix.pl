@@ -1,6 +1,8 @@
 $labelmapfile = 'labelmap.txt';
 $labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
-$method = shift;
+#$outFile=`cat fold$i/lastout.txt`;
+$outFile = shift;
+$method= shift;
 $numClasses=`cut -f 2 -d ' ' labelmap.txt | sort -n | tail -1`;
 
 %lmap=();
@@ -47,7 +49,6 @@ for $c (@C)
   for ( $i = 1; $i<= 4; $i++) 
   {
     $flag = 0; 
-$outFile=`cat fold$i/lastout.txt`;
     $count = 0;
     open(F,"fold$i/pred/$outFile")   ;
     while(<F>){
@@ -89,7 +90,7 @@ $outFile=`cat fold$i/lastout.txt`;
 
 for $c (@C)
 {
-  open(F,">confusionM_c$c\_$method.csv");
+  open(F,">confusionM.$method.csv");
   @ll = ();
   print $c."\n\n";
   printf "%-16s", $blank;
