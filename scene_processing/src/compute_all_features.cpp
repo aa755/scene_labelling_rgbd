@@ -1,351 +1,11 @@
-#include "float.h"
-#include "math.h"
-#include <iostream>
-#include <fstream>
-#include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
-#include "pcl/filters/passthrough.h"
-#include "pcl/filters/extract_indices.h"
-#include "pcl/features/intensity_spin.h"
-#include "pcl/features/normal_3d.h"
-//#include "descriptors_3d/all_descriptors.h"
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include"feat_utils.h"
 
-#include <point_cloud_mapping/kdtree/kdtree_ann.h>
-#include <vector>
-#include "sensor_msgs/point_cloud_conversion.h"
-#include "color.cpp"
-#include "pcl/kdtree/kdtree.h"
-#include "pcl/kdtree/tree_types.h"
-#include <point_cloud_mapping/geometry/nearest.h>
-#include <pcl_ros/io/bag_io.h>
-#include "HOG.cpp"
-typedef pcl::PointXYZRGBCamSL PointT;
-#include "CombineUtils.h"
-#include<boost/numeric/ublas/matrix.hpp>
-#include<boost/numeric/ublas/io.hpp>
-#include<boost/numeric/bindings/traits/ublas_matrix.hpp>
-#include<boost/numeric/bindings/lapack/gels.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
-namespace ublas = boost::numeric::ublas;
-namespace lapack= boost::numeric::bindings::lapack;
-#include "pcl_visualization/pcl_visualizer.h"
-typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
-typedef ColorHandler::Ptr ColorHandlerPtr;
+vector<OriginalFrameInfo*> originalFrames;
 
-
-//#include <Eig>
-//typedef pcl::PointXYGRGBCam PointT;
-
-typedef  pcl::KdTree<PointT> KdTree;
-typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
     pcl::PointCloud<PointT> cloudUntransformed;
     pcl::PointCloud<PointT> cloudUntransformedUnfiltered;
 
 
-using namespace pcl;
-
-class OriginalFrameInfo
-{
-   pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
-  HOG hogDescriptors;
-  TransformG cameraTrans;
-  bool cameraTransSet;
-  
-public:
-  
-  void saveImage(int segmentId,int label,vector<Point2DAbhishek>points)
-  {
-  CvSize size;
-  size.height=480;
-  size.width=640;
-  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
-  
-          pcl::PointXYZRGB tmp;
-  for(int x=0;x<size.width;x++)
-    for(int y=0;y<size.height;y++)
-      {
-        int index=x+y*size.width;
-        tmp= RGBDSlamFrame->points[index];
-        ColorRGB tmpColor(tmp.rgb);
-        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
-        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
-        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
-      }
-          
-        ColorRGB tmpColor(0.0,1.0,0.0);
-          for(int i=0;i<points.size ();i++)
-            {
-              int x=points[i].x;
-              int y=points[i].y;
-              
-                CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
-                CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
-                CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
-              
-            }
-
-          char filename[30];
-          sprintf(filename,"s%d_l%d.png",segmentId,label);
-HOG::saveFloatImage ( filename, image );
-cvReleaseImage (&image);
-
-    
-  }
-  OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame_)
-  {
-    cameraTransSet=false;
-    RGBDSlamFrame=RGBDSlamFrame_;
-  CvSize size;
-  size.height=480;
-  size.width=640;
-  cout<<"RGBslam size:"<<RGBDSlamFrame->size ()<<endl;
-    if(RGBDSlamFrame->size ()==0)
-      return;// can be 0 for dummy pcds of manually transformed
-
-  assert(RGBDSlamFrame->size ()==size.width*size.height); // can be 0 for dummy pcds of manually transformed
-
-  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
-  
-          pcl::PointXYZRGB tmp;
-          
-  for(int x=0;x<size.width;x++)
-    for(int y=0;y<size.height;y++)
-      {
-        int index=x+y*size.width;
-        tmp= RGBDSlamFrame->points[index];
-        ColorRGB tmpColor(tmp.rgb);
-        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
-        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
-        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
-      }
-          
-          hogDescriptors.computeHog (image);
-          
-          cvReleaseImage (&image);
-  }
-  
-  static Point2DAbhishek getPixelFromIndex(int index)
-  {
-    //assuming size is 640*480;
-    int width=640;
-    Point2DAbhishek ret;
-    ret.y=index/width;
-    ret.x=index%width;
-    assert(index==ret.x+ret.y*width);
-    return ret;
-  }
-  
-  static void findHog(size_t frameIndex,vector<size_t> & pointIndices,pcl::PointCloud<PointT> &incloud, HOGFeaturesOfBlock &hogSegment, vector<OriginalFrameInfo*> & originalFrames)
-  {
-    static int rejectCout=0;
-    OriginalFrameInfo * targetFrame=originalFrames[frameIndex];
-    assert(targetFrame->RGBDSlamFrame->size ()>0);
-	assert(targetFrame->cameraTransSet);
-    pcl::KdTreeFLANN<pcl::PointXYZRGB>::Ptr nnFinder(new pcl::KdTreeFLANN<pcl::PointXYZRGB>);
-    nnFinder->setInputCloud((targetFrame->RGBDSlamFrame));
-    
-    vector<int> indices;
-    vector<float> distances;
-    pcl::PointXYZRGB searchPoint;
-    vector<Point2DAbhishek> pointsInImageLyingOnSegment;
-    for(size_t i=0;i<pointIndices.size ();i++)
-      {
-        searchPoint.x=cloudUntransformed.points[pointIndices[i]].x;
-        searchPoint.y=cloudUntransformed.points[pointIndices[i]].y;
-        searchPoint.z=cloudUntransformed.points[pointIndices[i]].z;
-        assert(incloud.points[pointIndices[i]].rgb==cloudUntransformed.points[pointIndices[i]].rgb); // x,y,z are transformed but color should remain same
-        ColorRGB targetColor(incloud.points[pointIndices[i]].rgb);
-        nnFinder->radiusSearch (searchPoint,0.0001,indices,distances,2);
-        for(size_t nb=0;nb<indices.size ();nb++)
-          {
-            // this point could correspond to some other physical point nearby
-            ColorRGB temp(targetFrame->RGBDSlamFrame->points[indices[nb]].rgb);
-            if(ColorRGB::distance (temp,targetColor)<0.01)
-              pointsInImageLyingOnSegment.push_back (getPixelFromIndex (indices[nb]));
-            //else
-              //cout<<"rejected :"<<rejectCout++<<endl;
-            
-          }
-     
-      }
-    assert(pointsInImageLyingOnSegment.size ()>0);
-    targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
-    targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
-    
-  }
-
-  void
-  setCameraTrans (TransformG cameraTrans)
-  {
-    this->cameraTrans = cameraTrans;
-    cameraTransSet=true;
-  }
-  
-  void
-  applyPostGlobalTrans (TransformG globalTrans)
-  {
-    //post => premultiply coz point is towards right;
-    if(cameraTransSet)
-    cameraTrans=cameraTrans.preMultiply (globalTrans);
-  }
-
-  TransformG
-  getCameraTrans () const
-  {
-    assert(cameraTransSet);
-    return cameraTrans;
-  }
-
-  void
-  setCameraTransSet (bool cameraTransSet)
-  {
-    this->cameraTransSet = cameraTransSet;
-  }
-
-  bool
-  isCameraTransSet () const
-  {
-    return cameraTransSet;
-  }
-  
-};
-
-vector<OriginalFrameInfo*> originalFrames;
-
-
-class SpectralProfile
-{
-  vector<float> eigenValues; // sorted in ascending order
-public:
-  HOGFeaturesOfBlock avgHOGFeatsOfSegment;
-  float avgH;
-  float avgS;
-  float avgV;
-  
-  geometry_msgs::Point32 centroid;
-  Eigen::Vector3d normal;
-  void setEigValues(Eigen::Vector3d eigenValues_)
-  {
-    eigenValues.clear ();
-    //Assuming the values are sorted
-    assert(eigenValues_(0)<=eigenValues_(1));
-    assert(eigenValues_(1)<=eigenValues_(2));
-            
-    for(int i=0;i<3;i++)
-      eigenValues.push_back (eigenValues_(i));
-  //  std::sort (eigenValues.begin (),eigenValues.end ()); // sorted in ascending order
-  }
-  
-  float getDescendingLambda(int index) const
-  {
-    return eigenValues[2-index];
-  }
-  
-  float getScatter() const
-  {
-    return getDescendingLambda (0);
-  }
-  
-  float getLinearNess() const
-  {
-    return (getDescendingLambda (0)-getDescendingLambda (1));
-  }
-  
-  float getPlanarNess() const
-  {
-    return (getDescendingLambda (1)-getDescendingLambda (2));
-  }
-  
-  float getNormalZComponent() const
-  {
-    return normal[2];
-  }
-  
-  float getAngleWithVerticalInRadians() const
-  {
-    return acos(getNormalZComponent());
-  }
-  
-  float getHorzDistanceBwCentroids(const SpectralProfile & other) const
-  {
-     return sqrt(pow(centroid.x - other.centroid.x, 2) + pow(centroid.y - other.centroid.y, 2));    
-  }
-  
-  float getVertDispCentroids(const SpectralProfile & other)
-  {
-     return (centroid.z - other.centroid.z);    
-  }
-  
-  float getHDiffAbs(const SpectralProfile & other)
-  {
-     return fabs(avgH - other.avgH);    
-  }
-  
-  float getSDiff(const SpectralProfile & other)
-  {
-     return (avgS - other.avgS);    
-  }
-  
-  float getVDiff(const SpectralProfile & other)
-  {
-     return (avgV - other.avgV);    
-  }
-  
-  float getAngleDiffInRadians(const SpectralProfile & other)
-  {
-        return (getAngleWithVerticalInRadians() - other.getAngleWithVerticalInRadians ());  
-  }
-  
-  float getNormalDotProduct(const SpectralProfile & other)
-  {
-        return  fabs(normal(0)*other.normal(0) +normal(1)*other.normal(1) +normal(2)*other.normal(2)) ;
-  }
-  
-  float getInnerness(const SpectralProfile & other)
-  {
-    float r1=sqrt(centroid.x*centroid.x+centroid.y*centroid.y);
-    float r2=sqrt(other.centroid.x*other.centroid.x+other.centroid.y*other.centroid.y);
-    return r1-r2;
-  }
-
-  float pushHogDiffFeats(const SpectralProfile & other, vector<float> & feats)
-  {
-    avgHOGFeatsOfSegment.pushBackAllDiffFeats (other.avgHOGFeatsOfSegment,feats);
-  }
-
-  float getCoplanarity(const SpectralProfile & other)
-  {
-    float dotproduct = getNormalDotProduct( other);
-    if (fabs(dotproduct) >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
-    {
-        float distance = (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
-        if(distance == 0 || fabs(distance) < (1/1000) ) {return 1000;}
-        return fabs(1/distance);
-    }
-    else  // else return -1
-        return -1;
-  }
-
-  int getConvexity(const SpectralProfile & other, float mindistance)
-  {
-    VectorG centroid1(centroid.x,centroid.y,centroid.z);
-    VectorG centroid2(other.centroid.x,other.centroid.y,other.centroid.z);
-    
-    VectorG c1c2=centroid2.subtract(centroid1);
-    VectorG c2c1=centroid1.subtract(centroid2);
-    VectorG normal1(normal[0],normal[1],normal[2]);
-    VectorG normal2(other.normal[0],other.normal[1],other.normal[2]);
-    if ( mindistance < 0.04 && ( (normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) ) // refer local convexity criterion paper
-    {
-        return 1;
-    }
-     // else return 0
-    return 0;
-  }
-
-};
 
 class BinningInfo
 {
@@ -505,7 +165,7 @@ void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl:
         }
     assert(max>=0);
     cout<<"segment index:"<<segment<<"with "<<indices.size ()<<" points"<<" main frame "<<maxIndex<<" with numMax="<<max<<endl;
-    OriginalFrameInfo::findHog (maxIndex, indices, incloud, feats.avgHOGFeatsOfSegment,originalFrames);
+    OriginalFrameInfo::findHog (maxIndex, indices, incloud, feats.avgHOGFeatsOfSegment,originalFrames,cloudUntransformed);
     
 }
 
@@ -1125,7 +785,7 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
 		normalsOut.push_back(avgNormal);
 	}
 } */
-int NUM_ASSOCIATIVE_FEATS=4;
+int NUM_ASSOCIATIVE_FEATS=4+31;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
@@ -1149,6 +809,8 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getVDiff (segment2Spectral));
 
         edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral));
+        
+        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]); // 31 features
 
         assert(edge_features[seg2_id].size ()==NUM_ASSOCIATIVE_FEATS);
         
@@ -1172,8 +834,6 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));
-        
-        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]);
     }
     
 }
@@ -1239,94 +899,6 @@ void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z a
 
 }
 
-void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamBag)
-{
-       sensor_msgs::PointCloud2 cloud_blob;
-    if (pcl::io::loadPCDFile(unTransformedPCDFile, cloud_blob) == -1) {
-        ROS_ERROR("Couldn't read argv[3]");
-        exit(-1);
-    }
-     
-//    pcl::fromROSMsg(cloud_blob, cloudUntransformedUnfiltered);
-    pcl::fromROSMsg(cloud_blob, cloudUntransformed);
-    /*
-      pcl::PointCloud<PointT>::Ptr cloud_temp_ptr (new pcl::PointCloud<PointT > (cloudUntransformedUnfiltered));
-
-          pcl::PassThrough<PointT> pass;
-          pass.setInputCloud (cloud_temp_ptr);
-          pass.setFilterFieldName ("z");
-          pass.setFilterLimits (0, 10);
-          pass.filter (cloudUntransformed);
-          
-          cout<<cloudUntransformedUnfiltered.size ()<<endl;
-          cout<<"untransformed sizzes:"<<endl;
-          cout<<cloudUntransformed.size ()<<endl;
-    */
-    
-  pcl_ros::BAGReader reader;
-  char *topic = "/camera/rgb/points";
-  if (!reader.open (RGBDSlamBag, "/rgbdslam/my_clouds"))
-    {
-      cout << "Couldn't open RGBDSLAM topic" << (topic);
-      exit(-1);
-    }
-      rosbag::Bag bag;
-    std::cerr << "opening " << RGBDSlamBag << std::endl;
-    bag.open(RGBDSlamBag, rosbag::bagmode::Read);
-  
-       sensor_msgs::PointCloud2ConstPtr cloud_blob_new;
-       sensor_msgs::PointCloud2ConstPtr cloud_blob_old;
-       
-      cloud_blob_new = reader.getNextCloud ();
-     do
-    {
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZRGB> ());
-      pcl::fromROSMsg (*cloud_blob_new, *cloud_temp);
-      OriginalFrameInfo * temp=new OriginalFrameInfo(cloud_temp);
-        ros::Time ptime = cloud_blob_new->header.stamp;
-
-
-        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
-        //std::cerr<<(view_tf.size())<<endl;
-        std::cerr << ptime << std::endl;
-        //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
-        int tf_count = 0;
-
-        tf::Transform final_tft;
-
-        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
-        {
-            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
-            assert(tf_ptr != NULL);
-            std::vector<geometry_msgs::TransformStamped> bt;
-            tf_ptr->get_transforms_vec(bt);
-            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
-
-            //  transG.print();
-            if (ptime == bt[0].header.stamp)
-            {
-                tf_count++;
-                std::cerr << "tf qid:" << bt[0].header.seq << std::endl;
-                final_tft = tft;
-            }
-            assert(tf_count <= 1);
-        }
-
-        if(tf_count == 1)
-          {
-                TransformG transG(final_tft);
-                transG.print ();
-                temp->setCameraTrans (transG);
-          }
-	originalFrames.push_back (temp);
-      cloud_blob_old=cloud_blob_new;
-      for (int i = 0; i < 5; i++)
-        cloud_blob_new=reader.getNextCloud ();
-    }
-  while (cloud_blob_new != cloud_blob_old);
-//    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
-  
-}
 
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
@@ -1357,7 +929,7 @@ int main(int argc, char** argv) {
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
           cout<<cloud.size ()<<endl;
-    gatherOriginalFrames (unTransformedPCD,rgbdslamBag);
+    gatherOriginalFrames (unTransformedPCD,rgbdslamBag,originalFrames,cloudUntransformed);
     TransformG globalTransform;
     computeGlobalTransform (cloud,cloudUntransformed,globalTransform);
 
