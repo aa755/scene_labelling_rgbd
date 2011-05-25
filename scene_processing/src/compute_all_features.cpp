@@ -1092,13 +1092,18 @@ int main(int argc, char** argv) {
     // find pairwise features
    // assert(edgeFeatNames.size ()<100); // some error in setting flag can cause trouble
     efeatfile<<"#"<<NUM_ASSOCIATIVE_FEATS<<endl;
-    for(size_t i=0;i<edgeFeatNames.size ();i++)
-      efeatfile<<"#"<<edgeFeatNames[i]<<endl;
-    
+    int edgecount=0;
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
         get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features);
+        edgecount++;
+        if(edgecount==1)
+          {
+                for(size_t i=0;i<edgeFeatNames.size ();i++)
+                      efeatfile<<"#"<<edgeFeatNames[i]<<endl;
+
+          }
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
           //  cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
