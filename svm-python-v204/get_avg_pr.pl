@@ -2,7 +2,9 @@
 #$labelsfile = shift;
 $labelmapfile = 'labelmap.txt';
 $labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
-$method = shift;
+#$outFile=`cat fold$i/lastout.txt`;
+$outFile= shift;
+#$method = shift;
 
 %lmap=();
 open(F,$labelmapfile);
@@ -56,8 +58,7 @@ for $c (@C)
 #$outFile='model.w4.c0.1.e0.01.warm';
   for ( $i = 1; $i<= 4; $i++) 
   {
-$outFile=`cat fold$i/lastout.txt`;
-	print "outputfile=$outFile\n";
+	print "outputfile=fold$i/pred/$outFile\n";
     $line =  `grep "^prec: " fold$i/pred/$outFile`   ;
     chomp ($line);
 
