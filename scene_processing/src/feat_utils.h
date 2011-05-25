@@ -41,6 +41,11 @@ typedef ColorHandler::Ptr ColorHandlerPtr;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
+// octomap realted
+using namespace octomap;
+#include <octomap/octomap.h>
+#include <octomap_ros/OctomapROS.h>
+#include <octomap_ros/conversions.h>
 
 using namespace pcl;
 class OriginalFrameInfo

@@ -900,6 +900,40 @@ void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z a
 }
 
 
+void buildOctoMap(const pcl::PointCloud<PointT> &cloud)
+{
+    OcTreeROS tree(0.01);
+    OcTreeROS::NodeType* treeNode;
+    
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    pcl::PointCloud<PointT>::Ptr cloud_cam(new pcl::PointCloud<PointT > ());
+
+    int cnt =0;
+    // find all the camera indices
+    map<int,int> camera_indices;
+    for (size_t i = 0; i < cloud.points.size(); ++i) {
+        camera_indices[(int) cloud.points[i].cameraIndex] = 1;
+    }
+    // for every camera index .. apply filter and get the point cloud
+    for (map<int,int>::iterator it = camera_indices.begin(); it != camera_indices.end();it++)
+    {
+        int ci = (*it).first;
+        apply_camera_filter(*cloud_ptr,*cloud_cam,ci);
+
+
+        // convert to  pointXYZ format
+        sensor_msgs::PointCloud2 cloud_blob;
+        pcl::toROSMsg(*cloud_cam,cloud_blob);
+        pcl::PointCloud<pcl::PointXYZ> xyzcloud;
+        pcl::fromROSMsg(cloud_blob, xyzcloud);
+        // find the camera co-ordinate
+        originalFrames[0];
+        pcl::PointXYZ origin (0.0, 0.0, 0.0);
+        // insert to the tree
+        tree.insertScan(xyzcloud,origin,-1,true);
+    }
+}
+
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
@@ -935,6 +969,8 @@ int main(int argc, char** argv) {
 
     for(unsigned int i=0;i<originalFrames.size ();i++)
       originalFrames[i]->applyPostGlobalTrans (globalTransform);
+    
+    // call buildOctoMap here
       
     if(SHOW_CAM_POS_IN_VIEWER)
       {
