@@ -18,13 +18,14 @@
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
+#include "CombineUtils.h"
 
 typedef pcl::PointXYZRGBCamSL PointT;
 typedef pcl::PointXYGRGBCam PointCamT;
 typedef pcl::PointXYZRGB PointFrameT;
 
-typedef  pcl::KdTree<PointT> KdTree;
-typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
+//typedef  pcl::KdTree<PointT> KdTree;
+//typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
 void apply_segment_filter_frame(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
     //ROS_INFO("applying filter");
@@ -133,7 +134,7 @@ void findConsistentLabels (const pcl::PointCloud<PointT> &incloud,   pcl::PointC
 }
 
 
-void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<PointFrameT> &cloudframe , pcl::PointCloud<PointT> &outcloud) {
+void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<PointFrameT> &cloudframe , pcl::PointCloud<PointT> &outcloud,VectorG origin,int camIndex) {
 
     std::vector<int> nn_indices;
     nn_indices.resize(2);
@@ -149,8 +150,8 @@ void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<Poin
         outcloud.points[i].y = cloudframe.points[i].y;
         outcloud.points[i].z = cloudframe.points[i].z;
         outcloud.points[i].rgb = cloudframe.points[i].rgb;
-        outcloud.points[i].cameraIndex = 0; // this needs to be set correctly
-        outcloud.points[i].distance = 0; // this needs to be set correctly
+        outcloud.points[i].cameraIndex = camIndex;
+        outcloud.points[i].distance = (origin.subtract(VectorG(outcloud.points[i].x,outcloud.points[i].y,outcloud.points[i].z))).getNorm();
         outcloud.points[i].segment = 0;
         outcloud.points[i].label = 0;
     }
@@ -170,7 +171,7 @@ void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<Poin
 
 
 void extractEuclideanClusters (const pcl::PointCloud<PointT> &cloud,
-                               const boost::shared_ptr<KdTree > &tree,
+                               const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
                                float tolerance, std::vector<pcl::PointIndices> &clusters,
                                unsigned int min_pts_per_cluster,
                                unsigned int max_pts_per_cluster)
@@ -251,7 +252,7 @@ void extractEuclideanClusters (const pcl::PointCloud<PointT> &cloud,
 
 void extractEuclideanClusters (
       const pcl::PointCloud<PointT> &cloud, const pcl::PointCloud<pcl::Normal> &normals,
-      const std::vector<int> &indices, const boost::shared_ptr<KdTree > &tree,
+      const std::vector<int> &indices, const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
       float tolerance, std::vector<pcl::PointIndices> &clusters, double eps_angle,
       unsigned int min_pts_per_cluster = 1,
       unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
@@ -343,7 +344,7 @@ Extract the clusters based on location and normals
 */
 void extractEuclideanClusters (
       const pcl::PointCloud<PointT> &cloud, const pcl::PointCloud<pcl::Normal> &normals,
-      const boost::shared_ptr<KdTree > &tree,
+      const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
       float tolerance, std::vector<pcl::PointIndices> &clusters, double eps_angle,
       unsigned int min_pts_per_cluster = 1,
       unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
@@ -438,7 +439,7 @@ Extract the clusters based on location,normals and color
 */
 void extractEuclideanClusters (
       const pcl::PointCloud<PointT> &cloud, const pcl::PointCloud<pcl::Normal> &normals,
-      const boost::shared_ptr<KdTree > &tree,
+      const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
       float tolerance, float rgb_tolerance, std::vector<pcl::PointIndices> &clusters, double eps_angle,
       unsigned int min_pts_per_cluster = 1,
       unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
@@ -597,7 +598,7 @@ void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &ou
 
 }
 
-void convertType(const pcl::PointCloud<PointCamT> &cloud,  pcl::PointCloud<PointT> &outcloud){
+void convertType(const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<PointT> &outcloud,VectorG origin,int camIndex){
 
   outcloud.header.frame_id = cloud.header.frame_id;
   outcloud.points.resize(cloud.points.size());
@@ -607,20 +608,20 @@ void convertType(const pcl::PointCloud<PointCamT> &cloud,  pcl::PointCloud<Point
       outcloud.points[i].y = cloud.points[i].y;
       outcloud.points[i].z = cloud.points[i].z;
       outcloud.points[i].rgb = cloud.points[i].rgb;
-      outcloud.points[i].cameraIndex = cloud.points[i].cameraIndex;
-      outcloud.points[i].distance = cloud.points[i].distance;
+      outcloud.points[i].cameraIndex = camIndex;
+      outcloud.points[i].distance = (origin.subtract(VectorG(cloud.points[i].x,cloud.points[i].y,cloud.points[i].z))).getNorm();
       outcloud.points[i].segment = 0;
       outcloud.points[i].label = 0;
   }
 }
 
-void segment (const pcl::PointCloud<PointCamT> &cloud,  pcl::PointCloud<PointT> &outcloud){
+/*void segment (const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<PointT> &outcloud){
 
     pcl::PointCloud<PointT> newcloud;
-    convertType(cloud,newcloud);
+    convertType(cloud,newcloud,origin,camIndex);
     segment(newcloud,outcloud);
 
-}
+}*/
 
 
 

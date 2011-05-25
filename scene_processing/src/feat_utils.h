@@ -45,12 +45,12 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 using namespace pcl;
 class OriginalFrameInfo
 {
-   pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
   HOG hogDescriptors;
   TransformG cameraTrans;
   bool cameraTransSet;
   
 public:
+   pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
   
   void saveImage(int segmentId,int label,vector<Point2DAbhishek>points)
   {
@@ -206,6 +206,12 @@ cvReleaseImage (&image);
   {
     return cameraTransSet;
   }
+
+  bool
+  isEmpty () const
+  {
+    return RGBDSlamFrame->size()==0;
+  }
   
 };
 
@@ -343,6 +349,56 @@ public:
 
 };
 
+void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z aligned and possibly axis aligned*/,pcl::PointCloud<PointT> & combined_cloud_orig,TransformG & globalTrans)
+{
+  int numPoints=combined_cloud_orig.size ()-1;// semantics of first point not known
+    ublas::matrix<float,ublas::column_major> A(numPoints,4);
+    ublas::vector<float> b(numPoints);
+    
+
+
+    globalTrans.transformMat(3,0)=0;
+    globalTrans.transformMat(3,1)=0;
+    globalTrans.transformMat(3,2)=0;
+    globalTrans.transformMat(3,3)=1;
+    int row;
+    for(unsigned int cr=0;cr<3;cr++)
+      {
+        
+    for(unsigned i=0;i < numPoints;i++)
+        {
+        
+             A(i,0)=combined_cloud_orig.points[i+1].x;
+             A(i,1)=combined_cloud_orig.points[i+1].y;
+             A(i,2)=combined_cloud_orig.points[i+1].z;
+//             assert(combined_cloud_orig.points[i].x==combined_cloud_orig.points[i].data[0]);
+//             assert(combined_cloud_orig.points[i].y==combined_cloud_orig.points[i].data[1]);
+//             assert(combined_cloud_orig.points[i].z==combined_cloud_orig.points[i].data[2]);
+             A(i,3)=1;
+             b(i)=combined_cloud_trans.points[i+1].data[cr];
+        }
+    lapack::optimal_workspace works;
+    lapack::gels('N',A,b,works);
+    
+    for(unsigned int col=0;col<4;col++)
+        globalTrans.transformMat(cr,col)=b(col);
+    
+    cout<<"row="<<cr<<endl;
+    
+    //check that the solution is almost correct
+    for(unsigned int i=1;i < numPoints;i++)
+        {
+             double lhs=combined_cloud_orig.points[i].x*b(0)+combined_cloud_orig.points[i].y*b(1)+combined_cloud_orig.points[i].z*b(2)+b(3);
+             double rhs=combined_cloud_trans.points[i].data[cr];
+         //    cout<<lhs<<","<<rhs<<endl;
+             assert(fabs(lhs-rhs)<0.01);
+        }
+    
+
+      }
+    globalTrans.print ();
+
+}
 
 
 void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamBag,vector<OriginalFrameInfo*> & originalFrames,  pcl::PointCloud<PointT> & cloudUntransformed  )
