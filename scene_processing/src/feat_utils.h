@@ -41,6 +41,12 @@ typedef ColorHandler::Ptr ColorHandlerPtr;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
+// octomap realted
+
+#include <octomap/octomap.h>
+#include <octomap_ros/OctomapROS.h>
+#include <octomap_ros/conversions.h>
+using namespace octomap;
 
 using namespace pcl;
 class OriginalFrameInfo
@@ -225,7 +231,8 @@ public:
   float avgH;
   float avgS;
   float avgV;
-  
+  pcl::PointCloud<PointT>::Ptr cloudPtr ;
+
   geometry_msgs::Point32 centroid;
   Eigen::Vector3d normal;
   void setEigValues(Eigen::Vector3d eigenValues_)

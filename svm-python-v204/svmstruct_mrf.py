@@ -161,7 +161,7 @@ def read_examples(filename,sparm):
     print 'number of associative features: ',num_ass_edge_feats
     
     # computing C matrix
-    #C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
+    C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
    
     #savetxt('C.txt',C.todense(),fmt='%d');
 
@@ -288,9 +288,9 @@ def read_examples(filename,sparm):
         #areEqualVectors(Y, Yuc_reconstructed)
 
         #X with associative and non-associative features filled correctly
-        #X_small = C*X_sparse
+        X_small = C*X_sparse
         # Add the example to the list
-        examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
+        examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     # #print out some very useful statistics.
     #print len(examples),'examples read'

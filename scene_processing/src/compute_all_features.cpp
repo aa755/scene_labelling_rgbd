@@ -596,6 +596,7 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
         (*it).push_back(c.V);
     }
     
+    
     vector<BinningInfo> binnigInfos;
     binnigInfos.push_back (BinningInfo(0,360,num_bin_H));
     binnigInfos.push_back (BinningInfo(0,1,num_bin_S));
@@ -756,12 +757,91 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
 		normalsOut.push_back(avgNormal);
 	}
 } */
+
+float get_occupancy_feature(const pcl::PointCloud<PointT> &cloud1, const pcl::PointCloud<PointT> &cloud2,  OcTreeROS & tree){
+    //
+    OcTreeROS::NodeType* treeNode;
+    int occCount = 0;
+    int totalCount = 0;
+    int unknownCount = 0;
+    for (int i =0 ; i <100 ; i++)
+    {
+        int p1Index =  rand() % cloud1.points.size() ;
+        int p2Index =  rand() % cloud2.points.size();
+        VectorG p1 (cloud1.points[p1Index]);
+        VectorG p2 (cloud2.points[p2Index]);
+        double distance = (p2.subtract(p1)).getNorm();
+        int count = 0;
+        for ( double r = 0.05 ; r<= distance-0.05 ; r+=0.05)
+        {
+            count ++;
+            VectorG point = p1.add( ( p2.subtract(p1).normalizeAndReturn() ).multiply(r));
+            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
+            treeNode = tree.search(pt);
+            if (treeNode){
+                if (treeNode->getOccupancy() > 0.5){occCount++;}
+                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
+            }
+            else{
+                unknownCount++;
+                //cout << "ERROR: OcTreeNode not found (NULL)\n";
+            }
+            
+        }
+        if(count ==0)
+        {
+            VectorG point = p1.add(p2.subtract(p1).multiply(0.5));
+            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
+            treeNode = tree.search(pt);
+            if (treeNode){
+                if (treeNode->getOccupancy() > 0.5){occCount++;}
+                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
+            }
+            else{
+                unknownCount++;
+                //cout << "ERROR: OcTreeNode not found (NULL)\n";
+            }
+            count ++;
+        }
+        totalCount += count;       
+    }
+    cout << "seg1:" << cloud1.points[1].segment<< " label1: " << cloud1.points[1].label <<  " seg2:" << cloud2.points[1].segment<< " label2: " << cloud2.points[1].label << endl;
+    cout << "total:" << totalCount << " unknown:"  << unknownCount << " occupied:" << occCount  << endl;
+    return (float)unknownCount/(float)totalCount;
+}
+
+/*
+
+void get_convex_regions (map <int , vector <int> > &neighbor_map, std::map<int,int>  &segment_num_index_map, vector<SpectralProfile> & spectralProfiles){
+    
+    // for every segment
+    for(map<int , vector <int> >::iterator it = neighbor_map.begin(); it != neighbor_map.end(); it++)
+    {
+                
+        segment_id = (*it).first;
+        
+        SpectralProfile segment1Spectral=spectralProfiles[segment_num_index_map[segment_id]];
+    // explore list = neighbour list
+    // convexity list = empty
+    // if element in neighbour list is convex add it to convexity list and add its neighbours not already explored to explore list
+    
+    }
+    
+    for (vector<int>::iterator it = neighbor_list.begin(); it != neighbor_list.end(); it++) {
+
+        int seg2_id = *it;
+        SpectralProfile segment2Spectral=spectralProfiles[segment_num_index_map[seg2_id]];
+    segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] )
+ 
+}
+**/
 int NUM_ASSOCIATIVE_FEATS=4+31;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
                         vector<SpectralProfile> & spectralProfiles,
-                        map < int, vector<float> > &edge_features) {
+                        map < int, vector<float> > &edge_features,
+                        OcTreeROS & tree) {
 
     SpectralProfile segment1Spectral=spectralProfiles[segment_num_index_map[segment_id]];
 
@@ -769,6 +849,9 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         int seg2_id = *it;
         SpectralProfile segment2Spectral=spectralProfiles[segment_num_index_map[seg2_id]];
+        
+        
+        
         
         
         //here goes the associative features:
@@ -806,6 +889,8 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));addToEdgeHeader ("Innerness");
     
+        // occupancy fraction feature
+        edge_features[seg2_id].push_back(get_occupancy_feature( *(segment1Spectral.cloudPtr), *(segment2Spectral.cloudPtr), tree ) );addToEdgeHeader ("Occupancy");
         
 // this line should be in the end
         addEdgeHeader=false;
@@ -823,6 +908,40 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
     }
 }
 
+
+void buildOctoMap(const pcl::PointCloud<PointT> &cloud,  OcTreeROS & tree)
+{
+
+    
+    
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    pcl::PointCloud<PointT>::Ptr cloud_cam(new pcl::PointCloud<PointT > ());
+
+    int cnt =0;
+    // find all the camera indices
+    map<int,int> camera_indices;
+    for (size_t i = 0; i < cloud.points.size(); ++i) {
+        camera_indices[(int) cloud.points[i].cameraIndex] = 1;
+    }
+    // for every camera index .. apply filter and get the point cloud
+    for (map<int,int>::iterator it = camera_indices.begin(); it != camera_indices.end();it++)
+    {
+        int ci = (*it).first;
+        apply_camera_filter(*cloud_ptr,*cloud_cam,ci);
+
+
+        // convert to  pointXYZ format
+        sensor_msgs::PointCloud2 cloud_blob;
+        pcl::toROSMsg(*cloud_cam,cloud_blob);
+        pcl::PointCloud<pcl::PointXYZ> xyzcloud;
+        pcl::fromROSMsg(cloud_blob, xyzcloud);
+        // find the camera co-ordinate
+        VectorG cam_coordinates = originalFrames[ci]->getCameraTrans().getOrigin();
+        pcl::PointXYZ origin (cam_coordinates.v[0], cam_coordinates.v[1], cam_coordinates.v[2]);
+        // insert to the tree
+        tree.insertScan(xyzcloud,origin,-1,true);
+    }
+}
 
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
@@ -859,6 +978,11 @@ int main(int argc, char** argv) {
 
     for(unsigned int i=0;i<originalFrames.size ();i++)
       originalFrames[i]->applyPostGlobalTrans (globalTransform);
+    
+    // call buildOctoMap here
+    OcTreeROS tree(0.01);
+    OcTreeROS::NodeType* treeNode;
+    buildOctoMap(cloud,  tree);  
       
     if(SHOW_CAM_POS_IN_VIEWER)
       {
@@ -926,6 +1050,9 @@ int main(int argc, char** argv) {
         if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
+                        pcl::PointCloud<PointT>::Ptr tempPtr(new pcl::PointCloud<PointT > (segment_clouds[segment_clouds.size()-1]));
+                        temp.cloudPtr=tempPtr;
+ 
                         spectralProfiles.push_back (temp);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
 			index_ ++; 
@@ -983,7 +1110,7 @@ int main(int argc, char** argv) {
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
-        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features);
+        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features,tree);
         edgecount++;
         if(edgecount==1)
           {

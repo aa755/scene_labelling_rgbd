@@ -84,6 +84,16 @@ public:
 
 
     }
+    
+    VectorG(pcl::PointXYZRGBCamSL p)
+    {
+        v[0] = p.x;
+        v[1] = p.y;
+        v[2] = p.z;
+
+
+    }
+    
     /**
      * compute the distance from the line joining p1 and p2
      */
@@ -121,6 +131,16 @@ public:
         double norm = getNorm();
         for (int i = 0; i < 3; i++)
             v[i] = v[i] / norm;
+    }
+    
+    VectorG
+    normalizeAndReturn() const
+    {
+        VectorG out;
+        double norm = getNorm();
+        for (int i = 0; i < 3; i++)
+            out.v[i] = v[i] / norm;
+        return out;
     }
 
     PointT getAsPoint()
