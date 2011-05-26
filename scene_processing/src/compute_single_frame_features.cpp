@@ -41,7 +41,7 @@ typedef ColorHandler::Ptr ColorHandlerPtr;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 
-
+OriginalFrameInfo * originalFrame;
 using namespace pcl;
 class OriginalFrameInfo
 {
@@ -1291,6 +1291,7 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
+    std::string rgbdslamBag=argv[1];
     sensor_msgs::PointCloud2 cloud_blob;
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, nfeatfile, efeatfile;
@@ -1301,22 +1302,96 @@ int main(int argc, char** argv) {
 
     // read the pcd file
 
-    if (pcl::io::loadPCDFile(argv[1], cloud_blob) == -1) {
-        ROS_ERROR("Couldn't read file test_pcd.pcd");
-        return (-1);
-    }
-    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
 
     
     // convert to templated message type
 
     pcl::fromROSMsg(cloud_blob, cloud);
-    
 
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
           cout<<cloud.size ()<<endl;
+          
+  pcl_ros::BAGReader reader;
+  char *topic = "/camera/rgb/points";
+  
+  if (!reader.open (rgbdslamBag, "/rgbdslam/my_clouds"))
+    {
+      cout << "Couldn't open RGBDSLAM topic" << (topic);
+      exit(-1);
+    }
+      rosbag::Bag bag;
+    std::cerr << "opening " << RGBDSlamBag << std::endl;
+    bag.open(rgbdslamBag, rosbag::bagmode::Read);
+  
+       sensor_msgs::PointCloud2ConstPtr cloud_blob_new;
+       //sensor_msgs::PointCloud2ConstPtr cloud_blob_old;
+       
+      cloud_blob_new = reader.getNextCloud ();
+      
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZRGB> ());
+      pcl::fromROSMsg (*cloud_blob_new, *cloud_temp);
+      originalFrame=new OriginalFrameInfo(cloud_temp);
+        //ros::Time ptime = cloud_blob_new->header.stamp;
 
+
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        //std::cerr<<(view_tf.size())<<endl;
+    //    std::cerr << ptime << std::endl;
+        //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+            //  transG.print();
+            if (ptime == bt[0].header.stamp)
+            {
+                tf_count++;
+                std::cerr << "tf qid:" << bt[0].header.seq << std::endl;
+                final_tft = tft;
+            }
+            assert(tf_count <= 1);
+        }
+
+        assert(tf_count == 1)
+                TransformG transG(final_tft);
+                transG.print ();
+                originalFrame->setCameraTrans (transG);
+    
+
+    
+    // call buildOctoMap here
+    OcTreeROS tree(0.01);
+    OcTreeROS::NodeType* treeNode;
+    buildOctoMap(cloud,  tree);  
+      
+    if(SHOW_CAM_POS_IN_VIEWER)
+      {
+      ColorHandlerPtr color_handler;
+  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
+          color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
+          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
+  
+    for(unsigned int i=0;i<originalFrames.size ();i++)
+      {
+        if(originalFrames[i]->isCameraTransSet ())
+          {
+            VectorG cam=originalFrames[i]->getCameraTrans ().getOrigin ();
+                viewer.addCoordinateSystem (1,cam.v[0],cam.v[1],cam.v[2]);
+          }
+      }
+          
+          viewer.spin ();
+      }
+    assert(cloudUntransformed.size()==cloud.size ());
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());
@@ -1364,6 +1439,9 @@ int main(int argc, char** argv) {
         if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
+                        pcl::PointCloud<PointT>::Ptr tempPtr(new pcl::PointCloud<PointT > (segment_clouds[segment_clouds.size()-1]));
+                        temp.cloudPtr=tempPtr;
+ 
                         spectralProfiles.push_back (temp);
 			segment_num_index_map[cloud_seg->points[1].segment] = index_;
 			index_ ++; 
@@ -1421,7 +1499,7 @@ int main(int argc, char** argv) {
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
-        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features);
+        get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features,tree);
         edgecount++;
         if(edgecount==1)
           {

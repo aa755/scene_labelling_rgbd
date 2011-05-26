@@ -290,7 +290,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =1.0;
+   float tolerance =0.6;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
