@@ -50,8 +50,9 @@ vector<OriginalFrameInfo*> originalFrames;
           {
                 pcl::PointCloud<PointT>::Ptr cloud_temp (new pcl::PointCloud<PointT> ());
                 findlabel (cloudUntransformed,*originalFrames[i]->RGBDSlamFrame,temp1,originalFrames[i]->getCameraTrans ().getOrigin (),i);
+                
                 segment (temp1, temp2);
-                cerr<<"ambiguities of "<<outClouds.size()<<endl;
+                cerr<<"ambiguities of "<<argv[1]<<outClouds.size()<<endl;
                 findConsistentLabels (temp2,*cloud_temp);
                 globalTransform.transformPointCloudInPlaceAndSetOrigin (*cloud_temp);
                 outClouds.push_back (cloud_temp);
@@ -61,7 +62,7 @@ vector<OriginalFrameInfo*> originalFrames;
 
       string base(argv[1]);
     for(size_t i=0;i<outClouds.size ();i++)
-      writer.write ( base+boost::lexical_cast<std::string>(i),*outClouds[i], true);
+      writer.write ( boost::lexical_cast<std::string>(i)+"_"+base,*outClouds[i], true);
       
     
 }
