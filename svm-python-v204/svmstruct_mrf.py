@@ -133,6 +133,7 @@ def read_examples(filename,sparm):
 
     # Open the file and read each example.
     for input_file in file(filename):
+        print input_file
         input = [line.split() for line in line_reader(file(input_file.strip()))]
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());

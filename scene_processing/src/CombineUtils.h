@@ -84,6 +84,16 @@ public:
 
 
     }
+    
+    VectorG(pcl::PointXYZRGBCamSL p)
+    {
+        v[0] = p.x;
+        v[1] = p.y;
+        v[2] = p.z;
+
+
+    }
+    
     /**
      * compute the distance from the line joining p1 and p2
      */
@@ -121,6 +131,16 @@ public:
         double norm = getNorm();
         for (int i = 0; i < 3; i++)
             v[i] = v[i] / norm;
+    }
+    
+    VectorG
+    normalizeAndReturn() const
+    {
+        VectorG out;
+        double norm = getNorm();
+        for (int i = 0; i < 3; i++)
+            out.v[i] = v[i] / norm;
+        return out;
     }
 
     PointT getAsPoint()
@@ -192,6 +212,15 @@ public:
         return sqrt(sum);
 
     }
+    
+   Eigen::Vector4f   toEigenFormat()
+   {
+       Eigen::Vector4f out;
+       for (int i=0;i<3;i++)
+           out(i)=v[i];
+       return out;
+   }
+
 
 };
 
@@ -230,6 +259,31 @@ transformAsMatrix(const tf::Transform& bt)
 class TransformG
 {
 public:
+    
+void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
+{
+
+    boost::numeric::ublas::matrix<double> matIn(4, 1);
+
+    for (size_t i = 0; i < in.points.size(); ++i)
+    {
+        double * matrixPtr = matIn.data().begin();
+
+        matrixPtr[0] = in.points[i].x;
+        matrixPtr[1] = in.points[i].y;
+        matrixPtr[2] = in.points[i].z;
+        matrixPtr[3] = 1;
+        boost::numeric::ublas::matrix<double> matOut = prod(transformMat, matIn);
+        matrixPtr = matOut.data().begin();
+
+        in.points[i].x = matrixPtr[0];
+        in.points[i].y = matrixPtr[1];
+        in.points[i].z = matrixPtr[2];
+    }
+    
+    in.sensor_origin_=getOrigin().toEigenFormat();
+}
+    
     boost::numeric::ublas::matrix<double> transformMat;
 
     TransformG(const tf::Transform& bt)

@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include<assert.h>
 using namespace std;
-
+#ifndef COLOR_H
+#define	COLOR_H
 class ColorRGB{
   public:
    float r,g,b;
@@ -115,3 +116,4 @@ class ColorRGB{
        std::cerr<<r*255<<" "<<g*255<<" "<<b*255<<endl;
    }
 };
+#endif	/* COLOR_H */
