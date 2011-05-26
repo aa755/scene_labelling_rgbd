@@ -489,3 +489,65 @@ void gatherOriginalFrames(std::string unTransformedPCDFile,std::string RGBDSlamB
 //    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
   
 }
+class BinningInfo
+{
+  float max;
+  float min;
+  int numBins;
+  float binSize;
+public:
+  
+  
+  BinningInfo(float min_,float max_,int numBins_)
+  {
+    max=max_;
+    min=min_;
+    numBins=numBins_;
+    assert(max>min);
+    binSize=(max-min)/numBins;
+    
+  }
+
+  int
+  getBinIndex (float value)
+  {
+    assert(value>=min);
+    assert(value<=max);
+    
+    int bin =  ((value -min) / binSize);
+
+    assert (bin <= numBins);
+
+    if (bin == numBins)
+      {
+        bin = numBins - 1;
+      }
+    
+    return bin;
+
+  }
+
+  float
+  GetBinSize () const
+  {
+    return binSize;
+  }
+
+  int
+  GetNumBins () const
+  {
+    return numBins;
+  }
+
+  float
+  GetMin () const
+  {
+    return min;
+  }
+
+  float
+  GetMax () const
+  {
+    return max;
+  }
+};

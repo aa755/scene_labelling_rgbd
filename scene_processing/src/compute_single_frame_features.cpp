@@ -827,8 +827,6 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
-    std::string unTransformedPCD=argv[3];
-    std::string rgbdslamBag=argv[4];
     sensor_msgs::PointCloud2 cloud_blob;
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, nfeatfile, efeatfile;
@@ -853,32 +851,7 @@ int main(int argc, char** argv) {
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
           cout<<cloud.size ()<<endl;
-    gatherOriginalFrames (unTransformedPCD,rgbdslamBag,originalFrames,cloudUntransformed);
-    TransformG globalTransform;
-    computeGlobalTransform (cloud,cloudUntransformed,globalTransform);
 
-    for(unsigned int i=0;i<originalFrames.size ();i++)
-      originalFrames[i]->applyPostGlobalTrans (globalTransform);
-      
-    if(SHOW_CAM_POS_IN_VIEWER)
-      {
-      ColorHandlerPtr color_handler;
-  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
-          color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
-          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
-  
-    for(unsigned int i=0;i<originalFrames.size ();i++)
-      {
-        if(originalFrames[i]->isCameraTransSet ())
-          {
-            VectorG cam=originalFrames[i]->getCameraTrans ().getOrigin ();
-                viewer.addCoordinateSystem (1,cam.v[0],cam.v[1],cam.v[2]);
-          }
-      }
-          
-          viewer.spin ();
-      }
-    assert(cloudUntransformed.size()==cloud.size ());
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());

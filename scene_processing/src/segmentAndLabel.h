@@ -78,10 +78,17 @@ int getMajorityLabel(const pcl::PointCloud<PointT> &cloud){
         if((*it).first!=0&&(*it).first!=8 && (*it).first!=19&& (*it).first!=17)
         count_label_map.insert(pair<int,int>((*it).second,(*it).first));
     }
-    multimap<int,int>::reverse_iterator it = count_label_map.rbegin();
-    if(it != count_label_map.rend()) {max_count = (*it).first; max_label = (*it).second;}
-    it++;
-    if(it != count_label_map.rend()) {second_max_count = (*it).first; second_max_label=(*it).second; }
+    multimap<int, int>::reverse_iterator it = count_label_map.rbegin();
+    if (it != count_label_map.rend()) {
+        max_count = (*it).first;
+        max_label = (*it).second;
+        it++;
+
+        if (it != count_label_map.rend()) {
+            second_max_count = (*it).first;
+            second_max_label = (*it).second;
+        }
+    }
     //cout << "max_count:" << max_count << " second_max_count:" << second_max_count << " segment_size:" << cloud.points.size() << endl;
     if (max_count > 20 )
   //  if (max_count > cloud.points.size()/10 )
