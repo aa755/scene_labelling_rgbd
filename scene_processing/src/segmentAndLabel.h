@@ -66,6 +66,7 @@ int getMajorityLabel(const pcl::PointCloud<PointT> &cloud){
     map<int,int> label_count_map;
     int max_count=0;
     int max_label=0;
+    int second_max_label=0;
     int second_max_count =0;
 
     for (size_t i = 0; i < cloud.points.size(); ++i) {
@@ -74,19 +75,31 @@ int getMajorityLabel(const pcl::PointCloud<PointT> &cloud){
     multimap<int,int> count_label_map;
     for (map<int, int>::iterator it= label_count_map.begin(); it != label_count_map.end(); it++)
     {
-        count_label_map.insert(pair<int,int>((*it).first,(*it).second));
+        if((*it).first!=0&&(*it).first!=8 && (*it).first!=19&& (*it).first!=17)
+        count_label_map.insert(pair<int,int>((*it).second,(*it).first));
     }
-    multimap<int,int>::iterator it = count_label_map.begin();
-    if(it != count_label_map.end()) {max_count = (*it).first; max_label = (*it).second;}
-    it++;
-    if(it != count_label_map.end()) {second_max_count = (*it).first; }
+    multimap<int, int>::reverse_iterator it = count_label_map.rbegin();
+    if (it != count_label_map.rend()) {
+        max_count = (*it).first;
+        max_label = (*it).second;
+        it++;
+
+        if (it != count_label_map.rend()) {
+            second_max_count = (*it).first;
+            second_max_label = (*it).second;
+        }
+    }
     //cout << "max_count:" << max_count << " second_max_count:" << second_max_count << " segment_size:" << cloud.points.size() << endl;
-    if (max_count > cloud.points.size()/10 )
+    if (max_count > 20 )
+  //  if (max_count > cloud.points.size()/10 )
     {
         if( (max_count - second_max_count)> max_count/2 )
              return max_label;
         else
+        {
+            cerr<<max_label<<":"<<max_count<<","<<second_max_label<<":"<<second_max_count<<",";
             return AMBIGOUS_LABEL;//ambigous label
+        }
     }
     return 0;
 }
@@ -113,6 +126,7 @@ void findConsistentLabels (const pcl::PointCloud<PointT> &incloud,   pcl::PointC
         // find majority label segment
 
         segment_label_map[segnum] = getMajorityLabel(*cloud_seg);
+     //   cerr<<"segment "<<segnum<<" is "<<segment_label_map[segnum]<<endl;
         if(segment_label_map[segnum]==AMBIGOUS_LABEL)
             cerr<<"segment "<<segnum<<" is ambigous"<<endl;
     }
@@ -155,7 +169,11 @@ void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<Poin
         outcloud.points[i].z = cloudframe.points[i].z;
         outcloud.points[i].rgb = cloudframe.points[i].rgb;
         outcloud.points[i].cameraIndex = camIndex;
-        outcloud.points[i].distance = (origin.subtract(VectorG(outcloud.points[i].x,outcloud.points[i].y,outcloud.points[i].z))).getNorm();
+        if(isnan(outcloud.points[i].x))
+            outcloud.points[i].distance=0;
+        else            
+            outcloud.points[i].distance = (origin.subtract(VectorG(outcloud.points[i].x,outcloud.points[i].y,outcloud.points[i].z))).getNorm();
+        
         outcloud.points[i].segment = 0;
         outcloud.points[i].label = 0;
     }
@@ -163,183 +181,21 @@ void findlabel(const pcl::PointCloud<PointT> &cloud, const  pcl::PointCloud<Poin
 
     pcl::KdTreeFLANN<PointT>::Ptr tree(new pcl::KdTreeFLANN<PointT>);
     tree->setInputCloud(cloud_ptr);
+    int counter =0;
     for (size_t i = 0; i < outcloud.points.size(); ++i) {
 
         //if (!tree->radiusSearch ((*small_cloud).points[i], tolerance, nn_indices, nn_distances))
         tree->nearestKSearch(outcloud.points[i], 2, nn_indices, nn_distances);
-        if (nn_distances[1] < threshold)
+        if (nn_distances[1] < threshold) {
+            counter++;
             outcloud.points[i].label = cloud.points[nn_indices[1]].label;
+        }
     }
+    cout << "cloud size:" << outcloud.points.size() << " found " << counter << " point labels" << endl;
 
 }
 
 
-void extractEuclideanClusters (const pcl::PointCloud<PointT> &cloud,
-                               const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
-                               float tolerance, std::vector<pcl::PointIndices> &clusters,
-                               unsigned int min_pts_per_cluster,
-                               unsigned int max_pts_per_cluster)
-
-{
-  
-     // \note If the tree was created over <cloud, indices>, we guarantee a 1-1 mapping between what the tree returns
-  //and indices[i]
-  if (tree->getInputCloud ()->points.size () != cloud.points.size ())
-  {
-    ROS_ERROR ("[pcl::extractEuclideanClusters] Tree built for a different point cloud dataset (%zu) than the input cloud (%zu)!", tree->getInputCloud ()->points.size (), cloud.points.size ());
-    return;
-  }
-
-  // Create a bool vector of processed point indices, and initialize it to false
-  std::vector<bool> processed (cloud.points.size (), false);
-
-  std::vector<int> nn_indices;
-  std::vector<float> nn_distances;
-  // Process all points in the indices vector
-  for (size_t i = 0; i < cloud.points.size (); ++i)
-  {
-    if (processed[i])
-      continue;
-
-    std::vector<int> seed_queue;
-    int sq_idx = 0;
-    seed_queue.push_back (i);
-
-    processed[i] = true;
-
-    int cnt=0;
-
-    while (sq_idx < (int)seed_queue.size ())
-    {
-      cnt++;
-      //ROS_INFO ("i = %d, cnt = %d",i,cnt);
-      // Search for sq_idx
-      if (!tree->radiusSearch (seed_queue[sq_idx], tolerance, nn_indices, nn_distances))
-      {
-        sq_idx++;
-        continue;
-      }
-
-      for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
-      {
-       
-        if (processed[nn_indices[j]])                             // Has this point been processed before ?
-          continue;
-
-        // Perform a simple Euclidean clustering
-        seed_queue.push_back (nn_indices[j]);
-        processed[nn_indices[j]] = true;
-      }
-
-      sq_idx++;
-    }
-
-    // If this queue is satisfactory, add to the clusters
-    if (seed_queue.size () >= min_pts_per_cluster && seed_queue.size () <= max_pts_per_cluster)
-    {
-      pcl::PointIndices r;
-      r.indices.resize (seed_queue.size ());
-      for (size_t j = 0; j < seed_queue.size (); ++j)
-        // This is the only place where indices come into play
-        r.indices[j] = seed_queue[j];
-
-      //r.indices.assign(seed_queue.begin(), seed_queue.end());
-      sort (r.indices.begin (), r.indices.end ());
-      r.indices.erase (unique (r.indices.begin (), r.indices.end ()), r.indices.end ());
-
-      r.header = cloud.header;
-      clusters.push_back (r);   // We could avoid a copy by working directly in the vector
-    }
-  }
-
-}
-
-void extractEuclideanClusters (
-      const pcl::PointCloud<PointT> &cloud, const pcl::PointCloud<pcl::Normal> &normals,
-      const std::vector<int> &indices, const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
-      float tolerance, std::vector<pcl::PointIndices> &clusters, double eps_angle,
-      unsigned int min_pts_per_cluster = 1,
-      unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
-  {
-    // \note If the tree was created over <cloud, indices>, we guarantee a 1-1 mapping between what the tree returns
-    //and indices[i]
-    if (tree->getInputCloud ()->points.size () != cloud.points.size ())
-    {
-      ROS_ERROR ("[pcl::extractEuclideanClusters] Tree built for a different point cloud dataset (%zu) than the input cloud (%zu)!", tree->getInputCloud ()->points.size (), cloud.points.size ());
-      return;
-    }
-    if (tree->getIndices ()->size () != indices.size ())
-    {
-      ROS_ERROR ("[pcl::extractEuclideanClusters] Tree built for a different set of indices (%zu) than the input set (%zu)!", tree->getIndices ()->size (), indices.size ());
-      return;
-    }
-    if (cloud.points.size () != normals.points.size ())
-    {
-      ROS_ERROR ("[pcl::extractEuclideanClusters] Number of points in the input point cloud (%zu) different than normals (%zu)!", cloud.points.size (), normals.points.size ());
-      return;
-    }
-    // Create a bool vector of processed point indices, and initialize it to false
-    std::vector<bool> processed (indices.size (), false);
-
-    std::vector<int> nn_indices;
-    std::vector<float> nn_distances;
-    // Process all points in the indices vector
-    for (size_t i = 0; i < indices.size (); ++i)
-    {
-      if (processed[i])
-        continue;
-
-      std::vector<int> seed_queue;
-      int sq_idx = 0;
-      seed_queue.push_back (i);
-    processed[i] = true;
-
-      while (sq_idx < (int)seed_queue.size ())
-      { 
-        // Search for sq_idx
-        if (!tree->radiusSearch (seed_queue[sq_idx], tolerance, nn_indices, nn_distances))
-        {
-          sq_idx++;
-          continue;
-        }
-
-        for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
-        {
-          if (processed[nn_indices[j]])                             // Has this point been processed before ?
-            continue;
-
-          processed[nn_indices[j]] = true;
-          // [-1;1]
-          double dot_p =
-            normals.points[indices[i]].normal[0] * normals.points[indices[nn_indices[j]]].normal[0] +
-            normals.points[indices[i]].normal[1] * normals.points[indices[nn_indices[j]]].normal[1] +
-            normals.points[indices[i]].normal[2] * normals.points[indices[nn_indices[j]]].normal[2];
-          if ( fabs (acos (dot_p)) < eps_angle )
-          {
-            processed[nn_indices[j]] = true;
-            seed_queue.push_back (nn_indices[j]);
-          }
-        }
-
-        sq_idx++;
-      }
-
-      // If this queue is satisfactory, add to the clusters
-      if (seed_queue.size () >= min_pts_per_cluster && seed_queue.size () <= max_pts_per_cluster)
-      {
-        pcl::PointIndices r;
-        r.indices.resize (seed_queue.size ());
-        for (size_t j = 0; j < seed_queue.size (); ++j)
-          r.indices[j] = indices[seed_queue[j]];
-
-        sort (r.indices.begin (), r.indices.end ());
-        r.indices.erase (unique (r.indices.begin (), r.indices.end ()), r.indices.end ());
-
-        r.header = cloud.header;
-        clusters.push_back (r);
-      }
-    }
-  }
 
 
 
@@ -438,102 +294,6 @@ void extractEuclideanClusters (
   }
 
 
-/* 
-Extract the clusters based on location,normals and color
-*/
-void extractEuclideanClusters (
-      const pcl::PointCloud<PointT> &cloud, const pcl::PointCloud<pcl::Normal> &normals,
-      const boost::shared_ptr<pcl::KdTree<PointT> > &tree,
-      float tolerance, float rgb_tolerance, std::vector<pcl::PointIndices> &clusters, double eps_angle,
-      unsigned int min_pts_per_cluster = 1,
-      unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ())
-  {
-    float adjTolerance = 0;
-    // \note If the tree was created over <cloud, indices>, we guarantee a 1-1 mapping between what the tree returns
-    //and indices[i]
-    if (tree->getInputCloud ()->points.size () != cloud.points.size ())
-    {
-      ROS_ERROR ("[pcl::extractEuclideanClusters] Tree built for a different point cloud dataset (%zu) than the input cloud (%zu)!", tree->getInputCloud ()->points.size (), cloud.points.size ());
-      return;
-    }
-    if (cloud.points.size () != normals.points.size ())
-    {
-      ROS_ERROR ("[pcl::extractEuclideanClusters] Number of points in the input point cloud (%zu) different than normals (%zu)!", cloud.points.size (), normals.points.size ());
-      return;
-    }
-    // Create a bool vector of processed point indices, and initialize it to false
-    std::vector<bool> processed (cloud.points.size (), false);
-
-    std::vector<int> nn_indices;
-    std::vector<float> nn_distances;
-    // Process all points in the indices vector
-    for (size_t i = 0; i < cloud.points.size (); ++i)
-    {
-      if (processed[i])
-        continue;
-
-      std::vector<int> seed_queue;
-      int sq_idx = 0;
-      seed_queue.push_back (i);
-      processed[i] = true;
-
-      int cnt = 0;
- 
-      while (sq_idx < (int)seed_queue.size ())
-      { 
-         cnt++;
-         //ROS_INFO ("i = %d, cnt = %d", i , cnt);
-
-        // Search for sq_idx
-        adjTolerance = cloud.points[seed_queue[sq_idx]].distance * tolerance;
-        if (!tree->radiusSearch (seed_queue[sq_idx], adjTolerance, nn_indices, nn_distances))
-        {
-          sq_idx++;
-          continue;
-        }
-
-        for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
-        {
-          if (processed[nn_indices[j]])                             // Has this point been processed before ?
-            continue;
-
-          processed[nn_indices[j]] = true;
-          // [-1;1]
-          double dot_p =
-            normals.points[i].normal[0] * normals.points[nn_indices[j]].normal[0] +
-            normals.points[i].normal[1] * normals.points[nn_indices[j]].normal[1] +
-            normals.points[i].normal[2] * normals.points[nn_indices[j]].normal[2];
-          ColorRGB a (cloud.points[i].rgb);
-		  ColorRGB b (cloud.points[nn_indices[j]].rgb);
-          double color_diff = ColorRGB::HSVdistance(a, b);
-//ROS_INFO ("diff = %f",color_diff);
-          if ( fabs (acos (dot_p)) < eps_angle && color_diff < rgb_tolerance )
-          {
-            processed[nn_indices[j]] = true;
-            seed_queue.push_back (nn_indices[j]);
-          }
-        }
-
-        sq_idx++;
-      }
-
-      // If this queue is satisfactory, add to the clusters
-      if (seed_queue.size () >= min_pts_per_cluster && seed_queue.size () <= max_pts_per_cluster)
-      {
-        pcl::PointIndices r;
-        r.indices.resize (seed_queue.size ());
-        for (size_t j = 0; j < seed_queue.size (); ++j)
-          r.indices[j] = seed_queue[j];
-
-        sort (r.indices.begin (), r.indices.end ());
-        r.indices.erase (unique (r.indices.begin (), r.indices.end ()), r.indices.end ());
-
-        r.header = cloud.header;
-        //ROS_INFO ("cluster of size %d data point\n ",r.indices.size());
-        clusters.push_back (r);
-      }
-    }
-  }
 
 
 

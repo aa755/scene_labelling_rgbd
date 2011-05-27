@@ -153,13 +153,13 @@ public:
     }
     
     double
-    getNorm()
+    getNorm() const
     {
         return sqrt(getNormSqr());
     }
 
     double
-    getNormSqr()
+    getNormSqr() const
     {
         return (sqrG(v[0]) + sqrG(v[1]) + sqrG(v[2]));
     }

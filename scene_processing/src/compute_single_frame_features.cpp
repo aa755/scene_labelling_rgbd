@@ -1,6 +1,454 @@
-#include"feat_utils.h"
+#include "float.h"
+#include "math.h"
+#include <iostream>
+#include <fstream>
+#include "pcl/io/pcd_io.h"
+#include "pcl/point_types.h"
+#include "pcl/filters/passthrough.h"
+#include "pcl/filters/extract_indices.h"
+#include "pcl/features/intensity_spin.h"
+#include "pcl/features/normal_3d.h"
+//#include "descriptors_3d/all_descriptors.h"
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 
-vector<OriginalFrameInfo*> originalFrames;
+#include <point_cloud_mapping/kdtree/kdtree_ann.h>
+#include <vector>
+#include "sensor_msgs/point_cloud_conversion.h"
+#include "color.cpp"
+#include "pcl/kdtree/kdtree.h"
+#include "pcl/kdtree/tree_types.h"
+#include <point_cloud_mapping/geometry/nearest.h>
+#include <pcl_ros/io/bag_io.h>
+#include "HOG.cpp"
+typedef pcl::PointXYZRGBCamSL PointT;
+#include "CombineUtils.h"
+#include<boost/numeric/ublas/matrix.hpp>
+#include<boost/numeric/ublas/io.hpp>
+#include<boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include<boost/numeric/bindings/lapack/gels.hpp>
+#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
+namespace ublas = boost::numeric::ublas;
+namespace lapack= boost::numeric::bindings::lapack;
+#include "pcl_visualization/pcl_visualizer.h"
+typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
+typedef ColorHandler::Ptr ColorHandlerPtr;
+
+#include <octomap/octomap.h>
+#include <octomap_ros/OctomapROS.h>
+#include <octomap_ros/conversions.h>
+
+using namespace std;
+using namespace octomap;
+//#include <Eig>
+//typedef pcl::PointXYGRGBCam PointT;
+
+typedef  pcl::KdTree<PointT> KdTree;
+typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
+
+using namespace pcl;
+class OriginalFrameInfo
+{
+  HOG hogDescriptors;
+  TransformG cameraTrans;
+  bool cameraTransSet;
+  
+public:
+   pcl::PointCloud<pcl::PointXYZRGBCamSL>::ConstPtr RGBDSlamFrame; // required to get 2D pixel positions
+  
+  void saveImage(int segmentId,int label,vector<Point2DAbhishek>points)
+  {
+  CvSize size;
+  size.height=480;
+  size.width=640;
+  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
+  
+          pcl::PointXYZRGBCamSL tmp;
+  for(int x=0;x<size.width;x++)
+    for(int y=0;y<size.height;y++)
+      {
+        int index=x+y*size.width;
+        tmp= RGBDSlamFrame->points[index];
+        ColorRGB tmpColor(tmp.rgb);
+        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+      }
+          
+        ColorRGB tmpColor(0.0,1.0,0.0);
+          for(int i=0;i<points.size ();i++)
+            {
+              int x=points[i].x;
+              int y=points[i].y;
+              
+                CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+                CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+                CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+              
+            }
+
+          char filename[30];
+          sprintf(filename,"s%d_l%d.png",segmentId,label);
+HOG::saveFloatImage ( filename, image );
+cvReleaseImage (&image);
+
+    
+  }
+  OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGBCamSL>::ConstPtr RGBDSlamFrame_)
+  {
+    cameraTransSet=false;
+    RGBDSlamFrame=RGBDSlamFrame_;
+  CvSize size;
+  size.height=480;
+  size.width=640;
+  cout<<"RGBslam size:"<<RGBDSlamFrame->size ()<<endl;
+    if(RGBDSlamFrame->size ()==0)
+      return;// can be 0 for dummy pcds of manually transformed
+
+  assert(RGBDSlamFrame->size ()==size.width*size.height); // can be 0 for dummy pcds of manually transformed
+
+  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
+  
+          pcl::PointXYZRGBCamSL tmp;
+          
+  for(int x=0;x<size.width;x++)
+    for(int y=0;y<size.height;y++)
+      {
+        int index=x+y*size.width;
+        tmp= RGBDSlamFrame->points[index];
+        ColorRGB tmpColor(tmp.rgb);
+        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+      }
+          
+          hogDescriptors.computeHog (image);
+          
+          cvReleaseImage (&image);
+  }
+  
+  static Point2DAbhishek getPixelFromIndex(int index)
+  {
+    //assuming size is 640*480;
+    int width=640;
+    Point2DAbhishek ret;
+    ret.y=index/width;
+    ret.x=index%width;
+    assert(index==ret.x+ret.y*width);
+    return ret;
+  }
+  
+  static void findHog(vector<size_t> & pointIndices,pcl::PointCloud<PointT> &incloud, HOGFeaturesOfBlock &hogSegment, OriginalFrameInfo*  targetFrame)
+  {
+    static int rejectCout=0;
+    assert(targetFrame->RGBDSlamFrame->size ()>0);
+	assert(targetFrame->cameraTransSet);
+    
+    vector<Point2DAbhishek> pointsInImageLyingOnSegment;
+    for(size_t i=0;i<pointIndices.size ();i++)
+      {
+              pointsInImageLyingOnSegment.push_back (getPixelFromIndex (pointIndices[i]));     
+      }
+    
+    assert(pointsInImageLyingOnSegment.size ()>0);
+    targetFrame->hogDescriptors.getFeatValForPixels (pointsInImageLyingOnSegment,hogSegment);
+   // targetFrame->saveImage (incloud.points[pointIndices[1]].segment,incloud.points[pointIndices[1]].label,pointsInImageLyingOnSegment);
+    
+  }
+
+  void
+  setCameraTrans (TransformG cameraTrans)
+  {
+    this->cameraTrans = cameraTrans;
+    cameraTransSet=true;
+  }
+  
+  void
+  applyPostGlobalTrans (TransformG globalTrans)
+  {
+    //post => premultiply coz point is towards right;
+    if(cameraTransSet)
+    cameraTrans=cameraTrans.preMultiply (globalTrans);
+  }
+
+  TransformG
+  getCameraTrans () const
+  {
+    assert(cameraTransSet);
+    return cameraTrans;
+  }
+
+  void
+  setCameraTransSet (bool cameraTransSet)
+  {
+    this->cameraTransSet = cameraTransSet;
+  }
+
+  bool
+  isCameraTransSet () const
+  {
+    return cameraTransSet;
+  }
+
+  bool
+  isEmpty () const
+  {
+    return RGBDSlamFrame->size()==0;
+  }
+  
+};
+
+
+OriginalFrameInfo * originalFrame;
+
+class SpectralProfile
+{
+  vector<float> eigenValues; // sorted in ascending order
+public:
+      pcl::PointCloud<PointT>::Ptr cloudPtr ;
+  HOGFeaturesOfBlock avgHOGFeatsOfSegment;
+  float avgH;
+  float avgS;
+  float avgV;
+  
+  geometry_msgs::Point32 centroid;
+  Eigen::Vector3d normal;
+  void setEigValues(Eigen::Vector3d eigenValues_)
+  {
+    eigenValues.clear ();
+    //Assuming the values are sorted
+    assert(eigenValues_(0)<=eigenValues_(1));
+    assert(eigenValues_(1)<=eigenValues_(2));
+            
+    for(int i=0;i<3;i++)
+      eigenValues.push_back (eigenValues_(i));
+  //  std::sort (eigenValues.begin (),eigenValues.end ()); // sorted in ascending order
+  }
+  
+  float getDescendingLambda(int index) const
+  {
+    return eigenValues[2-index];
+  }
+  
+  float getScatter() const
+  {
+    return getDescendingLambda (0);
+  }
+  
+  float getLinearNess() const
+  {
+    return (getDescendingLambda (0)-getDescendingLambda (1));
+  }
+  
+  float getPlanarNess() const
+  {
+    return (getDescendingLambda (1)-getDescendingLambda (2));
+  }
+  
+  float getNormalZComponent() const
+  {
+    return normal[2];
+  }
+  
+  float getAngleWithVerticalInRadians() const
+  {
+    return acos(getNormalZComponent());
+  }
+  
+  float getHorzDistanceBwCentroids(const SpectralProfile & other) const
+  {
+     return sqrt(pow(centroid.x - other.centroid.x, 2) + pow(centroid.y - other.centroid.y, 2));    
+  }
+  
+  float getVertDispCentroids(const SpectralProfile & other)
+  {
+     return (centroid.z - other.centroid.z);    
+  }
+  
+  float getHDiffAbs(const SpectralProfile & other)
+  {
+     return fabs(avgH - other.avgH);    
+  }
+  
+  float getSDiff(const SpectralProfile & other)
+  {
+     return (avgS - other.avgS);    
+  }
+  
+  float getVDiff(const SpectralProfile & other)
+  {
+     return (avgV - other.avgV);    
+  }
+  
+  float getAngleDiffInRadians(const SpectralProfile & other)
+  {
+        return (getAngleWithVerticalInRadians() - other.getAngleWithVerticalInRadians ());  
+  }
+  
+  float getNormalDotProduct(const SpectralProfile & other)
+  {
+        return  fabs(normal(0)*other.normal(0) +normal(1)*other.normal(1) +normal(2)*other.normal(2)) ;
+  }
+  
+  float getInnerness(const SpectralProfile & other)
+  {
+    float r1=sqrt(centroid.x*centroid.x+centroid.y*centroid.y);
+    float r2=sqrt(other.centroid.x*other.centroid.x+other.centroid.y*other.centroid.y);
+    return r1-r2;
+  }
+
+  float pushHogDiffFeats(const SpectralProfile & other, vector<float> & feats)
+  {
+    avgHOGFeatsOfSegment.pushBackAllDiffFeats (other.avgHOGFeatsOfSegment,feats);
+  }
+
+  float getCoplanarity(const SpectralProfile & other)
+  {
+    float dotproduct = getNormalDotProduct( other);
+    if (fabs(dotproduct) >0.9) // if the segments are coplanar return the displacement between centroids in the direction of the normal
+    {
+        float distance = (centroid.x-other.centroid.x)*normal[0] + (centroid.y-other.centroid.y)*normal[1] + (centroid.z-other.centroid.z)*normal[2];
+        if(distance == 0 || fabs(distance) < (1/1000) ) {return 1000;}
+        return fabs(1/distance);
+    }
+    else  // else return -1
+        return -1;
+  }
+
+  int getConvexity(const SpectralProfile & other, float mindistance)
+  {
+    VectorG centroid1(centroid.x,centroid.y,centroid.z);
+    VectorG centroid2(other.centroid.x,other.centroid.y,other.centroid.z);
+    
+    VectorG c1c2=centroid2.subtract(centroid1);
+    VectorG c2c1=centroid1.subtract(centroid2);
+    VectorG normal1(normal[0],normal[1],normal[2]);
+    VectorG normal2(other.normal[0],other.normal[1],other.normal[2]);
+    if ( mindistance < 0.04 && ( (normal1.dotProduct(c1c2) <= 0 && normal2.dotProduct(c2c1) <= 0) || fabs(normal1.dotProduct(normal2)) > 0.95 ) ) // refer local convexity criterion paper
+    {
+        return 1;
+    }
+     // else return 0
+    return 0;
+  }
+
+};
+
+void computeGlobalTransform(pcl::PointCloud<PointT> & combined_cloud_trans /*z aligned and possibly axis aligned*/,pcl::PointCloud<PointT> & combined_cloud_orig,TransformG & globalTrans)
+{
+  int numPoints=combined_cloud_orig.size ()-1;// semantics of first point not known
+    ublas::matrix<float,ublas::column_major> A(numPoints,4);
+    ublas::vector<float> b(numPoints);
+    
+
+
+    globalTrans.transformMat(3,0)=0;
+    globalTrans.transformMat(3,1)=0;
+    globalTrans.transformMat(3,2)=0;
+    globalTrans.transformMat(3,3)=1;
+    int row;
+    for(unsigned int cr=0;cr<3;cr++)
+      {
+        
+    for(unsigned i=0;i < numPoints;i++)
+        {
+        
+             A(i,0)=combined_cloud_orig.points[i+1].x;
+             A(i,1)=combined_cloud_orig.points[i+1].y;
+             A(i,2)=combined_cloud_orig.points[i+1].z;
+//             assert(combined_cloud_orig.points[i].x==combined_cloud_orig.points[i].data[0]);
+//             assert(combined_cloud_orig.points[i].y==combined_cloud_orig.points[i].data[1]);
+//             assert(combined_cloud_orig.points[i].z==combined_cloud_orig.points[i].data[2]);
+             A(i,3)=1;
+             b(i)=combined_cloud_trans.points[i+1].data[cr];
+        }
+    lapack::optimal_workspace works;
+    lapack::gels('N',A,b,works);
+    
+    for(unsigned int col=0;col<4;col++)
+        globalTrans.transformMat(cr,col)=b(col);
+    
+    cout<<"row="<<cr<<endl;
+    
+    //check that the solution is almost correct
+    for(unsigned int i=1;i < numPoints;i++)
+        {
+             double lhs=combined_cloud_orig.points[i].x*b(0)+combined_cloud_orig.points[i].y*b(1)+combined_cloud_orig.points[i].z*b(2)+b(3);
+             double rhs=combined_cloud_trans.points[i].data[cr];
+         //    cout<<lhs<<","<<rhs<<endl;
+             assert(fabs(lhs-rhs)<0.01);
+        }
+    
+
+      }
+    globalTrans.print ();
+
+}
+
+
+class BinningInfo
+{
+  float max;
+  float min;
+  int numBins;
+  float binSize;
+public:
+  
+  
+  BinningInfo(float min_,float max_,int numBins_)
+  {
+    max=max_;
+    min=min_;
+    numBins=numBins_;
+    assert(max>min);
+    binSize=(max-min)/numBins;
+    
+  }
+
+  int
+  getBinIndex (float value)
+  {
+    assert(value>=min);
+    assert(value<=max);
+    
+    int bin =  ((value -min) / binSize);
+
+    assert (bin <= numBins);
+
+    if (bin == numBins)
+      {
+        bin = numBins - 1;
+      }
+    
+    return bin;
+
+  }
+
+  float
+  GetBinSize () const
+  {
+    return binSize;
+  }
+
+  int
+  GetNumBins () const
+  {
+    return numBins;
+  }
+
+  float
+  GetMin () const
+  {
+    return min;
+  }
+
+  float
+  GetMax () const
+  {
+    return max;
+  }
+};
+
 
     pcl::PointCloud<PointT> cloudUntransformed;
     pcl::PointCloud<PointT> cloudUntransformedUnfiltered;
@@ -39,7 +487,27 @@ vector<OriginalFrameInfo*> originalFrames;
         }
     }
     
+void buildOctoMap(const pcl::PointCloud<PointT> &cloud,  OcTreeROS & tree)
+{
+
     
+    
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+    pcl::PointCloud<PointT>::Ptr cloud_cam(new pcl::PointCloud<PointT > ());
+
+
+
+        // convert to  pointXYZ format
+        sensor_msgs::PointCloud2 cloud_blob;
+        pcl::toROSMsg(*cloud_ptr,cloud_blob);
+        pcl::PointCloud<pcl::PointXYZ> xyzcloud;
+        pcl::fromROSMsg(cloud_blob, xyzcloud);
+        // find the camera co-ordinate
+        VectorG cam_coordinates = originalFrame->getCameraTrans().getOrigin();
+        pcl::PointXYZ origin (cam_coordinates.v[0], cam_coordinates.v[1], cam_coordinates.v[2]);
+        // insert to the tree
+        tree.insertScan(xyzcloud,origin,-1,true);
+}    
 
 void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
     //ROS_INFO("applying filter");
@@ -86,13 +554,8 @@ void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl:
 //    outcloud.points = incloud.points;
     outcloud.points.resize ( incloud.points.size() );
 
-    assert(originalFrames.size ()>0);
-    int numFrames=originalFrames.size ();
     
-    int sceneIndexCounts[numFrames];
     
-    for(size_t f=0;f<numFrames;f++)
-      sceneIndexCounts[f]=0;
     
     vector<size_t> indices;
     int j = -1;
@@ -109,8 +572,6 @@ void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl:
           outcloud.points[j].cameraIndex = incloud.points[i].cameraIndex;
           outcloud.points[j].distance = incloud.points[i].distance;
         //  cerr<<incloud.points[i].cameraIndex<<","<<numFrames<<endl;
-          assert(incloud.points[i].cameraIndex<numFrames);
-          sceneIndexCounts[incloud.points[i].cameraIndex]+=1;
           indices.push_back (i);
 
             //     std::cerr<<segment_cloud.points[j].label<<",";
@@ -126,17 +587,7 @@ void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl:
         return;
       }
     int max=-1;
-    size_t maxIndex;
-    
-    for(size_t f=0;f<numFrames;f++)
-      if(max<sceneIndexCounts[f])
-        {
-           max=sceneIndexCounts[f];
-           maxIndex=f;
-        }
-    assert(max>=0);
-    cout<<"segment index:"<<segment<<"with "<<indices.size ()<<" points"<<" main frame "<<maxIndex<<" with numMax="<<max<<endl;
-    OriginalFrameInfo::findHog (maxIndex, indices, incloud, feats.avgHOGFeatsOfSegment,originalFrames,cloudUntransformed);
+    OriginalFrameInfo::findHog ( indices, incloud, feats.avgHOGFeatsOfSegment,originalFrame);
     
 }
 
@@ -290,7 +741,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =0.6;
+   float tolerance =1.0;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -437,7 +888,7 @@ void getSpectralProfile(const pcl::PointCloud<PointT> &cloud, SpectralProfile &s
           spectralProfile.normal=eigen_vectors.col(i);
           // check the angle with line joining the centroid to origin
           VectorG centroid(spectralProfile.centroid.x,spectralProfile.centroid.y,spectralProfile.centroid.z);
-          VectorG camera=originalFrames[cloud.points[1].cameraIndex]->getCameraTrans().getOrigin();
+          VectorG camera=originalFrame->getCameraTrans().getOrigin();
           VectorG cent2cam=camera.subtract(centroid);
           VectorG normal(spectralProfile.normal[0],spectralProfile.normal[1],spectralProfile.normal[2]);
           if (normal.dotProduct(cent2cam) < 0)
@@ -596,7 +1047,6 @@ void get_color_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fea
         (*it).push_back(c.V);
     }
     
-    
     vector<BinningInfo> binnigInfos;
     binnigInfos.push_back (BinningInfo(0,360,num_bin_H));
     binnigInfos.push_back (BinningInfo(0,1,num_bin_S));
@@ -647,6 +1097,57 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
     
    
  
+}
+float get_occupancy_feature(const pcl::PointCloud<PointT> &cloud1, const pcl::PointCloud<PointT> &cloud2,  OcTreeROS & tree){
+    //
+    OcTreeROS::NodeType* treeNode;
+    int occCount = 0;
+    int totalCount = 0;
+    int unknownCount = 0;
+    for (int i =0 ; i <100 ; i++)
+    {
+        int p1Index =  rand() % cloud1.points.size() ;
+        int p2Index =  rand() % cloud2.points.size();
+        VectorG p1 (cloud1.points[p1Index]);
+        VectorG p2 (cloud2.points[p2Index]);
+        double distance = (p2.subtract(p1)).getNorm();
+        int count = 0;
+        for ( double r = 0.05 ; r<= distance-0.05 ; r+=0.05)
+        {
+            count ++;
+            VectorG point = p1.add( ( p2.subtract(p1).normalizeAndReturn() ).multiply(r));
+            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
+            treeNode = tree.search(pt);
+            if (treeNode){
+                if (treeNode->getOccupancy() > 0.5){occCount++;}
+                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
+            }
+            else{
+                unknownCount++;
+                //cout << "ERROR: OcTreeNode not found (NULL)\n";
+            }
+            
+        }
+        if(count ==0)
+        {
+            VectorG point = p1.add(p2.subtract(p1).multiply(0.5));
+            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
+            treeNode = tree.search(pt);
+            if (treeNode){
+                if (treeNode->getOccupancy() > 0.5){occCount++;}
+                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
+            }
+            else{
+                unknownCount++;
+                //cout << "ERROR: OcTreeNode not found (NULL)\n";
+            }
+            count ++;
+        }
+        totalCount += count;       
+    }
+    cout << "seg1:" << cloud1.points[1].segment<< " label1: " << cloud1.points[1].label <<  " seg2:" << cloud2.points[1].segment<< " label2: " << cloud2.points[1].label << endl;
+    cout << "total:" << totalCount << " unknown:"  << unknownCount << " occupied:" << occCount  << endl;
+    return (float)unknownCount/(float)totalCount;
 }
 
 /*void get_shape_features(const pcl::PointCloud<PointT> &cloud, vector<float> &features, int num_bin ) {
@@ -757,84 +1258,6 @@ void get_global_features(const pcl::PointCloud<PointT> &cloud, vector<float> &fe
 		normalsOut.push_back(avgNormal);
 	}
 } */
-
-float get_occupancy_feature(const pcl::PointCloud<PointT> &cloud1, const pcl::PointCloud<PointT> &cloud2,  OcTreeROS & tree){
-    //
-    OcTreeROS::NodeType* treeNode;
-    int occCount = 0;
-    int totalCount = 0;
-    int unknownCount = 0;
-    for (int i =0 ; i <100 ; i++)
-    {
-        int p1Index =  rand() % cloud1.points.size() ;
-        int p2Index =  rand() % cloud2.points.size();
-        VectorG p1 (cloud1.points[p1Index]);
-        VectorG p2 (cloud2.points[p2Index]);
-        double distance = (p2.subtract(p1)).getNorm();
-        int count = 0;
-        for ( double r = 0.05 ; r<= distance-0.05 ; r+=0.05)
-        {
-            count ++;
-            VectorG point = p1.add( ( p2.subtract(p1).normalizeAndReturn() ).multiply(r));
-            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
-            treeNode = tree.search(pt);
-            if (treeNode){
-                if (treeNode->getOccupancy() > 0.5){occCount++;}
-                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
-            }
-            else{
-                unknownCount++;
-                //cout << "ERROR: OcTreeNode not found (NULL)\n";
-            }
-            
-        }
-        if(count ==0)
-        {
-            VectorG point = p1.add(p2.subtract(p1).multiply(0.5));
-            pcl::PointXYZ pt (point.v[0],point.v[1],point.v[2]);
-            treeNode = tree.search(pt);
-            if (treeNode){
-                if (treeNode->getOccupancy() > 0.5){occCount++;}
-                //cout << "Occupancy of node at ("<< pt.x << "," << pt.y<< "," << pt.z << ") = " << treeNode->getOccupancy() << " \n";
-            }
-            else{
-                unknownCount++;
-                //cout << "ERROR: OcTreeNode not found (NULL)\n";
-            }
-            count ++;
-        }
-        totalCount += count;       
-    }
-    cout << "seg1:" << cloud1.points[1].segment<< " label1: " << cloud1.points[1].label <<  " seg2:" << cloud2.points[1].segment<< " label2: " << cloud2.points[1].label << endl;
-    cout << "total:" << totalCount << " unknown:"  << unknownCount << " occupied:" << occCount  << endl;
-    return (float)unknownCount/(float)totalCount;
-}
-
-/*
-
-void get_convex_regions (map <int , vector <int> > &neighbor_map, std::map<int,int>  &segment_num_index_map, vector<SpectralProfile> & spectralProfiles){
-    
-    // for every segment
-    for(map<int , vector <int> >::iterator it = neighbor_map.begin(); it != neighbor_map.end(); it++)
-    {
-                
-        segment_id = (*it).first;
-        
-        SpectralProfile segment1Spectral=spectralProfiles[segment_num_index_map[segment_id]];
-    // explore list = neighbour list
-    // convexity list = empty
-    // if element in neighbour list is convex add it to convexity list and add its neighbours not already explored to explore list
-    
-    }
-    
-    for (vector<int>::iterator it = neighbor_list.begin(); it != neighbor_list.end(); it++) {
-
-        int seg2_id = *it;
-        SpectralProfile segment2Spectral=spectralProfiles[segment_num_index_map[seg2_id]];
-    segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] )
- 
-}
-**/
 int NUM_ASSOCIATIVE_FEATS=4+31;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
@@ -909,48 +1332,15 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
 }
 
 
-void buildOctoMap(const pcl::PointCloud<PointT> &cloud,  OcTreeROS & tree)
-{
-
-    
-    
-    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
-    pcl::PointCloud<PointT>::Ptr cloud_cam(new pcl::PointCloud<PointT > ());
-
-    int cnt =0;
-    // find all the camera indices
-    map<int,int> camera_indices;
-    for (size_t i = 0; i < cloud.points.size(); ++i) {
-        camera_indices[(int) cloud.points[i].cameraIndex] = 1;
-    }
-    // for every camera index .. apply filter and get the point cloud
-    for (map<int,int>::iterator it = camera_indices.begin(); it != camera_indices.end();it++)
-    {
-        int ci = (*it).first;
-        apply_camera_filter(*cloud_ptr,*cloud_cam,ci);
-
-
-        // convert to  pointXYZ format
-        sensor_msgs::PointCloud2 cloud_blob;
-        pcl::toROSMsg(*cloud_cam,cloud_blob);
-        pcl::PointCloud<pcl::PointXYZ> xyzcloud;
-        pcl::fromROSMsg(cloud_blob, xyzcloud);
-        // find the camera co-ordinate
-        VectorG cam_coordinates = originalFrames[ci]->getCameraTrans().getOrigin();
-        pcl::PointXYZ origin (cam_coordinates.v[0], cam_coordinates.v[1], cam_coordinates.v[2]);
-        // insert to the tree
-        tree.insertScan(xyzcloud,origin,-1,true);
-    }
-}
-
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
-    std::string unTransformedPCD=argv[3];
-    std::string rgbdslamBag=argv[4];
-    sensor_msgs::PointCloud2 cloud_blob;
+    std::string rgbdslamBag=argv[1];
+//    sensor_msgs::PointCloud2Ptr cloud_blob;
     pcl::PointCloud<PointT> cloud;
     std::ofstream labelfile, nfeatfile, efeatfile;
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > ());
+
 
     //labelfile.open("data_labels.txt",ios::app);
     nfeatfile.open("data_nodefeats.txt",ios::app);
@@ -958,51 +1348,66 @@ int main(int argc, char** argv) {
 
     // read the pcd file
 
-    if (pcl::io::loadPCDFile(argv[1], cloud_blob) == -1) {
-        ROS_ERROR("Couldn't read file test_pcd.pcd");
-        return (-1);
-    }
-    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
 
     
     // convert to templated message type
 
-    pcl::fromROSMsg(cloud_blob, cloud);
+  pcl_ros::BAGReader reader;
+  char *topic = "/camera/rgb/points";
+  
+  if (!reader.open (rgbdslamBag, "/rgbdslam/my_clouds"))
+    {
+      cout << "Couldn't open RGBDSLAM topic" << (topic);
+      exit(-1);
+    }
+      rosbag::Bag bag;
+    std::cerr << "opening " << rgbdslamBag << std::endl;
+    bag.open(rgbdslamBag, rosbag::bagmode::Read);
+       sensor_msgs::PointCloud2ConstPtr cloud_blob;
+       
+      cloud_blob = reader.getNextCloud ();
+      
+      pcl::fromROSMsg (*cloud_blob, *cloud_ptr);
+      originalFrame=new OriginalFrameInfo(cloud_ptr);
+      cloud=*cloud_ptr;
+        //ros::Time ptime = cloud_blob_new->header.stamp;
 
-    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
+
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        //std::cerr<<(view_tf.size())<<endl;
+    //    std::cerr << ptime << std::endl;
+        //        std::cerr<<"qid:"<<pcl_ptr->header.seq<<endl;;
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+            //  transG.print();
+                tf_count++;
+//                std::cerr << "tf qid:" << bt[0].header.seq << std::endl;
+                final_tft = tft;
+        }
+
+        assert(tf_count == 1);
+                TransformG transG(final_tft);
+                transG.print ();
+                originalFrame->setCameraTrans (transG);
     
-          cout<<cloud.size ()<<endl;
-    gatherOriginalFrames (unTransformedPCD,rgbdslamBag,originalFrames,cloudUntransformed);
-    TransformG globalTransform;
-    computeGlobalTransform (cloud,cloudUntransformed,globalTransform);
 
-    for(unsigned int i=0;i<originalFrames.size ();i++)
-      originalFrames[i]->applyPostGlobalTrans (globalTransform);
     
     // call buildOctoMap here
     OcTreeROS tree(0.01);
     OcTreeROS::NodeType* treeNode;
     buildOctoMap(cloud,  tree);  
       
-    if(SHOW_CAM_POS_IN_VIEWER)
-      {
-      ColorHandlerPtr color_handler;
-  pcl_visualization::PCLVisualizer viewer ("3D Viewer");
-          color_handler.reset (new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob));
-          viewer.addPointCloud (*cloud_ptr, color_handler, "cloud");
-  
-    for(unsigned int i=0;i<originalFrames.size ();i++)
-      {
-        if(originalFrames[i]->isCameraTransSet ())
-          {
-            VectorG cam=originalFrames[i]->getCameraTrans ().getOrigin ();
-                viewer.addCoordinateSystem (1,cam.v[0],cam.v[1],cam.v[2]);
-          }
-      }
-          
-          viewer.spin ();
-      }
-    assert(cloudUntransformed.size()==cloud.size ());
+
 
     pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT > ());
     pcl::PointCloud<PointT>::Ptr cloud_seg(new pcl::PointCloud<PointT > ());

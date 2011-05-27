@@ -32,8 +32,8 @@ do
   ls -l $bagfile
   #mapfile="seglabels_"$num".txt"
   #echo $mapfile
-  rosrun scene_processing  compute_all_features $file $num $labeledfile $bagfile #$num_bins_color $num_bins_shape
-#  echo "rosrun scene_processing  compute_all_features $file $num $labeledfile $bagfile #$num_bins_color $num_bins_shape"
+  #rosrun scene_processing  compute_all_features $file $num $labeledfile $bagfile #$num_bins_color $num_bins_shape
+  echo "rosrun scene_processing  compute_all_features $file $num $labeledfile $bagfile #$num_bins_color $num_bins_shape"
   
 done
 
