@@ -20,6 +20,10 @@ global NUM_CLASSES
 global ITER
 global LP_LIST
 global LOSS_WEIGHTS
+global CLASSIFY_METHOD
+global LEARN_METHOD
+global LOSS_METHOD
+global OBJECT_MAP_FILE
 LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
@@ -104,12 +108,58 @@ def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objM
     C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
     return C
 
+def parse_parameters(sparm):
+    temp_arg_list = sparm.argv
+    print sparm.argv
+    global LEARN_METHOD
+    global LOSS_METHOD
+    global OBJECT_MAP_FILE
+    # set default values
+    LOSS_METHOD = "micro"
+    LEARN_METHOD = "objassoc"
+    OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
+    for i in xrange(0,len(sparm.argv)/2):
+        print i,  len(sparm.argv)/2
+        opt = temp_arg_list.pop(0)
+        val = temp_arg_list.pop(0)
+        if(opt == "--l"):
+            LOSS_METHOD = val
+        if(opt == "--lm"):
+            LEARN_METHOD = val
+        if(opt == "--omf"):
+            OBJECT_MAP_FILE = val
+
+
+def parse_parameters_classify(attribute, value):
+    
+    global CLASSIFY_METHOD
+    global LEARN_METHOD
+    global LOSS_METHOD
+    global OBJECT_MAP_FILE
+    # set default values
+    LOSS_METHOD = "micro"
+    LEARN_METHOD = "objassoc"
+    OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
+    CLASSIFY_METHOD  = "sum1.IP"
+    if(attribute == "--l"):
+        LOSS_METHOD = value
+    if(attribute == "--lm"):
+        LEARN_METHOD = value
+    if(attribute == "--omf"):
+        OBJECT_MAP_FILE = value
+    if(attribute == "--cm"):
+        CLASSIFY_METHOD= value
+
+
 def read_examples(filename,sparm):
+    
     print commands.getoutput('git log | head')
     print commands.getoutput('git diff --color')
 
     global NUM_CLASSES
     global LOSS_WEIGHTS
+    global LEARN_METHOD
+    global OBJECT_MAP_FILE
     print sparm
     # Helper function for reading from files.
     def line_reader(lines):
@@ -122,7 +172,7 @@ def read_examples(filename,sparm):
     ################
     # read the object label map file
 
-    objMapList = [line.split() for line in line_reader(file('/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt'))]
+    objMapList = [line.split() for line in line_reader(file(OBJECT_MAP_FILE))]
     
     #################
     """Parses an input file into an example sequence."""
@@ -142,7 +192,8 @@ def read_examples(filename,sparm):
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
         K = int(input[0][2].strip());
-        num_ass_edge_feats =  int(input[0][3].strip());
+        if (LEARN_METHOD == "objassoc"):
+            num_ass_edge_feats =  int(input[0][3].strip());
         # find the max class and number of node features -- will work for sparse representation
         for i in xrange(0,N):
             target = int(input[i+1][0]);
@@ -163,11 +214,13 @@ def read_examples(filename,sparm):
     print 'number of node features: ', num_node_feats
     print 'number of edge features: ',num_edge_feats
     print 'number of associative features: ',num_ass_edge_feats
-    
+
+
     # computing C matrix
-    C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
-   
-    #savetxt('C.txt',C.todense(),fmt='%d');
+    if (LEARN_METHOD == "objassoc"):
+        C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
+        #savetxt('C.txt',C.todense(),fmt='%d');
+        
     class_counts = zeros(K)
 
     example_num=-1
@@ -292,12 +345,15 @@ def read_examples(filename,sparm):
         #Yc = concatenate ((Yn,Yec))
         #Yuc_reconstructed=Compactify*Yc;
         #areEqualVectors(Y, Yuc_reconstructed)
+        if (LEARN_METHOD == "objassoc"):
+            #X with associative and non-associative features filled correctly
+            X_small = C*X_sparse
+            # Add the example to the list
+            examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
+        else:
+            # Add the example to the list
+            examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
 
-        #X with associative and non-associative features filled correctly
-        X_small = C*X_sparse
-        # Add the example to the list
-        #examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
-        examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
     LOSS_WEIGHTS = zeros(K)
 
@@ -1320,6 +1376,119 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
     if(lp.obj.value  > 1.1):
       assert (round(lp.obj.value,2) ==  round(score,2))
     return ymax
+
+
+def lp_inference_qbpo_sum1_IP(X,sm,sparm):
+
+    start = time.clock()
+
+    K = sm.num_classes
+    w = sm.w
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+
+ ############ solve QBPO
+    qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
+    qpbo.add_node(N*K)
+
+    x = X[0]
+    #x = (X[0]).todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+
+    w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
+    #print w_list    y = Y[0]
+    K = sm.num_classes
+    w = sm.w
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+    qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
+    qpbo.add_node(N*K)
+
+    x = X[0]
+    #x = (X[0]).todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+
+    w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
+    #print w_list
+    ##print (asarray(w*x)[0]).tolist()
+    coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
+
+    for index in xrange(0,N*K):
+        qpbo.add_term(index,0,-coeff_list[index]);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        n1 = int(u*K + l)
+        n2 = int(v*K + k)
+        qpbo.add_term(n1,n2,0,0,0,-coeff_list[index+N*K])
+    ##print lp.obj[:]
+    qpbo.solve();
+    qpbo.compute_weak_persistencies();
+
+ ############ done
+
+    labellist = [];
+    for n in xrange(0,N*K):
+        l = qpbo.get_label(n);
+        #print n,l
+        if(l == 0):
+            labellist.append(0);
+        elif(l ==1):
+            labellist.append(1);
+        else:
+            labellist.append(0.5);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        l1 = labellist[int(u*K + l)]
+        l2 = labellist[int(v*K + k)]
+        if(l1*l2 == 0.25):
+            if(coeff_list[index+N*K]>0):
+                labellist.append(0.5)
+            else:
+                labellist.append(0)
+        else:
+            labellist.append(l1*l2);
+
+    labeling = asmatrix(array([labellist]))
+    #print labeling.T
+    ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
+    c1 = 0
+    c0= 0
+    ch =0
+    cr = 0
+    for c in lp.cols:
+        if (c.primal == 1):
+            c1 += 1
+        elif(c.primal ==0):
+            c0 += 1
+        elif (c.primal == 0.5):
+            ch += 1
+        else:
+            cr +=1
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+    #print 'number of 0s: %d' % cr
+    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+    score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
+    #print "objective value = ", round(lp.obj.value,2)
+    #print '\n score : ' , round(score,2), ' score2: ',score2;
+    if(lp.obj.value  > 1.1):
+      assert (round(lp.obj.value,2) ==  round(score,2))
+    return ymax
+
+
 def lp_inference_random_w(X,sm,sparm):
 
     K = sm.num_classes
@@ -1848,16 +2017,19 @@ def classification_score(x,y,sm,sparm):
 
 def classify_example(x, sm, sparm):
     """Returns the classification of an example 'x'."""
+    global CLASSIFY_METHOD
     #y = (mat(ones((1,x[0].shape[1]))),x[2],sm.num_classes)
     #l = lp_inference(x,sm,sparm)
-
-
-
-    l = lp_inference_sum1_IP(x,sm,sparm)
-    #l = lp_inference_qbpo_sum1_IP(x,sm,sparm)
-
-    #l = lp_inference_sum1(x,sm,sparm)
-    #l = lp_inference(x,sm,sparm)
+    
+    if(CLASSIFY_METHOD == "sum1.IP"):
+        l = lp_inference_sum1_IP(x,sm,sparm)
+    elif(CLASSIFY_METHOD == "sum1"):
+        l = lp_inference_sum1(x,sm,sparm)
+    elif(CLASSIFY_METHOD == "qbpo.sum1.IP"):
+        l = lp_inference_qbpo_sum1_IP(x,sm,sparm)
+    elif(CLASSIFY_METHOD == "qbpo"):
+        l = lp_inference_qbpo(x,sm,sparm)
+   
     return l
 
 def areEqualVectors(V1,V2):
@@ -1866,12 +2038,15 @@ def areEqualVectors(V1,V2):
         
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
+    global LOSS_METHOD
     # Similar, but include the loss.
     #print
     #print "MOST VIOLATED Constraint"
-   # l1 = lp_training(x,y,sm,sparm)
-   # l2 = lp_training_qpbo(x,y,sm,sparm)
-    l2 = lp_training_qpbo_macro(x,y,sm,sparm)
+    # l1 = lp_training(x,y,sm,sparm)
+    if(LOSS_METHOD== "micro"):
+        l2 = lp_training_qpbo(x,y,sm,sparm)
+    else:
+        l2 = lp_training_qpbo_macro(x,y,sm,sparm)
     #print "l1:"
     #for i in xrange(l1[1]*sm.num_classes):
         #print l1[0][i,0],l2[0][i,0]
@@ -1899,7 +2074,11 @@ def psi(x, y, sm, sparm):
     
 
 def loss(Y, Ybar, sparm):
-    return loss_macro(Y, Ybar, sparm);
+    global LOSS_METHOD
+    if(LOSS_METHOD == "macro"):
+        return loss_macro(Y, Ybar, sparm);
+    else:
+        return loss_micro(Y, Ybar, sparm);
 
 def loss_micro(Y, Ybar, sparm):
     """Loss is 1 if the labels are different, 0 if they are the same."""
@@ -1985,7 +2164,7 @@ def read_model(filename, sparm):
 
 
 
-def evaluation_class_pr(Y,Ybar,K,N,spram):
+def evaluation_class_pr(Y,Ybar,K,N,sparm):
     y = Y[0]   
     ybar = Ybar[0]
     truecount = zeros((K,1))
@@ -2027,7 +2206,7 @@ def evaluation_class_pr(Y,Ybar,K,N,spram):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
     return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
 
-def evaluation_class_pr_sum1(Y,Ybar,K,N,spram):
+def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
     y = Y[0]
     ybar = Ybar[0]
     truecount = zeros((K,1))
