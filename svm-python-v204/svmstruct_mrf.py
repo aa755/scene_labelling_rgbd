@@ -19,6 +19,7 @@ from graphcut import *
 global NUM_CLASSES
 global ITER
 global LP_LIST
+global LOSS_WEIGHTS
 LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
@@ -108,6 +109,7 @@ def read_examples(filename,sparm):
     print commands.getoutput('git diff --color')
 
     global NUM_CLASSES
+    global LOSS_WEIGHTS
     print sparm
     # Helper function for reading from files.
     def line_reader(lines):
@@ -131,6 +133,7 @@ def read_examples(filename,sparm):
     num_edge_feats=0
     num_ass_edge_feats = 0
 
+
     # Open the file and read each example.
     for input_file in file(filename):
         print input_file
@@ -139,10 +142,11 @@ def read_examples(filename,sparm):
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
         K = int(input[0][2].strip());
-        num_ass_edge_feats = int(input[0][3].strip()); 
+        num_ass_edge_feats =  int(input[0][3].strip());
         # find the max class and number of node features -- will work for sparse representation
         for i in xrange(0,N):
             target = int(input[i+1][0]);
+
             if (max_target<int(target)):
                 max_target=int(target)
             tokens = [line.split(':') for line in input[i+1][2:]]
@@ -164,6 +168,7 @@ def read_examples(filename,sparm):
     C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
    
     #savetxt('C.txt',C.todense(),fmt='%d');
+    class_counts = zeros(K)
 
     example_num=-1
     for input_file in file(filename):
@@ -183,6 +188,7 @@ def read_examples(filename,sparm):
         edges = mat(zeros((E,2)))
         for i in xrange(0,N):
             target = int(input[i+1][0]);
+            class_counts[target-1]+=1
             Yn[i*max_target+(target-1),0]=1
             # get the segment number
             node_map[int(input[i+1][1])] = i
@@ -290,8 +296,24 @@ def read_examples(filename,sparm):
         #X with associative and non-associative features filled correctly
         X_small = C*X_sparse
         # Add the example to the list
+        #examples.append(((X_sparse, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
         examples.append(((X_small, edges, N,example_num ), (Y_s,N,max_target,Compactify,ijlk)))
     NUM_CLASSES = max_target
+    LOSS_WEIGHTS = zeros(K)
+
+    # finding loss weights for training for optmized macro
+    hsum=0
+    for l in xrange(0,K):
+        if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
+            hsum+=(1.0/class_counts[l])
+        
+    for l in xrange(0,K):
+        if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
+            LOSS_WEIGHTS[l]=1.0/(hsum*N*class_counts[l])
+        else:
+            LOSS_WEIGHTS[l]=1.0/(N*K)
+        
+    
     # #print out some very useful statistics.
     #print len(examples),'examples read'
     return examples
@@ -1149,16 +1171,6 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
     qpbo.solve();
     qpbo.compute_weak_persistencies();
 
-    labellist = [];
-    for n in xrange(0,N*K):
-        l = qpbo.get_label(n);
-        #print n,l
-        if(l == 0):
-            labellist.append(0);
-        elif(l ==1):
-            labellist.append(1);
-        else:
-            labellist.append(0.5);
  ############ done
 
 
@@ -1231,13 +1243,14 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
 
 
     ########## Initialize basis with QBPO
-    for n in xrange(0,N*K):
-        if(qpbo.get_label(n)==1):
-            lp.cols[n].status='nu'
-        elif(qpbo.get_label(n)==0):
-            lp.cols[n].status='nl'
-        else:
-            lp.cols[n].status='bs'
+    for col in lp.cols:
+        if(col.index<N*K):
+            if(qpbo.get_label(col.index)==1):
+                col.status="nu"
+            elif(qpbo.get_label(col.index)==0):
+                col.status="nl"
+            else:
+                col.status="bs"
             
     for index in xrange(0,E*K*K):
         u = edge[int(index/(K*K)),0]
@@ -1248,11 +1261,11 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
         l1 = qpbo.get_label(int(u*K + l))
         l2 = qpbo.get_label(int(v*K + k))
         if(l1*l2 == 1): #and=1 , y1y2 stand for and
-            lp.cols[N*K+index].status='nu'
+            lp.cols[N*K+index].status="nu"
         elif(l1*l2==0): # and=0
-            lp.cols[N*K+index].status='nl'
+            lp.cols[N*K+index].status="nl"
         else:
-            lp.cols[N*K+index].status='bs'
+            lp.cols[N*K+index].status="bs"
 
 
 
@@ -1607,13 +1620,113 @@ def lp_training_qpbo(X,Y,sm,sparm):
     #print 'number of 0s: %d' % c0
     #print 'number of 0.5s: %d' % ch
     
-    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+ #   score = asarray((w_mat*x*ymax[0]).todense())[0][0];
 
     #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
     #print 'score : ' , round(score+loss(Y,ymax,sparm),2)
     #print 'loss: ',loss(Y,ymax,sparm)
     #print '\n'
     
+    #assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
+    return ymax
+
+def lp_training_qpbo_macro(X,Y,sm,sparm):
+    y = Y[0]
+    K = sm.num_classes
+    w = sm.w
+    edge = X[1]
+    E = edge.shape[0]
+    N = X[2]
+    qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
+    qpbo.add_node(N*K)
+
+    x = X[0]
+    #x = (X[0]).todense()
+    w_list = [w[i] for i in xrange(0,x.shape[0])]
+
+    w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
+    #print w_list
+    ##print (asarray(w*x)[0]).tolist()
+    coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
+    for index in xrange(0,N*K):
+        classt=index%K
+        if(y[index,0] == 1):
+            coeff_list[index] = coeff_list[index]-(1.0*LOSS_WEIGHTS[classt])
+        else:
+            coeff_list[index] = coeff_list[index]+(1.0*LOSS_WEIGHTS[classt])
+
+
+    for index in xrange(0,N*K):
+        qpbo.add_term(index,0,-coeff_list[index]);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        n1 = int(u*K + l)
+        n2 = int(v*K + k)
+        qpbo.add_term(n1,n2,0,0,0,-coeff_list[index+N*K])
+    ##print lp.obj[:]
+    qpbo.solve();
+    qpbo.compute_weak_persistencies();
+
+    labellist = [];
+    for n in xrange(0,N*K):
+        l = qpbo.get_label(n);
+        #print n,l
+        if(l == 0):
+            labellist.append(0);
+        elif(l ==1):
+            labellist.append(1);
+        else:
+            labellist.append(0.5);
+
+    for index in xrange(0,E*K*K):
+        u = edge[int(index/(K*K)),0]
+        v = edge[int(index/(K*K)),1]
+        l = int((index%(K*K))/K)
+        k = int((index%(K*K))%K)
+
+        l1 = labellist[int(u*K + l)]
+        l2 = labellist[int(v*K + k)]
+        if(l1*l2 == 0.25):
+            if(coeff_list[index+N*K]>0):
+                labellist.append(0.5)
+            else:
+                labellist.append(0)
+        else:
+            labellist.append(l1*l2);
+  #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
+   # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
+                       # #print struct variable names and primal val
+    labeling = asmatrix(array([labellist]))
+    #print labeling.T.shape[0],labeling.T.shape[1]
+    ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
+    c1 = 0
+    c0= 0
+    ch =0
+
+    for c in labellist:
+        if (c == 1):
+            c1 += 1
+        elif(c ==0):
+            c0 += 1
+        else:
+            ch +=1
+    #print "QPBO counts:"
+    #print 'number of 1s: %d' % c1
+    #print 'number of 0s: %d' % c0
+    #print 'number of 0.5s: %d' % ch
+
+#    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+
+    #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
+    #print 'score : ' , round(score+loss(Y,ymax,sparm),2)
+    #print 'loss: ',loss(Y,ymax,sparm)
+    #print '\n'
+
     #assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
 
@@ -1757,7 +1870,8 @@ def find_most_violated_constraint(x, y, sm, sparm):
     #print
     #print "MOST VIOLATED Constraint"
    # l1 = lp_training(x,y,sm,sparm)
-    l2 = lp_training_qpbo(x,y,sm,sparm)
+   # l2 = lp_training_qpbo(x,y,sm,sparm)
+    l2 = lp_training_qpbo_macro(x,y,sm,sparm)
     #print "l1:"
     #for i in xrange(l1[1]*sm.num_classes):
         #print l1[0][i,0],l2[0][i,0]
@@ -1785,6 +1899,9 @@ def psi(x, y, sm, sparm):
     
 
 def loss(Y, Ybar, sparm):
+    return loss_macro(Y, Ybar, sparm);
+
+def loss_micro(Y, Ybar, sparm):
     """Loss is 1 if the labels are different, 0 if they are the same."""
     N = Y[1]
     K = Y[2]
@@ -1803,6 +1920,28 @@ def loss(Y, Ybar, sparm):
             sum-=yDiff[index,0]
             
     return sum/size;
+
+def loss_macro(Y, Ybar, sparm):
+    """Loss is 1 if the labels are different, 0 if they are the same."""
+    N = Y[1]
+    K = Y[2]
+    y= Y[0]
+
+   # #print N,K,y.shape[0],y.shape[1]
+    ybar = Ybar[0]
+    yDiff=y- ybar;
+    sum=0.0;
+    size=N*K
+
+    for n in xrange(0,N):
+        for k in xrange(0,K):
+            index=n*K+k
+            if yDiff[index,0]>0:
+                sum+=LOSS_WEIGHTS[k]*yDiff[index,0]
+            else:
+                sum-=LOSS_WEIGHTS[k]*yDiff[index,0] # adding absolute diff
+
+    return sum;
 
 def write_label(fileptr, y):
     K= y[2]
