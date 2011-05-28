@@ -27,6 +27,11 @@ global OBJECT_MAP_FILE
 LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
+# default options
+LOSS_METHOD = "micro"
+LEARN_METHOD = "objassoc"
+OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
+CLASSIFY_METHOD  = "sum1.IP"
 
 
 def get_C_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K ):
@@ -119,12 +124,13 @@ def parse_parameters(sparm):
     LEARN_METHOD = "objassoc"
     OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
     for i in xrange(0,len(sparm.argv)/2):
-        print i,  len(sparm.argv)/2
+        #print i,  len(sparm.argv)/2
         opt = temp_arg_list.pop(0)
         val = temp_arg_list.pop(0)
         if(opt == "--l"):
             LOSS_METHOD = val
         if(opt == "--lm"):
+            #print "setting lm to ", val
             LEARN_METHOD = val
         if(opt == "--omf"):
             OBJECT_MAP_FILE = val
@@ -137,14 +143,12 @@ def parse_parameters_classify(attribute, value):
     global LOSS_METHOD
     global OBJECT_MAP_FILE
     # set default values
-    LOSS_METHOD = "micro"
-    LEARN_METHOD = "objassoc"
-    OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
-    CLASSIFY_METHOD  = "sum1.IP"
+    #print attribute, value
     if(attribute == "--l"):
         LOSS_METHOD = value
     if(attribute == "--lm"):
         LEARN_METHOD = value
+        #print "setting lm to ", LEARN_METHOD
     if(attribute == "--omf"):
         OBJECT_MAP_FILE = value
     if(attribute == "--cm"):
@@ -161,6 +165,7 @@ def read_examples(filename,sparm):
     global LEARN_METHOD
     global OBJECT_MAP_FILE
     print sparm
+    print LEARN_METHOD
     # Helper function for reading from files.
     def line_reader(lines):
         # returns only non-empty lines
@@ -358,6 +363,7 @@ def read_examples(filename,sparm):
     LOSS_WEIGHTS = zeros(K)
 
     # finding loss weights for training for optmized macro
+	# these need to be divided by N(scene specific) to get the weights
     hsum=0
     for l in xrange(0,K):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
@@ -365,9 +371,13 @@ def read_examples(filename,sparm):
         
     for l in xrange(0,K):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
-            LOSS_WEIGHTS[l]=1.0/(hsum*N*class_counts[l])
+            LOSS_WEIGHTS[l]=1.0/(hsum*class_counts[l])
         else:
-            LOSS_WEIGHTS[l]=1.0/(N*K)
+            LOSS_WEIGHTS[l]=1.0/(K)
+
+
+        print LOSS_WEIGHTS[l]
+        print class_counts[l]
         
     
     # #print out some very useful statistics.
@@ -1801,9 +1811,9 @@ def lp_training_qpbo_macro(X,Y,sm,sparm):
     for index in xrange(0,N*K):
         classt=index%K
         if(y[index,0] == 1):
-            coeff_list[index] = coeff_list[index]-(1.0*LOSS_WEIGHTS[classt])
+            coeff_list[index] = coeff_list[index]-(1.0*LOSS_WEIGHTS[classt]/N)
         else:
-            coeff_list[index] = coeff_list[index]+(1.0*LOSS_WEIGHTS[classt])
+            coeff_list[index] = coeff_list[index]+(1.0*LOSS_WEIGHTS[classt]/N)
 
 
     for index in xrange(0,N*K):
