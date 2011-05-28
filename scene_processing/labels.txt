@@ -123,3 +123,4 @@ cupboardTop
 printerTray
 fridgeSide
 ambigousInSingleFrame
+heatingPipe

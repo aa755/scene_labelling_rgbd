@@ -835,7 +835,7 @@ void get_convex_regions (map <int , vector <int> > &neighbor_map, std::map<int,i
  
 }
 **/
-int NUM_ASSOCIATIVE_FEATS=4+31;
+int NUM_ASSOCIATIVE_FEATS=4+31+1;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
@@ -866,11 +866,12 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral)); addToEdgeHeader ("Coplanarity");
         
 
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));addToEdgeHeader ("convexity");
+
         assert(edge_features[seg2_id].size ()==NUM_ASSOCIATIVE_FEATS);
         
         //here goes the non-associative features
         
-        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));addToEdgeHeader ("convexity");
         
         edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));addToEdgeHeader ("centroid_horz_diff");
         // difference in z coordinates of the centroids

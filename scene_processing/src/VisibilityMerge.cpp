@@ -47,7 +47,7 @@ typedef pcl::PointXYZRGBNormal PointT;
 using namespace std;
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 
-bool detectOcclusion=true;
+bool detectOcclusion=false;
 int
 main(int argc, char** argv)
 {
@@ -295,12 +295,13 @@ main(int argc, char** argv)
                                 //visible but occluded by some point in same frame
                                 if(occluded)
                                 {
-                                    std::cerr<<"occlusion repudiation detected "<<numOcclRepudiated++ <<" pcl no:"<< pcl_count<<std::endl;
+                                   // std::cerr<<"occlusion repudiation detected "<<numOcclRepudiated++ <<" pcl no:"<< pcl_count<<std::endl;
                                     break;
                                 }
                                 else
-                                    std::cerr<<"occlusion detected "<<numOccluded++ <<" pcl no:"<< pcl_count<<std::endl;
-
+                                {
+                                   // std::cerr<<"occlusion detected "<<numOccluded++ <<" pcl no:"<< pcl_count<<std::endl;
+                                }
                             }
                         }
                     }

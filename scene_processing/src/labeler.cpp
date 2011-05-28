@@ -388,7 +388,7 @@ boost::recursive_mutex global_mutex;
     {
         cout<<"not assigned a label yet\n";
     }
-    else if(conf.skip_labeled&&labels.at(curLabel-1).compare (conf.no_skip_label)!=0)
+    else if(curLabel>0 && conf.skip_labeled&&labels.at(curLabel-1).compare (conf.no_skip_label)!=0)
       return false;
     else
     {
