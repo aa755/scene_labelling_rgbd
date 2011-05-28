@@ -1378,7 +1378,7 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
     return ymax
 
 
-def lp_inference_qbpo_sum1_IP(X,sm,sparm):
+def lp_inference_qbpo(X,sm,sparm):
 
     start = time.clock()
 
@@ -1463,29 +1463,10 @@ def lp_inference_qbpo_sum1_IP(X,sm,sparm):
     labeling = asmatrix(array([labellist]))
     #print labeling.T
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
-    c1 = 0
-    c0= 0
-    ch =0
-    cr = 0
-    for c in lp.cols:
-        if (c.primal == 1):
-            c1 += 1
-        elif(c.primal ==0):
-            c0 += 1
-        elif (c.primal == 0.5):
-            ch += 1
-        else:
-            cr +=1
-    #print 'number of 1s: %d' % c1
-    #print 'number of 0s: %d' % c0
-    #print 'number of 0.5s: %d' % ch
-    #print 'number of 0s: %d' % cr
-    score = asarray((w_mat*x*ymax[0]).todense())[0][0];
-    score2 = 0#sm.svm_model.classify(psi(x,ymax,sm,sparm))
-    #print "objective value = ", round(lp.obj.value,2)
-    #print '\n score : ' , round(score,2), ' score2: ',score2;
-    if(lp.obj.value  > 1.1):
-      assert (round(lp.obj.value,2) ==  round(score,2))
+  
+
+    #score = asarray((w_mat*x*ymax[0]).todense())[0][0];
+    
     return ymax
 
 
