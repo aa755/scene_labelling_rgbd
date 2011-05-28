@@ -27,6 +27,11 @@ global OBJECT_MAP_FILE
 LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
+# default options
+LOSS_METHOD = "micro"
+LEARN_METHOD = "objassoc"
+OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
+CLASSIFY_METHOD  = "sum1.IP"
 
 
 def get_C_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K ):
@@ -119,12 +124,13 @@ def parse_parameters(sparm):
     LEARN_METHOD = "objassoc"
     OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
     for i in xrange(0,len(sparm.argv)/2):
-        print i,  len(sparm.argv)/2
+        #print i,  len(sparm.argv)/2
         opt = temp_arg_list.pop(0)
         val = temp_arg_list.pop(0)
         if(opt == "--l"):
             LOSS_METHOD = val
         if(opt == "--lm"):
+            #print "setting lm to ", val
             LEARN_METHOD = val
         if(opt == "--omf"):
             OBJECT_MAP_FILE = val
@@ -137,14 +143,12 @@ def parse_parameters_classify(attribute, value):
     global LOSS_METHOD
     global OBJECT_MAP_FILE
     # set default values
-    LOSS_METHOD = "micro"
-    LEARN_METHOD = "objassoc"
-    OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
-    CLASSIFY_METHOD  = "sum1.IP"
+    #print attribute, value
     if(attribute == "--l"):
         LOSS_METHOD = value
     if(attribute == "--lm"):
         LEARN_METHOD = value
+        #print "setting lm to ", LEARN_METHOD
     if(attribute == "--omf"):
         OBJECT_MAP_FILE = value
     if(attribute == "--cm"):
@@ -161,6 +165,7 @@ def read_examples(filename,sparm):
     global LEARN_METHOD
     global OBJECT_MAP_FILE
     print sparm
+    print LEARN_METHOD
     # Helper function for reading from files.
     def line_reader(lines):
         # returns only non-empty lines
