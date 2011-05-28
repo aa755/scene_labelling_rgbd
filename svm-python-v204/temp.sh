@@ -22,8 +22,11 @@ do
 
 #ls -rtlh fold$i/imodels/*.c4.* | tail -1
 #ls -rtlh fold$i/models/*
-echo "out.sum1.model.w4.c0.001.e0.01.assoc"> fold$i/lastout.txt
-#echo $i 
+#echo "out.sum1.model.w4.c0.001.e0.01.assoc"> fold$i/lastout.txt
+echo $i 
+cat fold$i/train$i
+echo "----"
+cat fold$i/test$i
 
 done
 
