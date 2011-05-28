@@ -368,7 +368,7 @@ def read_examples(filename,sparm):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
             LOSS_WEIGHTS[l]=1.0/(hsum*class_counts[l])
         else:
-            LOSS_WEIGHTS[l]=1.0/(*K)
+            LOSS_WEIGHTS[l]=1.0/(K)
 
 
         print LOSS_WEIGHTS[l]
