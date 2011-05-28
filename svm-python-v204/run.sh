@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #method=sum1.IP
-lmethod=assoc
+lmethod=objassoc
 cmethod=sum1.IP
-c=0.1
+c=0.001
 e=0.01
 pid=(0 0 0 0)
 for i in `seq 1 4`
@@ -20,7 +20,7 @@ echo "out.$method.$modelFile" >> fold$i/lastout.txt
 #mkdir fold$i/models
 #mkdir fold$i/imodels
 #mkdir fold$i/pred
-sh runsvm.sh $c $e $i $modelFile $modelFolder $suffix $cmethod &
+sh runsvm.sh $c $e $i $modelFile $modelFolder $suffix $cmethod $lmethod &
 p=$!
 pid[$i]=$p
 #sleep 60
