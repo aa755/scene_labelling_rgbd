@@ -364,7 +364,7 @@ def read_examples(filename,sparm):
 
     # finding loss weights for training for optmized macro
 	# these need to be divided by N(scene specific) to get the weights
-    hsum=0
+    hsum=0.0
     for l in xrange(0,K):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
             hsum+=(1.0/class_counts[l])
@@ -2107,9 +2107,9 @@ def loss_macro(Y, Ybar, sparm):
         for k in xrange(0,K):
             index=n*K+k
             if yDiff[index,0]>0:
-                sum+=LOSS_WEIGHTS[k]*yDiff[index,0]
+                sum+=LOSS_WEIGHTS[k]*yDiff[index,0]/N
             else:
-                sum-=LOSS_WEIGHTS[k]*yDiff[index,0] # adding absolute diff
+                sum-=LOSS_WEIGHTS[k]*yDiff[index,0]/N # adding absolute diff
 
     return sum;
 
