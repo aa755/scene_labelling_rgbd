@@ -358,6 +358,7 @@ def read_examples(filename,sparm):
     LOSS_WEIGHTS = zeros(K)
 
     # finding loss weights for training for optmized macro
+	# these need to be divided by N(scene specific) to get the weights
     hsum=0
     for l in xrange(0,K):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
@@ -365,9 +366,13 @@ def read_examples(filename,sparm):
         
     for l in xrange(0,K):
         if(class_counts[l]!=0): # in treaining time, none of this shoule be 0, it nis
-            LOSS_WEIGHTS[l]=1.0/(hsum*N*class_counts[l])
+            LOSS_WEIGHTS[l]=1.0/(hsum*class_counts[l])
         else:
-            LOSS_WEIGHTS[l]=1.0/(N*K)
+            LOSS_WEIGHTS[l]=1.0/(*K)
+
+
+        print LOSS_WEIGHTS[l]
+        print class_counts[l]
         
     
     # #print out some very useful statistics.
@@ -1801,9 +1806,9 @@ def lp_training_qpbo_macro(X,Y,sm,sparm):
     for index in xrange(0,N*K):
         classt=index%K
         if(y[index,0] == 1):
-            coeff_list[index] = coeff_list[index]-(1.0*LOSS_WEIGHTS[classt])
+            coeff_list[index] = coeff_list[index]-(1.0*LOSS_WEIGHTS[classt]/N)
         else:
-            coeff_list[index] = coeff_list[index]+(1.0*LOSS_WEIGHTS[classt])
+            coeff_list[index] = coeff_list[index]+(1.0*LOSS_WEIGHTS[classt]/N)
 
 
     for index in xrange(0,N*K):
