@@ -43,6 +43,11 @@ rm runinfo
 echo "description: $descrip" >> runinfo
 echo "method : $method" >> runinfo
 echo "loss: $loss" >> runinfo
+
+echo "errors:" >> runinfo
+cat errfile >> runinfo
+rm errfile
+
 echo "" >> runinfo
 echo "~~~~~~~~~~~~~~~" >> runinfo
 echo "" >> runinfo
