@@ -67,6 +67,7 @@ for $c (@C)
     #print "\n$line\n";
     $line =~ s/(prec:  )(.*)( recall:  )(.*)( tp:  )(.*)(  pc:  )(.*)( tc:  )(.*)/\1/; 
      #print "$2,$4,$6,$8,$10\n";
+    if ($line eq ""){print "WARN: fold $i not present\n";}
     $pr{$i} = $2;
     $rc{$i} = $4;
     $tp{$i} = $6;
@@ -83,6 +84,7 @@ for $c (@C)
      $rest = $3;
      #print "\n$rest\n";
      $rest =~ s/(  prec:  )(.*)(  recall:  )(.*)(  tp:  )(.*)(  tc:  )(.*)(  pc:  )(.*)/\1/; 
+     
      #print "$2,$4,$6,$8,$10\n";
      $lpr{$i}{$label} = $2;
      $lrc{$i}{$label} = $4;
