@@ -59,6 +59,8 @@ for $c (@C)
   for ( $i = 1; $i<= 4; $i++) 
   {
 	print "outputfile=fold$i/pred/$outFile\n";
+    $ls = `ls -l fold$i/pred/$outFile`;
+    print "$ls\n";
     $line =  `grep "^prec: " fold$i/pred/$outFile`   ;
     chomp ($line);
 
