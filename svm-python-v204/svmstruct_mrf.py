@@ -1146,13 +1146,13 @@ def lp_inference_sum1_IP(X,sm,sparm):
             c.kind=int
 
 
-    retval=lp.integer(tm_lim=180000)
+    retval=lp.integer(tm_lim=1800000)
 
 
     MIPFin = time.clock()
     print "Time for MIP:", (MIPFin-lpFin)
 
-    assert retval == None
+    assert retval == None or retval == tmlim
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
