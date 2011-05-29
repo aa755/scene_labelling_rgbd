@@ -178,7 +178,7 @@ def read_examples(filename,sparm):
     # read the object label map file
 
     objMapList = [line.split() for line in line_reader(file(OBJECT_MAP_FILE))]
-    
+    #print objMapList
     #################
     """Parses an input file into an example sequence."""
     # This reads example files of the type read by SVM^multiclass.
@@ -1146,7 +1146,7 @@ def lp_inference_sum1_IP(X,sm,sparm):
             c.kind=int
 
 
-    retval=lp.integer()
+    retval=lp.integer(tm_lim=180000)
 
 
     MIPFin = time.clock()

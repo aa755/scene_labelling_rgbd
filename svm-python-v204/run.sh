@@ -1,8 +1,10 @@
 #!/bin/bash
-
+descrip="info about the data"
 #method=sum1.IP
+loss=micro
 lmethod=objassoc
 cmethod=sum1.IP
+objmapfile="/opt/ros/unstable/stacks/svm-python-v204/home_objectMap.txt"
 c=0.001
 e=0.01
 pid=(0 0 0 0)
@@ -20,7 +22,7 @@ echo "out.$method.$modelFile" >> fold$i/lastout.txt
 #mkdir fold$i/models
 #mkdir fold$i/imodels
 #mkdir fold$i/pred
-sh runsvm.sh $c $e $i $modelFile $modelFolder $suffix $cmethod $lmethod &
+sh runsvm.sh $c $e $i $modelFile $modelFolder $suffix $cmethod $lmethod $loss $objmapfile &
 p=$!
 pid[$i]=$p
 #sleep 60
@@ -36,4 +38,22 @@ echo "processes completed!"
 perl ../get_avg_pr.pl out.$cmethod.$modelFile > avg_pr.$cmethod.$modelFile
 method=$suffix.$cmethod
 perl ../get_confusion_matrix.pl out.$cmethod.$modelFile $method  > confusionM.$method
- 
+
+rm runinfo
+echo "description: $descrip" >> runinfo
+echo "method : $method" >> runinfo
+echo "loss: $loss" >> runinfo
+echo "" >> runinfo
+echo "~~~~~~~~~~~~~~~" >> runinfo
+echo "" >> runinfo
+echo "" >> runinfo
+cat avg_pr.$cmethod.$modelFile >> runinfo
+echo "" >> runinfo
+echo "~~~~~~~~~~~~~~~" >> runinfo
+echo "" >> runinfo
+echo "" >> runinfo
+cat confusionM.$method >> runinfo
+
+scp runinfo fox.cs.cornell.edu:~/
+ssh fox.cs.cornell.edu "cat runinfo | mail -s "$method" hema.swetha@gmail.com"
+ssh fox.cs.cornell.edu "cat runinfo | mail -s "$method" aa755@cs.cornell.edu"
