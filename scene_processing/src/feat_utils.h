@@ -96,6 +96,30 @@ cvReleaseImage (&image);
 
     
   }
+  void saveImage(std::string filename)
+  {
+  CvSize size;
+  size.height=480;
+  size.width=640;
+  IplImage * image = cvCreateImage ( size, IPL_DEPTH_32F, 3 );
+  
+          pcl::PointXYZRGB tmp;
+  for(int x=0;x<size.width;x++)
+    for(int y=0;y<size.height;y++)
+      {
+        int index=x+y*size.width;
+        tmp= RGBDSlamFrame->points[index];
+        ColorRGB tmpColor(tmp.rgb);
+        CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
+        CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
+      }
+          
+
+HOG::saveFloatImage ( filename.data(), image );
+cvReleaseImage (&image);
+  }
+  
   OriginalFrameInfo(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr RGBDSlamFrame_)
   {
     cameraTransSet=false;

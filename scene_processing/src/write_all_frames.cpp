@@ -73,10 +73,20 @@ vector<OriginalFrameInfo*> originalFrames;
     
     vector<pcl::PointCloud<PointT>::Ptr> outClouds;
     vector<TransformG> outTrans;
+          string base(argv[1]);
+          bool first=true;
+          TransformG prevCam;
     for(size_t i=0;i<originalFrames.size ();i++)
       {
         if(!originalFrames[i]->isEmpty ())
           {
+            if(!first&&prevCam.isOverlapSignificant(originalFrames[i]->getCameraTrans()))
+            {
+//                cerr<<"overlap rejected";
+                continue;
+            }
+            first=false;
+            originalFrames[i]->saveImage(boost::lexical_cast<std::string>(i)+"_"+base+".png");
                 pcl::PointCloud<PointT>::Ptr cloud_temp (new pcl::PointCloud<PointT> ());
                 findlabel (cloudUntransformed,*originalFrames[i]->RGBDSlamFrame,temp1,originalFrames[i]->getCameraTrans ().getOrigin (),i);
                 
@@ -86,11 +96,11 @@ vector<OriginalFrameInfo*> originalFrames;
                 globalTransform.transformPointCloudInPlaceAndSetOrigin (*cloud_temp);
                 outClouds.push_back (cloud_temp);
                 outTrans.push_back(originalFrames[i]->getCameraTrans());
+                prevCam=originalFrames[i]->getCameraTrans();
           }
       }
    //   pcl::PCDWriter writer;
 
-      string base(argv[1]);
     for(size_t i=0;i<outClouds.size ();i++)
       writeToBag ( boost::lexical_cast<std::string>(i)+"_"+base+".bag",*outClouds[i],outTrans[i]);
    //   writer.write ( boost::lexical_cast<std::string>(i)+"_"+base,*outClouds[i], true);

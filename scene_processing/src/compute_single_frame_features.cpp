@@ -741,7 +741,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =1.0;
+   float tolerance =0.6;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -1258,7 +1258,7 @@ float get_occupancy_feature(const pcl::PointCloud<PointT> &cloud1, const pcl::Po
 		normalsOut.push_back(avgNormal);
 	}
 } */
-int NUM_ASSOCIATIVE_FEATS=4+31;
+int NUM_ASSOCIATIVE_FEATS=4+31+1;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
@@ -1288,12 +1288,12 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
 
         edge_features[seg2_id].push_back(segment1Spectral.getCoplanarity (segment2Spectral)); addToEdgeHeader ("Coplanarity");
         
+        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));addToEdgeHeader ("convexity");
 
         assert(edge_features[seg2_id].size ()==NUM_ASSOCIATIVE_FEATS);
         
         //here goes the non-associative features
         
-        edge_features[seg2_id].push_back(segment1Spectral.getConvexity (segment2Spectral,distance_matrix[make_pair(segment_id,seg2_id)] ));addToEdgeHeader ("convexity");
         
         edge_features[seg2_id].push_back(segment1Spectral.getHorzDistanceBwCentroids (segment2Spectral));addToEdgeHeader ("centroid_horz_diff");
         // difference in z coordinates of the centroids
