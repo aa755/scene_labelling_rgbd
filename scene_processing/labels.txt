@@ -124,3 +124,6 @@ printerTray
 fridgeSide
 ambigousInSingleFrame
 heatingPipe
+tableEdge
+sofaTop
+bookSide
