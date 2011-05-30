@@ -2118,8 +2118,8 @@ def write_label(fileptr, y):
     N = y[1]
     for node in xrange(0,N):
         for label in xrange(0,K):
-            if(y[0][node*K+label,0] == 1):
-                s = repr(node+1)+':'+repr(label+1)
+            if(y[0][node*K+label,0] != 0):
+                s = repr(node+1)+':'+repr(label+1)+':'y[0][node*K+label,0]
                 print>>fileptr,s,
     print>>fileptr
 
