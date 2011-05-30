@@ -59,6 +59,6 @@ echo "" >> runinfo
 echo "" >> runinfo
 cat confusionM.$method >> runinfo
 
-scp runinfo fox.cs.cornell.edu:~/
-ssh fox.cs.cornell.edu "cat runinfo | mail -s "$method" hema.swetha@gmail.com"
-ssh fox.cs.cornell.edu "cat runinfo | mail -s "$method" aa755@cs.cornell.edu"
+scp runinfo lion.cs.cornell.edu:~/
+ssh lion.cs.cornell.edu "cat runinfo | mail -s "$method" hema.swetha@gmail.com"
+ssh lion.cs.cornell.edu "cat runinfo | mail -s "$method" aa755@cs.cornell.edu"
