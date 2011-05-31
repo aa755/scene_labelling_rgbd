@@ -1140,7 +1140,7 @@ def lp_inference_sum1_IP(X,sm,sparm):
     print "Time for LP:", (lpFin-start)
 
     assert retval == None
-    
+    labeling = asmatrix(array([c.primal for c in lp.cols]))
     for c in lp.cols:      # Iterate over all columns
         if (c.index < N*K) :
             c.kind=int
@@ -1156,7 +1156,8 @@ def lp_inference_sum1_IP(X,sm,sparm):
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val
-    labeling = asmatrix(array([c.primal for c in lp.cols]))
+    if(retval == None):
+        labeling = asmatrix(array([c.primal for c in lp.cols]))
     #print labeling.T
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
     c1 = 0
