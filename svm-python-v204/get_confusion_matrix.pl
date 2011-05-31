@@ -1,5 +1,5 @@
 $labelmapfile = 'labelmap.txt';
-$labelsfile = '/opt/ros/unstable/stacks/scene_processing/labels.txt';
+$labelsfile = '../../scene_processing/labels.txt';
 #$outFile=`cat fold$i/lastout.txt`;
 $outFile = shift;
 $method= shift;
