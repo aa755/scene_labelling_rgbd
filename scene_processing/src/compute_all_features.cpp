@@ -1,5 +1,6 @@
 #include"feat_utils.h"
 
+bool UseVolFeats=false;
 vector<OriginalFrameInfo*> originalFrames;
 
     pcl::PointCloud<PointT> cloudUntransformed;
@@ -290,7 +291,7 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
 
 void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
-   float tolerance =0.6;
+   float tolerance =0.9;
 // get distance matrix
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
@@ -891,7 +892,10 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));addToEdgeHeader ("Innerness");
     
         // occupancy fraction feature
-        edge_features[seg2_id].push_back(get_occupancy_feature( *(segment1Spectral.cloudPtr), *(segment2Spectral.cloudPtr), tree ) );addToEdgeHeader ("Occupancy");
+        if(UseVolFeats)
+        {
+                edge_features[seg2_id].push_back(get_occupancy_feature( *(segment1Spectral.cloudPtr), *(segment2Spectral.cloudPtr), tree ) );addToEdgeHeader ("Occupancy");
+        }
         
 // this line should be in the end
         addEdgeHeader=false;
@@ -981,10 +985,13 @@ int main(int argc, char** argv) {
       originalFrames[i]->applyPostGlobalTrans (globalTransform);
     
     // call buildOctoMap here
-    OcTreeROS tree(0.01);
-    OcTreeROS::NodeType* treeNode;
-    buildOctoMap(cloud,  tree);  
-      
+        OcTreeROS tree(0.01);
+    if(UseVolFeats)
+    {
+        OcTreeROS::NodeType* treeNode;
+        buildOctoMap(cloud,  tree);  
+    }
+    
     if(SHOW_CAM_POS_IN_VIEWER)
       {
       ColorHandlerPtr color_handler;

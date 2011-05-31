@@ -303,9 +303,9 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         VectorG orig1=getOrigin();
         VectorG orig2=other.getOrigin();
         VectorG disp=orig1.subtract(orig2);
-        if(disp.getNormSqr()>0.4) // if the camera moved by more than 40 cm
+        if(disp.getNormSqr()>0.5) // if the camera moved by more than 40 cm
             return false;
-        double angle=30;
+        double angle=34;
         double cosTurn=fabs(getZUnitVector().dotProduct(other.getZUnitVector()));
         std::cerr<<"turn by"<<cosTurn<<std::endl;
         if(cosTurn<cos(angle*PI/180.0)) //if the camera turned by more than "angle"

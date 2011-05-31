@@ -33,6 +33,7 @@ namespace lapack= boost::numeric::bindings::lapack;
 #include "pcl_visualization/pcl_visualizer.h"
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
+#include "time.h"
 
 #include <octomap/octomap.h>
 #include <octomap_ros/OctomapROS.h>
@@ -45,6 +46,7 @@ using namespace octomap;
 
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
+bool UseVolFeats=false;
 
 using namespace pcl;
 class OriginalFrameInfo
@@ -1313,8 +1315,11 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         edge_features[seg2_id].push_back(segment1Spectral.getInnerness (segment2Spectral));addToEdgeHeader ("Innerness");
     
         // occupancy fraction feature
-        edge_features[seg2_id].push_back(get_occupancy_feature( *(segment1Spectral.cloudPtr), *(segment2Spectral.cloudPtr), tree ) );addToEdgeHeader ("Occupancy");
-        
+   if(UseVolFeats)
+        {
+                edge_features[seg2_id].push_back(get_occupancy_feature( *(segment1Spectral.cloudPtr), *(segment2Spectral.cloudPtr), tree ) );addToEdgeHeader ("Occupancy");
+        }
+             
 // this line should be in the end
         addEdgeHeader=false;
     }
@@ -1402,10 +1407,12 @@ int main(int argc, char** argv) {
     
 
     
-    // call buildOctoMap here
-    OcTreeROS tree(0.01);
-    OcTreeROS::NodeType* treeNode;
-    buildOctoMap(cloud,  tree);  
+        OcTreeROS tree(0.01);
+    if(UseVolFeats)
+    {
+        OcTreeROS::NodeType* treeNode;
+        buildOctoMap(cloud,  tree);  
+    }
       
 
 
@@ -1465,9 +1472,15 @@ int main(int argc, char** argv) {
     }
     map< pair <int,int> , float > distance_matrix;
     map <int , vector <int> > neighbor_map;
+    cerr<<"computing neighbores"<<endl;
+    clock_t start_time=clock();
     get_neighbors ( segment_clouds, distance_matrix, neighbor_map );
+    clock_t elapsed=clock()-start_time;
+    cerr<<"computing neighbores"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
 
+//    cerr<<"done adding wall distance features"<<endl;
 
+   
     // for each segment compute node featuers
     int num_bin_shape = 3;
     map < int , vector<float> > features;
@@ -1487,7 +1500,14 @@ int main(int argc, char** argv) {
           addNodeHeader=false;
 
     }
+    cerr<<"adding wall distance features"<<endl;
+    start_time=clock();
     add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
+    elapsed=clock()-start_time;
+    cerr<<"time for computing wall"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
+
+    cerr<<"done adding wall distance features"<<endl;
+    
   //  vector<pcl::Normal> cloud_normals;
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
