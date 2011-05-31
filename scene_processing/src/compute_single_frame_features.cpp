@@ -545,6 +545,7 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
        outcloud.points.clear ();
 }
 
+int MIN_SEG_SIZE=10;
 /** it also discards unlabeled segments
  */
 void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment,SpectralProfile & feats) {
@@ -581,15 +582,16 @@ void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl:
     }
     
    // cout<<j << ","<<segment<<endl;
-    if(j>=0)
+    if(j>=MIN_SEG_SIZE)
+    {
         outcloud.points.resize ( j+1 );
+            OriginalFrameInfo::findHog ( indices, incloud, feats.avgHOGFeatsOfSegment,originalFrame);
+    }
     else
       {
         outcloud.points.clear ();
         return;
       }
-    int max=-1;
-    OriginalFrameInfo::findHog ( indices, incloud, feats.avgHOGFeatsOfSegment,originalFrame);
     
 }
 
@@ -1336,7 +1338,7 @@ void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector
     }
 }
 
-
+int counts[640*480];
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
     int scene_num = atoi(argv[2]);
@@ -1353,7 +1355,8 @@ int main(int argc, char** argv) {
 
     // read the pcd file
 
-
+    for(int i=0;i<640*480;i++)
+        assert(counts[i]==0);
     
     // convert to templated message type
 
@@ -1426,8 +1429,10 @@ int main(int argc, char** argv) {
     // get segments
 
     // find the max segment number
+    
     int max_segment_num = 0;
     for (size_t i = 0; i < cloud.points.size(); ++i) {
+        counts[cloud.points[i].segment]++;
         if (max_segment_num < cloud.points[i].segment) {
             max_segment_num = (int) cloud.points[i].segment;
         }
@@ -1438,6 +1443,8 @@ int main(int argc, char** argv) {
     int index_ = 0;
     vector<SpectralProfile> spectralProfiles;
     for (int seg = 1; seg <= max_segment_num; seg++) {
+        if(counts[seg]<=MIN_SEG_SIZE)
+            continue;
         //vector<float> features;
         //int label;
         //segment_indices->indices.clear();
@@ -1459,7 +1466,7 @@ int main(int argc, char** argv) {
         apply_segment_filter_and_compute_HOG (*cloud_ptr,*cloud_seg,seg,temp);
         
         //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
-        if (!cloud_seg->points.empty () && cloud_seg->points.size() > 10  && cloud_seg->points[1].label != 0) {
+        if (!cloud_seg->points.empty () && cloud_seg->points.size() > MIN_SEG_SIZE  && cloud_seg->points[1].label != 0) {
          //std::cout << seg << ". Cloud size after extracting : " << cloud_seg->points.size() << std::endl;
 			segment_clouds.push_back(*cloud_seg);
                         pcl::PointCloud<PointT>::Ptr tempPtr(new pcl::PointCloud<PointT > (segment_clouds[segment_clouds.size()-1]));

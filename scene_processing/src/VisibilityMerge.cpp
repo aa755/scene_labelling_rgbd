@@ -47,7 +47,7 @@ typedef pcl::PointXYZRGBNormal PointT;
 using namespace std;
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 
-bool detectOcclusion=false;
+bool detectOcclusion=true;
 int
 main(int argc, char** argv)
 {
