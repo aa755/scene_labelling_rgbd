@@ -1,9 +1,13 @@
 $predfile = shift;
-$labelfile = shift;
-$testfile = shift;
-$data = shift;
+$labelfile = "labelmap.txt";
+$fold = shift;
+$data = "fold$fold";
+$testfile = "$data/test$fold";
+
+$predfile = "$data/pred/$predfile";
 
 %labels = ();
+
 open(F,$labelfile);
 while(<F>){
   chomp();
@@ -60,11 +64,11 @@ while(<F>){
   
   for $p (@a)
   {
-    ($segnum,$label) = split/:/,$p;
+    ($segnum,$label,@r) = split/:/,$p;
     print "$segnum,$label\n";
      $segid = $segmap{$sn}{$segnum}; 
     $map{$sn}{$segid} = $labels{$label};
-    print "$count\t$sn\t$segnum\t$segid\t$label\n";
+    print "c:$count\tsn:$sn\tsegn:$segnum\tsegid:$segid\tl:$label\n";
   }
 }
 close(F);
