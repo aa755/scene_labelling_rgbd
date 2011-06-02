@@ -1535,7 +1535,8 @@ def lp_inference_qbpo(X,sm,sparm):
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
   
     Fin = time.clock()
-    print "Time for LP:", (Fin-start)
+    print "Time for Qbpo:", (Fin-start)
+    sys.stdout.flush()
     #score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     
     return ymax
