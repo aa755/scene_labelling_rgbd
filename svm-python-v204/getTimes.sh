@@ -13,4 +13,5 @@ done
 echo "LP stats"
 cut -f 2 -d ':' LPtimes | sort -n | awk '{ s += $1 } END { print "sum: ", s, " average: ", s/NR, " samples: ", NR }'
 echo "MIP stats"
-cut -f 2 -d ':' MIPtimes | sort -n | awk '{ s += $1 } END { print "sum: ", s, " average: ", s/NR, " samples: ", NR }'
+cut -f 2 -d ':' MIPtimes | sort -n > MIPTimes.clean
+cat MIPTimes.clean | awk '{ s += $1 } END { print "sum: ", s, " average: ", s/NR, " samples: ", NR }'
