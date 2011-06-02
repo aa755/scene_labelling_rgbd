@@ -1,6 +1,8 @@
 """A module for SVM^python for multiclass MRF learning."""
 
 # Thomas Finley, tfinley@gmail.com
+
+import sys
 from numpy import random
 import time
 from operator import concat
@@ -226,6 +228,7 @@ def read_examples(filename,sparm):
     num_edge_feats=0
     num_ass_edge_feats = 0
 
+    start = time.clock()
 
     # Open the file and read each example.
     for input_file in file(filename):
@@ -261,7 +264,8 @@ def read_examples(filename,sparm):
     print 'number of edge features: ',num_edge_feats
     print 'number of associative features: ',num_ass_edge_feats
 
-
+    print 'time spent in preprocessing data files', start-time.clock()
+    
     # computing C matrix
     if (LEARN_METHOD == "objassoc"):
         C = get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objMapList)
@@ -1084,6 +1088,7 @@ def lp_inference_sum1(X,sm,sparm):
     lp.simplex()
     lpFin = time.clock()
     print "Time for LP:", (lpFin-start)
+    sys.stdout.flush()
   #  #print 'Z = %g;' % lp.obj.value,  # Retrieve and #print obj func value
    # #print '; '.join('%s = %g' % (c.name, c.primal) for c in lp.cols)
                        # #print struct variable names and primal val

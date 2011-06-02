@@ -1,6 +1,7 @@
 for i in `seq 1 4` 
 do
   grep "Setting"  fold$i/logs/log* | tail -1
+echo "fold$i "
 #  grep "^prec:"  fold$i/pred/out.c.1.e005.opt.infer.sum1 
 #  echo "train$i"
 #  grep "22"  fold$i/train$i
@@ -26,7 +27,8 @@ do
 #echo $i 
 #cat fold$i/train$i
 #echo "----"
-#cat fold$i/test$i
 
+#cp test$i fold$i/
+#cp train$i fold$i/
 done
 
