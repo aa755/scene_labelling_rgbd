@@ -63,4 +63,5 @@ rosbuild_add_executable (multiFramePCD2Bag src/pcd2bag.cpp)
 ##target_link_libraries ( pcl_kdtree pcl_surface)
 
 rosbuild_add_executable (combineVisibility src/VisibilityMerge.cpp)
+rosbuild_add_executable (bag2pcd src/bag2pcd.cpp)
 ##rosbuild_add_executable (combineNearestCam src/NearestCamMerge.cpp)
