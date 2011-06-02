@@ -929,31 +929,20 @@ void buildOctoMap(const pcl::PointCloud<PointT> &cloud,  OcTreeROS & tree)
 
 int main(int argc, char** argv) {
     int scene_num = atoi(argv[2]);
-    
-//    sensor_msgs::PointCloud2 cloud_blob;
-  pcl_ros::BAGReader reader;
-  char *topic = "/camera/rgb/points";
-  
-  if (!reader.open (argv[1], "/rgbdslam/my_clouds"))
-    {
-      cout << "Couldn't open RGBDSLAM topic" << (topic);
-      exit(-1);
-    }
-      rosbag::Bag bag;
-    std::cerr << "opening " << argv[1] << std::endl;
-       sensor_msgs::PointCloud2ConstPtr cloud_blob;
-       
-      cloud_blob = reader.getNextCloud ();
-      
+    sensor_msgs::PointCloud2 cloud_blob;
     pcl::PointCloud<PointT> cloud;
-    std::ofstream labelfile, nfeatfile;
+    std::ofstream labelfile, nfeatfile, efeatfile;
     
-//    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
+    if (pcl::io::loadPCDFile(argv[1], cloud_blob) == -1) {
+        ROS_ERROR("Couldn't read file test_pcd.pcd");
+        return (-1);
+    }
+    ROS_INFO("Loaded %d data points from test_pcd.pcd with the following fields: %s", (int) (cloud_blob.width * cloud_blob.height), pcl::getFieldsList(cloud_blob).c_str());
 
     
     // convert to templated message type
 
-    pcl::fromROSMsg(*cloud_blob, cloud);
+    pcl::fromROSMsg(cloud_blob, cloud);
 
     pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT > (cloud));
     
@@ -963,7 +952,6 @@ int main(int argc, char** argv) {
     std::vector<pcl::PointCloud<PointT> > segment_clouds;
     std::map<int,int>  segment_num_index_map;
     pcl::PointIndices::Ptr segment_indices(new pcl::PointIndices());
-    nfeatfile.open("data_nodefeats.txt",ios::app);
 
     // get segments
 
@@ -981,7 +969,9 @@ int main(int argc, char** argv) {
     //vector<SpectralProfile> spectralProfiles;
     for (it=myset.begin(); it!=myset.end(); it++) {
         apply_segment_filter_and_compute_HOG (*cloud_ptr,*cloud_seg,*it,temp);
-        nfeatfile<<scene_num<<"\t"<<*it<<"\t"<<cloud_seg->points[1].label<<"\t"<<cloud_seg->size()<<endl;
+        cerr<<*it<<"\t"<<cloud_seg->points[1].label<<"\t"<<cloud_seg->size()<<endl;
+        //if (label!=0) cout << "segment: "<< seg << " label: " << label << " size: " << cloud_seg->points.size() << endl;
     }
-    nfeatfile.close();
 }
+
+
