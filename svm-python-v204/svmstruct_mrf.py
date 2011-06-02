@@ -16,14 +16,17 @@ import glpk
 from bitarray import bitarray
 from graphcut import *
 
+
 global NUM_CLASSES
 global ITER
 global LP_LIST
 global LOSS_WEIGHTS
 global CLASSIFY_METHOD
 global LEARN_METHOD
+global ATTRIBUTE_METHOD
 global LOSS_METHOD
 global OBJECT_MAP_FILE
+global ATTRIBUTE_MAP_FILE
 LP_LIST= []
 ITER = 0
 NUM_CLASSES = 0
@@ -32,7 +35,8 @@ LOSS_METHOD = "micro"
 LEARN_METHOD = "objassoc"
 OBJECT_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/objectMap.txt"
 CLASSIFY_METHOD  = "sum1.IP"
-
+ATTRIBUTE_METHOD = "false"
+ATTRIBUTE_MAP_FILE = "/opt/ros/unstable/stacks/svm-python-v204/attributeMap.txt"
 
 def get_C_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K ):
     num_nonass_edge_feats = num_edge_feats - num_ass_edge_feats;
@@ -119,6 +123,8 @@ def parse_parameters(sparm):
     global LEARN_METHOD
     global LOSS_METHOD
     global OBJECT_MAP_FILE
+    global ATTRIBUTE_METHOD
+    global ATTRIBUTE_MAP_FILE
     # set default values
     LOSS_METHOD = "micro"
     LEARN_METHOD = "objassoc"
@@ -132,8 +138,13 @@ def parse_parameters(sparm):
         if(opt == "--lm"):
             #print "setting lm to ", val
             LEARN_METHOD = val
+        if(opt == "--am"):
+            print "setting am to ", val
+            ATTRIBUTE_METHOD = val
         if(opt == "--omf"):
             OBJECT_MAP_FILE = val
+        if(opt == "--amf"):
+            ATTRIBUTE_MAP_FILE = val
 
 
 def parse_parameters_classify(attribute, value):
@@ -142,6 +153,8 @@ def parse_parameters_classify(attribute, value):
     global LEARN_METHOD
     global LOSS_METHOD
     global OBJECT_MAP_FILE
+    global ATTRIBUTE_METHOD
+    global ATTRIBUTE_MAP_FILE
     # set default values
     #print attribute, value
     if(attribute == "--l"):
@@ -151,8 +164,12 @@ def parse_parameters_classify(attribute, value):
         #print "setting lm to ", LEARN_METHOD
     if(attribute == "--omf"):
         OBJECT_MAP_FILE = value
+    if(attribute == "--amf"):
+        ATTRIBUTE_MAP_FILE = value
     if(attribute == "--cm"):
         CLASSIFY_METHOD= value
+    if(attribute == "--am"):
+        ATTRIBUTE_METHOD= value
 
 
 def read_examples(filename,sparm):
@@ -164,6 +181,7 @@ def read_examples(filename,sparm):
     global LOSS_WEIGHTS
     global LEARN_METHOD
     global OBJECT_MAP_FILE
+    global ATTRIBUTE_METHOD
     print sparm
     print LEARN_METHOD
     # Helper function for reading from files.
@@ -180,6 +198,26 @@ def read_examples(filename,sparm):
     objMapList = [line.split() for line in line_reader(file(OBJECT_MAP_FILE))]
     #print objMapList
     #################
+
+    ################
+    # read the attribute label map file
+    attrMapList=[]
+    if(ATTRIBUTE_METHOD == "true"):
+        print "reading attrmap"
+        attrMapList = [line.split() for line in line_reader(file(ATTRIBUTE_MAP_FILE))]
+
+    #find max attribute
+    max_attribute = 0;
+    for attrL in attrMapList:
+        for a in attrL:
+            if(int(a) > max_attribute):
+                max_attribute = int(a);
+
+    print "max_attribute = ", max_attribute
+    print attrMapList
+    #################
+
+
     """Parses an input file into an example sequence."""
     # This reads example files of the type read by SVM^multiclass.
     examples = []
@@ -196,7 +234,7 @@ def read_examples(filename,sparm):
         # first line has the number of nodes and number of edges
         N = int(input[0][0].strip());
         E = int(input[0][1].strip());
-        K = int(input[0][2].strip());
+        K = int(input[0][2].strip()); 
         if (LEARN_METHOD == "objassoc"):
             num_ass_edge_feats =  int(input[0][3].strip());
         # find the max class and number of node features -- will work for sparse representation
@@ -215,6 +253,9 @@ def read_examples(filename,sparm):
                 if(num_edge_feats<int(k)):
                     num_edge_feats=int(k)
     max_target = K # use the max number of classes read from the file
+    if(ATTRIBUTE_METHOD == "true"):
+        max_target = max_attribute
+        K = max_attribute
     print 'number of classes: ', max_target
     print 'number of node features: ', num_node_feats
     print 'number of edge features: ',num_edge_feats
@@ -246,8 +287,14 @@ def read_examples(filename,sparm):
         edges = mat(zeros((E,2)))
         for i in xrange(0,N):
             target = int(input[i+1][0]);
-            class_counts[target-1]+=1
-            Yn[i*max_target+(target-1),0]=1
+            if(ATTRIBUTE_METHOD == "true"):
+                for attr in attrMapList[target-1]:
+                    print target,attr
+                    class_counts[int(attr)-1]+=1
+                    Yn[i*max_target+(int(attr)-1),0]=1
+            else:
+                class_counts[target-1]+=1
+                Yn[i*max_target+(target-1),0]=1
             # get the segment number
             node_map[int(input[i+1][1])] = i
 
@@ -274,9 +321,17 @@ def read_examples(filename,sparm):
         #Xe = mat(zeros((max_target*max_target*num_edge_feats,max_target*max_target*E)))
         Ye = mat(zeros((max_target*max_target*E,1)))
         for i in xrange(N,N+E):
-            target1 = int(input[i+1][0]);
-            target2 = int(input[i+1][1]);
-            Ye[(i-N)*max_target*max_target + (target1-1)*max_target+(target2-1)]=1
+            if(ATTRIBUTE_METHOD == "true"):
+                target1 = int(input[i+1][0]);
+                target2 = int(input[i+1][1]);
+                for attr1 in attrMapList[target1-1]:
+                    for attr2 in attrMapList[target2-1]:
+                        Ye[(i-N)*max_target*max_target + (int(attr1)-1)*max_target+(int(attr2)-1)]=1
+
+            else:
+                target1 = int(input[i+1][0]);
+                target2 = int(input[i+1][1]);
+                Ye[(i-N)*max_target*max_target + (target1-1)*max_target+(target2-1)]=1
             # get the segment numbers
             edges[i-N,0]= node_map[int(input[i+1][2])]
             edges[i-N,1]= node_map[int(input[i+1][3])]
@@ -1146,7 +1201,7 @@ def lp_inference_sum1_IP(X,sm,sparm):
             c.kind=int
 
 
-    retval=lp.integer(tm_lim=1800000)
+    retval=lp.integer(tm_lim=300000)
 
 
     MIPFin = time.clock()
@@ -1398,7 +1453,6 @@ def lp_inference_qbpo(X,sm,sparm):
     edge = X[1]
     E = edge.shape[0]
     N = X[2]
-
  ############ solve QBPO
     qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
     qpbo.add_node(N*K)
@@ -1475,7 +1529,8 @@ def lp_inference_qbpo(X,sm,sparm):
     #print labeling.T
     ymax = (csr_matrix(labeling.T,dtype='d'),N,K)
   
-
+    Fin = time.clock()
+    print "Time for LP:", (Fin-start)
     #score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     
     return ymax
@@ -1701,7 +1756,7 @@ def lp_training_qpbo(X,Y,sm,sparm):
     N = X[2]
     qpbo = QPBO(N*K,E*K*K)        # Create empty problem instance
     qpbo.add_node(N*K)
-
+    #print "N:",N," K: ", K
     x = X[0]
     #x = (X[0]).todense()
     w_list = [w[i] for i in xrange(0,x.shape[0])]
@@ -2078,7 +2133,7 @@ def loss_micro(Y, Ybar, sparm):
     K = Y[2]
     y= Y[0]
     
-   # #print N,K,y.shape[0],y.shape[1]
+    #print "N:",N," K: ", K #,y.shape[0],y.shape[1]
     ybar = Ybar[0] 
     yDiff=y- ybar;
     sum=0.0;
@@ -2163,6 +2218,7 @@ def evaluation_class_pr(Y,Ybar,K,N,sparm):
     predcount = zeros((K,1))
     tpcount = zeros((K,1))
     confusionMatrix=zeros((K,K))
+    singlepredcount = zeros((K,1))
     confusionMatrixWMultiple=zeros((K,K))
     multipleClasses=zeros((K,1))
     zeroClasses=zeros((K,1))
@@ -2191,12 +2247,13 @@ def evaluation_class_pr(Y,Ybar,K,N,sparm):
             multipleClasses[actualClass,0]+=1
         else:
             confusionMatrix[predClass,actualClass]+=1
+            singlepredcount[predClass,0] += 1;
     for label in xrange(0,K):
         if(predcount[label,0] != 0):
             prec[label,0] = tpcount[label,0]/float(predcount[label,0])
         if(truecount[label,0] !=0):
             recall[label,0] = tpcount[label,0]/float(truecount[label,0])
-    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple)
+    return (tpcount,truecount,predcount,confusionMatrix,zeroClasses,multipleClasses,confusionMatrixWMultiple,singlepredcount)
 
 def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
     y = Y[0]
@@ -2319,22 +2376,19 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
 
     On the first call, that is, when exnum==0, teststats==None.  The
     default behavior is that the function does nothing."""
+    global ATTRIBUTE_METHOD
     if exnum==0: teststats = []
     #print 'on example',exnum,'predicted',ypred[0].T,'where correct is',y[0].T
     #print 'loss is',evaluation_loss(y, ypred, sm.num_classes , x[2], sparm)
     #teststats.append(evaluation_loss(y, ypred, sm.num_classes , x[2], sparm))
-    teststats.append(evaluation_class_pr_sum1(y, ypred, sm.num_classes , x[2], sparm))
+    if(ATTRIBUTE_METHOD == "true"):
+        teststats.append(evaluation_class_pr(y, ypred, sm.num_classes , x[2], sparm))
+    else:
+        teststats.append(evaluation_class_pr_sum1(y, ypred, sm.num_classes , x[2], sparm))
     return teststats
 
 
-def print_testing_stats(sample, sm, sparm, teststats):
-    """#print statistics once classification has finished.
-
-    This is called after all test predictions are made to allow the
-    display of any summary statistics that have been accumulated in
-    the teststats object through use of the eval_prediction function.
-
-    The default behavior is that nothing is #printed."""
+def print_testing_stats_objects(sample, sm, sparm, teststats):
 
     avgp = zeros((sm.num_classes,1))
     avgr = zeros((sm.num_classes,1))
@@ -2386,3 +2440,71 @@ def print_testing_stats(sample, sm, sparm, teststats):
 
     print "num Multiples:"
     print aggMultiplePreds;
+
+def print_testing_stats_attributes(sample, sm, sparm, teststats):
+
+    avgp = zeros((sm.num_classes,1))
+    avgr = zeros((sm.num_classes,1))
+    tpcount = zeros((sm.num_classes,1))
+    truecount = zeros((sm.num_classes,1))
+    predcount = zeros((sm.num_classes,1))
+    singlepredcount = zeros((sm.num_classes,1))
+    aggConfusionMatrix=zeros((sm.num_classes,sm.num_classes),dtype='i')
+    aggConfusionMatrixWMultiple=zeros((sm.num_classes,sm.num_classes),dtype='i')
+    aggZeroPreds=zeros((sm.num_classes,1))
+    aggMultiplePreds=zeros((sm.num_classes,1))
+    for t in teststats:
+        tpcount += t[0]
+        truecount += t[1]
+        predcount += t[2]
+        singlepredcount += t[7]
+        aggConfusionMatrix+=t[3];
+        aggZeroPreds +=t[4];
+        aggMultiplePreds +=t[5];
+        aggConfusionMatrixWMultiple+=t[6];
+
+
+    total_tc  = 0
+    total_pc = 0
+    total_tp = 0
+    for label in xrange(0,sm.num_classes):
+        if(predcount[label,0] != 0):
+            avgp[label,0] = tpcount[label,0]/float(predcount[label,0])
+        if(truecount[label,0] !=0):
+            avgr[label,0] = tpcount[label,0]/float(truecount[label,0])
+      #  avgp[label,0] = avgp[label,0]/len(teststats)
+      #  avgr[label,0] = avgr[label,0]/len(teststats)
+        print "label ",label+1, " prec: " , avgp[label,0], " recall: " ,avgr[label,0], " tp: ", tpcount[label,0], " tc: ", truecount[label,0], " pc: ", predcount[label,0]
+        total_tc +=  truecount[label,0]
+        total_pc += predcount[label,0]
+        total_tp += tpcount[label,0]
+    print "prec: ", total_tp/total_pc , "recall: ",total_tp/total_tc ,"tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    #print "Error per Test example: ", teststats
+    print "confusion matrix:"
+    print aggConfusionMatrix;
+    savetxt('conf.txt',aggConfusionMatrix,fmt='%d');
+
+    print "confusion matrix with multiple semantics:"
+    print aggConfusionMatrixWMultiple;
+    savetxt('confm.txt',aggConfusionMatrixWMultiple,fmt='%d');
+
+    print "num Zeros:"
+    print aggZeroPreds;
+
+    print "num Multiples:"
+    print aggMultiplePreds;
+
+def print_testing_stats(sample, sm, sparm, teststats):
+    """#print statistics once classification has finished.
+
+    This is called after all test predictions are made to allow the
+    display of any summary statistics that have been accumulated in
+    the teststats object through use of the eval_prediction function.
+
+    The default behavior is that nothing is #printed."""
+    global ATTRIBUTE_METHOD
+    if(ATTRIBUTE_METHOD=="true"):
+        print_testing_stats_attributes(sample, sm, sparm, teststats)
+    else:
+        print_testing_stats_objects(sample, sm, sparm, teststats)
+

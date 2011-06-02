@@ -1,6 +1,6 @@
 for i in `seq 1 4` 
 do
-#  grep "Setting"  fold$i/logs/log.w4.c4.e0.01.* | tail -1
+  grep "Setting"  fold$i/logs/log* | tail -1
 #  grep "^prec:"  fold$i/pred/out.c.1.e005.opt.infer.sum1 
 #  echo "train$i"
 #  grep "22"  fold$i/train$i
@@ -23,10 +23,10 @@ do
 #ls -rtlh fold$i/imodels/*.c4.* | tail -1
 #ls -rtlh fold$i/models/*
 #echo "out.sum1.model.w4.c0.001.e0.01.assoc"> fold$i/lastout.txt
-echo $i 
-cat fold$i/train$i
-echo "----"
-cat fold$i/test$i
+#echo $i 
+#cat fold$i/train$i
+#echo "----"
+#cat fold$i/test$i
 
 done
 
