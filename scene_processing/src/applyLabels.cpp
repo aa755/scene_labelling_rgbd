@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
   labeled_cloud.points = cloud.points;
   for (size_t i = 0; i< labeled_cloud.points.size(); i++)
   {
-     if(label_mapping[labeled_cloud.points[i].segment]!=0)
+     //if(label_mapping[labeled_cloud.points[i].segment]!=0)
         labeled_cloud.points[i].label = label_mapping[labeled_cloud.points[i].segment];
 
   }

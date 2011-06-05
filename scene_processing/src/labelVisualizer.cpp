@@ -158,6 +158,23 @@ bool apply_label_filter(pcl::PointCloud<PointT> &incloud, int label, float color
     return changed;
 }
 
+bool apply_label_filter(pcl::PointCloud<PointT> &incloud, vector<int> labels, float color) {
+    ROS_INFO("applying filter");
+    bool changed = false;
+
+    for (size_t l = 0; l < labels.size(); l++) {
+    for (size_t i = 0; i < incloud.points.size(); ++i) {
+
+        if (incloud.points[i].label == labels[l]) {
+
+            //     std::cerr<<segment_cloud.points[j].label<<",";
+            incloud.points[i].rgb = color;
+            changed = true;
+        }
+    }
+    }
+    return changed;
+}
 
 bool apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment) {
     ROS_INFO("applying filter");
@@ -189,6 +206,22 @@ void spinThread() {
         viewer.spinOnce(1000, true);
 }
 
+vector <string> getTokens(std::string str)
+{
+  char * pch;
+  char  buffer[100];
+  str.copy(buffer,str.length(),0);
+  pch = strtok (buffer,",");
+  vector<string> labels;
+  while (pch != NULL)
+  {
+      labels.push_back(string(pch));
+      cerr<<"added token"<<string(pch)<<endl;
+      pch = strtok (NULL, ",");
+  }
+  return labels;    
+}
+
 void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
@@ -196,12 +229,12 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
     pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
     bool c = false;
 
-    int NUM_CLASSES_TO_SHOW=9;
+    int NUM_CLASSES_TO_SHOW=10;
     int labelNum = 0;
 
     if (conf.showLabel) {
         conf.showLabel = false;
-        viewer.setBackgroundColor (0.9,0.9,0.9);
+        viewer.setBackgroundColor (1.0,1.0,1.0);
         doUpdate = true;
         string selLabels[NUM_CLASSES_TO_SHOW];
         selLabels[0]=conf.red_label;
@@ -213,6 +246,7 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
         selLabels[6]=conf.dark_red_label;
         selLabels[7]=conf.dark_green_label;
         selLabels[8]=conf.dark_blue_label;
+        selLabels[9]=conf.dark_yellow_label;
 
         ColorRGB *labelColors[NUM_CLASSES_TO_SHOW];
         labelColors[0]= new ColorRGB(1,0,0);
@@ -224,6 +258,7 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
         labelColors[6]= new ColorRGB(0.5,0,0);
         labelColors[7]= new ColorRGB(0,0.5,0);
         labelColors[8]= new ColorRGB(0,0,0.5);
+        labelColors[9]= new ColorRGB(0.5,0,0.5);
 
          *cloud_colored_orig=*orig_cloud_ptr;
          *cloud_colored_pred=*pred_cloud_ptr;
@@ -232,30 +267,38 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
             //cout<<labelColors[color]->r*255.0<<labelColors[color]->g*255.0<<labelColors[color]->b*255.0<<endl;
             viewer.addText (selLabels[color],charCount*11,50,labelColors[color]->r,labelColors[color]->g,labelColors[color]->b);
             charCount=charCount+selLabels[color].size ()+0.9;
+            cerr<<"showing label "<<selLabels[color];
         
             
         bool found = false;
         std::string labelStr(selLabels[color]);
+        
+        std::vector<std::string> selLabels=getTokens(labelStr);
+        vector<int> labelNums;
+        for (size_t lmi = 0; lmi < selLabels.size(); lmi++) {
             for (size_t li = 0; li < labels.size(); li++) {
-                if (labelStr.compare(labels.at(li)) == 0) {
-                    labelNum = li + 1;
+                if (selLabels[lmi].compare(labels.at(li)) == 0) {
+                    labelNums.push_back(li + 1);
                     found = true;
                     break;
                 }
             }
-
+        }
+        
             if (found) {
                 ROS_INFO("label found %d", labelNum);
                 viewer.removePointCloud("orig");
                 viewer.removePointCloud("pred");
-                c = apply_label_filter(*cloud_colored_orig, labelNum,labelColors[color]->getFloatRep());
+                c = apply_label_filter(*cloud_colored_orig, labelNums,labelColors[color]->getFloatRep());
                 ROS_INFO("filetered sucessfully");
                 if (c) {
+                        for (size_t lmi = 0; lmi < labelNums.size(); lmi++) {
                     std::cerr << "Orig cloud: List of segments with the label " << labelStr << " : ";
-                    for (std::set<int>::iterator it = label_mapping_orig[labelNum].begin(); it != label_mapping_orig[labelNum].end(); it++) {
+                    for (std::set<int>::iterator it = label_mapping_orig[labelNums[lmi]].begin(); it != label_mapping_orig[labelNums[lmi]].end(); it++) {
                         std::cerr << *it << " , ";
                     }
                     std::cerr << std::endl;
+                        }
                     //conf.message_orig = "label found!";
 
                 } else {
@@ -266,14 +309,17 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
                 color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_filtered_orig));
                 viewer.addPointCloud(*cloud_colored_orig, color_handler_orig, "orig", viewportOrig);
 
-                c = apply_label_filter(*cloud_colored_pred, labelNum,labelColors[color]->getFloatRep());
+                c = apply_label_filter(*cloud_colored_pred, labelNums,labelColors[color]->getFloatRep());
                 ROS_INFO("filetered sucessfully");
                 if (c) {
-                    std::cerr << "Pred cloud: List of segments with the label " << labelStr << " : ";
-                    for (std::set<int>::iterator it = label_mapping_pred[labelNum].begin(); it != label_mapping_pred[labelNum].end(); it++) {
+                        for (size_t lmi = 0; lmi < labelNums.size(); lmi++) {
+                    std::cerr << "Orig cloud: List of segments with the label " << labelStr << " : ";
+                    for (std::set<int>::iterator it = label_mapping_orig[labelNums[lmi]].begin(); it != label_mapping_orig[labelNums[lmi]].end(); it++) {
                         std::cerr << *it << " , ";
                     }
                     std::cerr << std::endl;
+                        }
+                    //conf.message_orig = "label found!";
 
                     //conf.message_pred = "label found!";
                 } else {
