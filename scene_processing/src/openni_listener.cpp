@@ -58,26 +58,15 @@ void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_im
   
    if(++callback_counter_%step_ == 0) {
    ROS_INFO("Received data from kinect");
- //    bag_.write ( "/camera/rgb/image_mono" , visual_img_msg->header.stamp, visual_img_msg );
- //    bag_.write ( "/camera/depth/image" , depth_img_msg->header.stamp, depth_img_msg );
- //    bag_.write ( "/camera/rgb/camera_info" , cam_info->header.stamp, cam_info );
-     //bag_.write ( "/camera/rgb/points" , point_cloud->header.stamp, point_cloud );
+   VectorG origin(0,0,0);
        pcl::PointCloud<pcl::PointXYZRGB> cloud;
+       pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr cloud_seg_ptr(new pcl::PointCloud<pcl::PointXYZRGBCamSL > ());
        pcl::fromROSMsg(*point_cloud, cloud);
+       convertType(cloud,*cloud_seg_ptr,origin,0);
+       segmentInPlace(*cloud_seg_ptr);
    }
-/*  if(++callback_counter_ % 3 != 0 || pause_) return;
-  //Get images into correct format
-	sensor_msgs::CvBridge bridge;
-	cv::Mat depth_float_img = bridge.imgMsgToCv(depth_img_msg); 
-	cv::Mat visual_img =  bridge.imgMsgToCv(visual_img_msg, "mono8");
-  if(visual_img.rows != depth_float_img.rows || visual_img.cols != depth_float_img.cols){
-    ROS_ERROR("Depth and Visual image differ in size!");
-    return;
-  }
-   
-*/
-
 }
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv,"hi");

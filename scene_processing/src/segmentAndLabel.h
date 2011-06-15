@@ -325,6 +325,17 @@ void getClustersFromPointCloud2 (const pcl::PointCloud<PointT> &cloud,
   }
 }
 
+void getClustersFromPointCloud2InPlace (pcl::PointCloud<PointT> &cloud,
+                const std::vector<pcl::PointIndices> &clusters2)
+{    
+  for (size_t i = 0; i < clusters2.size (); ++i)
+  {
+    for (size_t j = 0; j < clusters2[i].indices.size (); ++j)
+    {
+      cloud.points[clusters2[i].indices[j]].segment = i;
+    }
+  }
+}
 
 void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &outcloud){
 
@@ -358,6 +369,41 @@ void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &ou
     ROS_INFO ("Number of clusters found matching the given constraints: %d.", (int)clusters.size ());
 
     getClustersFromPointCloud2(*cloud_ptr, clusters, outcloud);
+
+}
+
+void segmentInPlace (pcl::PointCloud<PointT> &cloud){
+
+    int min_pts_per_cluster = 1000;
+    int max_pts_per_cluster = INT_MAX;//3000000;
+    assert(max_pts_per_cluster>3000000); //no overflows!
+    
+    int number_neighbours = 50;
+    float radius = 0.01;// 0.025
+    float angle = 0.52;
+    KdTreePtr normals_tree_, clusters_tree_;
+    pcl::NormalEstimation<PointT, pcl::Normal> n3d_;
+    pcl::PointCloud<PointT>::Ptr cloud_ptr (new pcl::PointCloud<PointT> (cloud));
+    std::vector<pcl::PointIndices> clusters;
+
+
+    clusters_tree_ = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
+    initTree (0, clusters_tree_);
+    clusters_tree_->setInputCloud (cloud_ptr);
+
+    normals_tree_ = boost::make_shared<pcl::KdTreeFLANN<PointT> > ();
+    n3d_.setKSearch (number_neighbours);
+    n3d_.setSearchMethod (normals_tree_);
+
+    pcl::PointCloud<pcl::Normal> cloud_normals;
+    n3d_.setInputCloud(cloud_ptr);
+    n3d_.compute(cloud_normals);
+    pcl::PointCloud<pcl::Normal>::ConstPtr cloud_normals_ptr = boost::make_shared<const pcl::PointCloud<pcl::Normal> > (cloud_normals);
+
+    extractEuclideanClusters ( cloud, *cloud_normals_ptr, clusters_tree_, radius, clusters, angle, min_pts_per_cluster, max_pts_per_cluster);
+    ROS_INFO ("Number of clusters found matching the given constraints: %d.", (int)clusters.size ());
+
+    getClustersFromPointCloud2InPlace(*cloud_ptr, clusters);
 
 }
 
