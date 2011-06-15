@@ -328,8 +328,10 @@ void getClustersFromPointCloud2 (const pcl::PointCloud<PointT> &cloud,
 
 void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &outcloud){
 
-    int min_pts_per_cluster = 0;
-    int max_pts_per_cluster = 3000000;
+    int min_pts_per_cluster = 1000;
+    int max_pts_per_cluster = INT_MAX;//3000000;
+    assert(max_pts_per_cluster>3000000); //no overflows!
+    
     int number_neighbours = 50;
     float radius = 0.01;// 0.025
     float angle = 0.52;
