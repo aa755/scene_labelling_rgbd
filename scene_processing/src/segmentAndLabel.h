@@ -403,7 +403,7 @@ void segmentInPlace (pcl::PointCloud<PointT> &cloud){
     extractEuclideanClusters ( cloud, *cloud_normals_ptr, clusters_tree_, radius, clusters, angle, min_pts_per_cluster, max_pts_per_cluster);
     ROS_INFO ("Number of clusters found matching the given constraints: %d.", (int)clusters.size ());
 
-    getClustersFromPointCloud2InPlace(*cloud_ptr, clusters);
+    getClustersFromPointCloud2InPlace(cloud, clusters);
 
 }
 

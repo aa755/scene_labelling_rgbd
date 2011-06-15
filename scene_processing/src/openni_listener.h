@@ -66,7 +66,7 @@ class OpenNIListener  {
     ros::Publisher pub_ref_cloud_;
   //  tf::TransformListener  listener; 
    //ros::Publisher pc_pub; 
-    unsigned int callback_counter_;
+     unsigned int callback_counter_;
     unsigned int step_;
     //bool pause_;
     //bool first_frame_;
