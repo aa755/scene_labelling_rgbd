@@ -1,4 +1,4 @@
-dataN = load('temp_data_nodefeats.n.txt');
+dataN = load('temp_data_nodefeats.txt');
 dataNB = dataN(:,1:3)
 numFeats=size(dataN,2)-4+1;
 binStumps=zeros(10,numFeats);
@@ -17,7 +17,7 @@ end
 dlmwrite('temp_data_nodefeats.b.txt',dataNB,'\t')
 dlmwrite('binStumpsN.txt',binStumps','\t')
 
-dataE = load('temp_data_edgefeats.n.txt');
+dataE = load('temp_data_edgefeats.txt');
 dataEB = dataE(:,1:5)
 numFeats=size(dataE,2)-6+1;
 binStumps=zeros(10,numFeats);
@@ -28,7 +28,7 @@ for f = 6:size(dataE,2)
      binv(b) = featv(b*binsize)
   end
   binv(10) = featv(length(featv))
-  binStumps(:,f-3)=binv;
+  binStumps(:,f-5)=binv;
   for b =1:10
     dataEB = [dataEB dataE(:,f)<binv(b)];
   end
