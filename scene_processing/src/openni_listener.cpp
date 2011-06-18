@@ -1266,7 +1266,7 @@ float get_occupancy_feature(const pcl::PointCloud<PointT> &cloud1, const pcl::Po
 		normalsOut.push_back(avgNormal);
 	}
 } */
-int NUM_ASSOCIATIVE_FEATS=4+31+1;
+int NUM_ASSOCIATIVE_FEATS=4+1;
 void get_pair_features( int segment_id, vector<int>  &neighbor_list,
                         map< pair <int,int> , float > &distance_matrix,
 						std::map<int,int>  &segment_num_index_map,
@@ -1286,7 +1286,7 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
         
         
         //here goes the associative features:
-        segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]); addToEdgeHeader ("HOGDiff",31);
+     //   segment1Spectral.pushHogDiffFeats (segment2Spectral,edge_features[seg2_id]); addToEdgeHeader ("HOGDiff",31);
         
         edge_features[seg2_id].push_back(segment1Spectral.getHDiffAbs (segment2Spectral)); addToEdgeHeader ("HDiffAbs");
         
@@ -1461,7 +1461,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     }
     cerr<<"adding wall distance features"<<endl;
     start_time=clock();
-  //  add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
+//    add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
     elapsed=clock()-start_time;
     cerr<<"time for computing wall"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
 
