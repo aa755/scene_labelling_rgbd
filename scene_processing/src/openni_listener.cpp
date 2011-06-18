@@ -42,8 +42,10 @@ typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 #include <octomap/octomap.h>
 #include <octomap_ros/OctomapROS.h>
 #include <octomap_ros/conversions.h>
-
+#include <boost/foreach.hpp>
+#include <boost/tokenizer.hpp>
 using namespace std;
+using namespace boost;
 using namespace octomap;
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
@@ -51,6 +53,61 @@ using namespace octomap;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 bool UseVolFeats=false;
+
+    static const string nodeBinFile="binStumpsN.txt";
+    static const string edgeBinFile="binStumpsE.txt";
+
+    class BinStumps
+{
+    static const int NUM_BINS=10;
+    double binStumps[NUM_BINS];
+public:
+    BinStumps(string line)
+    {
+        char_separator<char> sep("\t");
+        tokenizer<char_separator<char> > tokens(line, sep);
+        int count =0; 
+        
+        BOOST_FOREACH(string t, tokens) 
+        {
+            binStumps[count]=(lexical_cast<double>(t.data()));
+            cout<<t<<":"<<count <<endl;
+            count++;            
+        }
+        assert(count==NUM_BINS);        
+    }
+};
+
+vector<BinStumps> nodeFeatStumps;
+vector<BinStumps> edgeFeatStumps;
+
+void readStumpValues(vector<BinStumps> featBins, string file) {
+    //    char lineBuf[1000]; // assuming a line is less than 
+    string line;
+    ifstream myfile(file.data());
+
+    if(!myfile.is_open())
+    {
+        cerr<<"cound not find the file:" << file << " which stores the ranges for binning the features .. you should run this program from the folder scene_processing(do roscd scene_processing), or put the binning info files: binStumpsN.txt(for node features) and binStumpsE.txt(for edge features) in current folder and rerun ... exiting with assertion failure"<<endl ;
+    }
+    assert(myfile.is_open());
+
+    while (myfile.good()) 
+    {
+        getline(myfile, line);
+//        cout << line << endl;
+        if(line.length()>0)
+                featBins.push_back(BinStumps(line));
+    }
+    myfile.close();
+
+}
+
+void readAllStumpValues()
+{
+    readStumpValues(nodeFeatStumps,nodeBinFile);
+    readStumpValues(edgeFeatStumps,edgeBinFile);
+}
 
 using namespace pcl;
 class OriginalFrameInfo
@@ -1591,6 +1648,7 @@ int main(int argc, char** argv)
   if(argc > 1)  step = atoi(argv[1]);
   ros::NodeHandle n;
   //Instantiate the kinect image listener
+    readAllStumpValues();
   OpenNIListener kinect_listener(n, 
                                  "/camera/rgb/image_mono",  
                                  "/camera/depth/image",
