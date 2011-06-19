@@ -53,15 +53,15 @@ using namespace octomap;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 bool UseVolFeats=false;
-
+bool BinFeatures=true;
     static const string nodeBinFile="binStumpsN.txt";
     static const string edgeBinFile="binStumpsE.txt";
 
     class BinStumps
 {
+public:
     static const int NUM_BINS=10;
     double binStumps[NUM_BINS];
-public:
     BinStumps(string line)
     {
         char_separator<char> sep("\t");
@@ -76,12 +76,25 @@ public:
         }
         assert(count==NUM_BINS);        
     }
+    
+void    writeBinnedValues(double value, std::ofstream & file, int featIndex)
+    {
+        int binv,bindex;
+        for(int i=0;i<NUM_BINS;i++)
+        {
+            binv=0;
+            if(value<binStumps[i])
+                binv=1;
+            bindex=featIndex*NUM_BINS+i+1;
+            file<<" "<<bindex<<":"<<binv;
+        }
+    }
 };
 
 vector<BinStumps> nodeFeatStumps;
 vector<BinStumps> edgeFeatStumps;
 
-void readStumpValues(vector<BinStumps> featBins, string file) {
+void readStumpValues(vector<BinStumps> & featBins,const string & file) {
     //    char lineBuf[1000]; // assuming a line is less than 
     string line;
     ifstream myfile(file.data());
@@ -803,8 +816,14 @@ pair<float,int>  getSmallestDistance (const pcl::PointCloud<PointT> &cloud1,cons
   return make_pair(sqrt(min_distance),min_index) ;
 }
 
-
-void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
+/**
+ * 
+ * @param segment_clouds 
+ * @param distance_matrix : it will be populated by this method
+ * @param neighbor_map : it will be populated by this method(in adjacency list format)
+ * @return : number of edges
+ */
+int get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds, map< pair <int,int> , float > &distance_matrix, map <int , vector <int> > &neighbor_map )
 {
    float tolerance =0.6;
 // get distance matrix
@@ -819,9 +838,14 @@ void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds
  //     std::cerr<< "size of segment " << i << " : " << segment_clouds[i].points.size() << "\t and label is: " << segment_clouds[i].points[1].label <<"\n";
     }
 // get neighbour map
+   int num_neighbors=0;
     for ( map< pair <int,int> , float >::iterator it=distance_matrix.begin() ; it != distance_matrix.end(); it++ )
     {   
-      if((*it).second < tolerance)  neighbor_map[(*it).first.first].push_back((*it).first.second);
+      if((*it).second < tolerance)
+      {
+          neighbor_map[(*it).first.first].push_back((*it).first.second);
+          num_neighbors++;
+      }
  //     cout << (*it).first.first << "," << (*it).first.second <<" => " << (*it).second << endl;
     }
 /*
@@ -833,8 +857,139 @@ void get_neighbors ( const std::vector<pcl::PointCloud<PointT> > &segment_clouds
         cout << "," << (*it2) ;
       cout << endl;
     }*/
+   return num_neighbors;
 }
 
+class Point2DGeo
+{
+public:
+  double x;
+  double y;
+  Point2DGeo(double x_,double y_)
+  {
+    x=x_;
+    y=y_;
+  }
+  Point2DGeo()
+  {
+  }
+  
+  Point2DGeo subtract(Point2DGeo rhs)
+  {
+      return Point2DGeo(x-rhs.x,y-rhs.y);
+  }
+ 
+  double toDegress(double rad)
+  {
+  //    cerr<<"PI is"<<PI<<endl;
+      return rad*180.0/PI;
+  }
+  
+  double angle()
+  {
+      double principalAngle=toDegress(atan(y/x));
+  //    cout<<"y:"<<y<<"x:"<<x<<"angle:"<<principalAngle<<endl;
+      double fullAngle;
+      if(x>0)
+          fullAngle= principalAngle;
+      else
+          fullAngle= principalAngle+180.0;
+      
+      if(fullAngle<0.0)
+          fullAngle+=360.0;
+    //  cout<<"fa:"<<fullAngle<<endl;
+      assert(fullAngle>=0.0);
+      assert(fullAngle<360.0);
+      return fullAngle;
+  }
+  
+  double norm()
+  {
+      return sqrt(x*x+y*y);
+  }
+  
+  int principleRange(int angle)
+  {
+      return (angle % 360);
+  }
+  
+  vector<int>  getAdjacentAngles(int angle,int ticks)
+  {
+      vector<int> ret;
+      
+      for(int i=0;i<ticks;i++)
+          ret.push_back(principleRange(angle+i));
+      
+      for(int i=1;i<ticks;i++) // 0 is already covered => so starting from 1
+          ret.push_back(principleRange(angle-i));
+      
+      return ret;
+  }
+};
+
+pair<int,double> get2DAngleDegreesAndDistance(PointT  point/*, TransformG & camera*/)
+{
+    Point2DGeo point2D(point.x,point.y);
+//    VectorG origin=camera.getOrigin();
+//    Point2DGeo origin2D(origin.v[0],origin.v[1]);
+    Point2DGeo ray2D=point2D;//-origin2D;
+    return pair<int,double>((int)ray2D.angle(),ray2D.norm());
+}
+
+
+void getSegmentDistanceToBoundaryOptimized( const pcl::PointCloud<PointT> &cloud , map<int,float> &segment_boundary_distance,std::vector<pcl::PointCloud<PointT> > & segment_clouds)
+{
+    //assuming the camera is in the centre of the room and Z is aligned vertical
+    
+    //bin points based on azimuthal angle 
+//    vector<int> directionBins[360];
+    double maxDist[360];
+    for(int angle=0;angle<360;angle++)
+    {
+        maxDist[angle]=0;            
+    }
+    
+    //get the max distance to boundary along each direction
+    for(int i=1;i<cloud.size();i++)
+    {
+        if(isnan( cloud.points[i].x))
+            continue;
+        pair<int,double>angDist= get2DAngleDegreesAndDistance(cloud.points[i]/*,camera*/);
+        int angle=angDist.first;
+        double distance=angDist.second;
+//        directionBins[angle].push_back(i);
+        if(maxDist[angle]<distance)
+            maxDist[angle]=distance;
+    }
+
+    
+    for(int i=0;i<segment_clouds.size();i++)
+    {
+        double distBoundary=0;
+        double dist;
+        pcl::PointCloud<PointT> & segment= segment_clouds[i];
+        for(int j=1;j<segment.size();j++)
+        {
+                pair<int,double>angDist= get2DAngleDegreesAndDistance(segment.points[j]/*,camera*/);
+                int angle=angDist.first;
+                dist=maxDist[angle]-angDist.second;
+                assert(dist>=0);
+                if(distBoundary<dist)
+                    distBoundary=dist;
+        }
+        segment_boundary_distance[segment.points[1].segment]=distBoundary;
+    }
+    
+}
+void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features,std::vector<pcl::PointCloud<PointT> > & segment_clouds){
+    map<int,float> segment_boundary_distance;
+    getSegmentDistanceToBoundaryOptimized(cloud,segment_boundary_distance,segment_clouds);
+    for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
+    {
+        int segid = (*it).first;
+        features[segid].push_back((*it).second);
+    }
+}
 
 void getSegmentDistanceToBoundary( const pcl::PointCloud<PointT> &cloud , map<int,float> &segment_boundary_distance){
     pcl::PointCloud<PointT>::Ptr cloud_rest(new pcl::PointCloud<PointT > ());
@@ -1389,25 +1544,17 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
     
 }
 
-void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features){
-    map<int,float> segment_boundary_distance;
-    getSegmentDistanceToBoundary(cloud,segment_boundary_distance);
-    for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
-    {
-        int segid = (*it).first;
-        features[segid].push_back((*it).second);
-    }
-}
+
 
 int counts[640*480];
 int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr & cloud_ptr ,int scene_num) {
-    std::ofstream labelfile, nfeatfile, efeatfile;
+    std::ofstream  featfile;
     pcl::PointCloud<pcl::PointXYZRGBCamSL> cloud=*cloud_ptr;
       originalFrame=new OriginalFrameInfo(cloud_ptr);
 
     //labelfile.open("data_labels.txt",ios::app);
-    nfeatfile.open("data_nodefeats.txt",ios::app);
-    efeatfile.open("data_edgefeats.txt",ios::app);
+      string featfilename="data_scene_labelling_full_"+lexical_cast<string>(scene_num);
+    featfile.open(featfilename.data());
 
     // read the pcd file
 
@@ -1490,7 +1637,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     map <int , vector <int> > neighbor_map;
     cerr<<"computing neighbores"<<endl;
     clock_t start_time=clock();
-    get_neighbors ( segment_clouds, distance_matrix, neighbor_map );
+    int num_edges=get_neighbors ( segment_clouds, distance_matrix, neighbor_map );
     clock_t elapsed=clock()-start_time;
     cerr<<"computing neighbores"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
 
@@ -1500,6 +1647,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     // for each segment compute node featuers
     int num_bin_shape = 3;
     map < int , vector<float> > features;
+    bool isFirstFrame=addNodeHeader;
     for (size_t i = 0; i< segment_clouds.size(); i++)
     {
      //   vector<float> features;
@@ -1518,7 +1666,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     }
     cerr<<"adding wall distance features"<<endl;
     start_time=clock();
-//    add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
+    add_distance_features(cloud,features,segment_clouds);if(isFirstFrame) nodeFeatNames.push_back ("distance_from_wall0");
     elapsed=clock()-start_time;
     cerr<<"time for computing wall"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
 
@@ -1528,49 +1676,74 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
  //   assert(nodeFeatNames.size ()<100); // some error in setting flag can cause trouble
-    for(size_t i=0;i<nodeFeatNames.size ();i++)
-      nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
+    //for(size_t i=0;i<nodeFeatNames.size ();i++)
+      //featfile<<"#"<<nodeFeatNames[i]<<endl;
+    int totatAssocFeats=NUM_ASSOCIATIVE_FEATS;
+    if(BinFeatures)
+        totatAssocFeats=NUM_ASSOCIATIVE_FEATS*BinStumps::NUM_BINS;
+        featfile<<segment_clouds.size()<<" "<<num_edges<<" "<<20/*should not matter ... it is read from modelfile*/<<totatAssocFeats<<endl;
     
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         assert(nodeFeatNames.size ()==(*it).second.size ());
         //cerr << (*it).first << ":\t";
-        nfeatfile <<  scene_num << "\t" << (*it).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t";
-        for (vector<float>::iterator it2 = (*it).second.begin(); it2 != (*it).second.end(); it2++) {
-           //cerr << *it2 << "\t";
-           nfeatfile <<  *it2 << "\t";
+        featfile<< segment_clouds[segment_num_index_map[(*it).first]].points[1].label<< " " << (*it).first;
+        int featIndex=0;
+        for (vector<float>::iterator it2 = (*it).second.begin(); it2 != (*it).second.end(); it2++) 
+        {
+            if(BinFeatures)
+            {
+                nodeFeatStumps[featIndex].writeBinnedValues(*it2,featfile,featIndex);
+            }
+            else
+            {
+                featfile <<" "<<featIndex<<":"<< *it2;
+            }
+            featIndex++;
         }
         //cerr << endl;
-        nfeatfile << "\n";
+        featfile << "\n";
     }
     cerr << "\n";
     map < int, vector <float> > edge_features;
     // find pairwise features
    // assert(edgeFeatNames.size ()<100); // some error in setting flag can cause trouble
-    efeatfile<<"#"<<NUM_ASSOCIATIVE_FEATS<<endl;
+ //   efeatfile<<"#"<<NUM_ASSOCIATIVE_FEATS<<endl;
     int edgecount=0;
     for ( map< int, vector<int> >::iterator it=neighbor_map.begin() ; it != neighbor_map.end(); it++) {
 
         edge_features.clear();
         get_pair_features((*it).first, (*it).second, distance_matrix, segment_num_index_map , spectralProfiles, edge_features,tree);
         edgecount++;
-        if(edgecount==1)
-          {
-                for(size_t i=0;i<edgeFeatNames.size ();i++)
-                      efeatfile<<"#"<<edgeFeatNames[i]<<endl;
-
-          }
+     //   if(edgecount==1)
+       //   {
+         //       for(size_t i=0;i<edgeFeatNames.size ();i++)
+           //           featfile<<"#"<<edgeFeatNames[i]<<endl;
+          //}
+        
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
           //  cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
-            efeatfile << scene_num << "\t" << (*it).first << "\t" << (*it2).first << "\t" << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << "\t" << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label ;
+            featfile  << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << " " << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label << (*it).first << " " << (*it2).first << " "  ;
                     assert(edgeFeatNames.size ()==(*it2).second.size ());
 
-            for (vector<float>::iterator it3 = (*it2).second.begin(); it3 != (*it2).second.end(); it3++) {
-            //    cerr << *it3 << "\t";
-                efeatfile << "\t" <<*it3 ;
+        int featIndex=0;
+            for (vector<float>::iterator it3 = (*it2).second.begin(); it3 != (*it2).second.end(); it3++)
+            {
+                //    cerr << *it3 << "\t";
+                if (BinFeatures)
+                {
+                    edgeFeatStumps[featIndex].writeBinnedValues(*it3, featfile, featIndex);
+                }
+                else
+                {
+                    featfile << " " << featIndex << ":" << *it3;
+                }
+                featIndex++;
+
+                        //                efeatfile << "\t" <<*it3 ;
             }
             //cerr << endl;
-            efeatfile << endl;
+            featfile << endl;
         }
 
     }
@@ -1584,8 +1757,8 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     outfile << "\n";
  */
     //labelfile.close();
-    nfeatfile.close();
-    efeatfile.close();
+    featfile.close();
+ //   efeatfile.close();
 
 
 
@@ -1635,6 +1808,7 @@ void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_im
        pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr cloud_seg_ptr(new pcl::PointCloud<pcl::PointXYZRGBCamSL > ());
        pcl::fromROSMsg(*point_cloud, cloud);
        convertType(cloud,*cloud_seg_ptr,origin,0);
+       assert(cloud_seg_ptr->size()==640*480);
        segmentInPlace(*cloud_seg_ptr);
        write_feats(TransformG(),cloud_seg_ptr,callback_counter_);
        
@@ -1648,7 +1822,11 @@ int main(int argc, char** argv)
   if(argc > 1)  step = atoi(argv[1]);
   ros::NodeHandle n;
   //Instantiate the kinect image listener
-    readAllStumpValues();
+  if(BinFeatures)
+  {
+     readAllStumpValues();
+  }
+  
   OpenNIListener kinect_listener(n, 
                                  "/camera/rgb/image_mono",  
                                  "/camera/depth/image",
