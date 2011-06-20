@@ -1028,16 +1028,17 @@ void getSegmentDistanceToBoundaryOptimized( const pcl::PointCloud<PointT> &cloud
                 int angle=angDist.first;
                 dist=maxDist[angle]-angDist.second;
                 assert(dist>=0);
-                if(distBoundary<dist)
-                    distBoundary=dist;
+                distBoundary+=dist;
+                segment.points[j].distance=dist;
         }
-        segment_boundary_distance[segment.points[1].segment]=distBoundary;
+        segment_boundary_distance[segment.points[1].segment]=distBoundary/(segment_clouds.size()-1);
     }
     
 }
 
 void add_distance_features(pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features,std::vector<pcl::PointCloud<PointT> > & segment_clouds){
-    bool outputDistancePCD=true;
+    bool outputDistancePCDSegmentWise=true;
+    bool outputDistancePCDPointWise=true;
     map<int,float> segment_boundary_distance;
     getSegmentDistanceToBoundaryOptimized(cloud,segment_boundary_distance,segment_clouds);
     for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
@@ -1045,22 +1046,35 @@ void add_distance_features(pcl::PointCloud<PointT> &cloud, map< int,vector<float
         int segid = (*it).first;
         features[segid].push_back((*it).second);
     }
-    
-    if(outputDistancePCD)
+
+    if (outputDistancePCDSegmentWise)
     {
-    pcl::PointCloud<PointT> temp;
-    temp.header=cloud.header;
-        for(int i=0;i<cloud.size();i++)
-        {
-            if(segment_boundary_distance.find(cloud.points[i].segment)!=segment_boundary_distance.end())
+        pcl::PointCloud<PointT> temp;
+            temp.header = cloud.header;
+            for (int i = 0; i < cloud.size(); i++)
             {
-                PointT tp=cloud.points[i];
-                
-                    tp.distance=segment_boundary_distance[cloud.points[i].segment];
+                if (segment_boundary_distance.find(cloud.points[i].segment) != segment_boundary_distance.end())
+                {
+                    PointT tp = cloud.points[i];
+
+                    tp.distance = segment_boundary_distance[cloud.points[i].segment];
                     temp.points.push_back(tp);
+                }
             }
-        }
-        writer.write<pcl::PointXYZRGBCamSL > ("data_scene_distance.pcd", temp, true);    
+            writer.write<pcl::PointXYZRGBCamSL > ("data_scene_distance_seg.pcd", temp, true);
+    }
+    if (outputDistancePCDPointWise)
+    {
+        pcl::PointCloud<PointT> temp;
+            temp.header = cloud.header;
+            
+            for (int i = 0; i < segment_clouds.size(); i++)
+            {
+                temp+=segment_clouds[i];
+            }
+            
+        
+            writer.write<pcl::PointXYZRGBCamSL > ("data_scene_distance_point.pcd", temp, true);
     }
 }
 
