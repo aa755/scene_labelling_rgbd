@@ -339,7 +339,7 @@ void getClustersFromPointCloud2InPlace (pcl::PointCloud<PointT> &cloud,
 
 void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &outcloud){
 
-    int min_pts_per_cluster = 1000;
+    int min_pts_per_cluster = 1500;
     int max_pts_per_cluster = INT_MAX;//3000000;
     assert(max_pts_per_cluster>3000000); //no overflows!
     
@@ -374,7 +374,7 @@ void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &ou
 
 void segmentInPlace (pcl::PointCloud<PointT> &cloud){
 
-    int min_pts_per_cluster = 1000;
+    int min_pts_per_cluster = 1500;
     int max_pts_per_cluster = INT_MAX;//3000000;
     assert(max_pts_per_cluster>3000000); //no overflows!
     
