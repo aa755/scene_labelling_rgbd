@@ -31,7 +31,7 @@ public:
   double feats[numFeats];
   static void aggregateFeatsOfBlocks(std::vector<HOGFeaturesOfBlock> & featsOfBlocks, HOGFeaturesOfBlock & aggFeats)
   {
-    cout<<"here goes the HOG feats"<<endl;
+ //   cout<<"here goes the HOG feats"<<endl;
     size_t numBlocks=featsOfBlocks.size();
     for(size_t f=0;f<numFeats;f++)
       {
@@ -39,7 +39,7 @@ public:
         for(size_t b=0;b<numBlocks;b++)
           aggFeats.feats[f]+=featsOfBlocks[b].feats[f];
         aggFeats.feats[f]/=numBlocks;
-        cout<<aggFeats.feats[f]<<endl;
+     //   cout<<aggFeats.feats[f]<<endl;
       } 
   }
   
@@ -143,7 +143,7 @@ public :
   void getFeatValForPixels(const std::vector<Point2DAbhishek> & interestPointsInImage, HOGFeaturesOfBlock & hogFeats)
   {
     // bin pixels into blocksOuts()
-    cout<<interestPointsInImage.size ()<<endl;
+//    cout<<interestPointsInImage.size ()<<endl;
     int numPointsInBlock[numBlocksOutY][numBlocksOutX];
     for(int y=0;y<numBlocksOutY;y++)
         for(int x=0;x<numBlocksOutX;x++)
@@ -170,13 +170,13 @@ public :
           }
     HOGFeaturesOfBlock temp;
     std::vector<HOGFeaturesOfBlock> maxBlockFeats;
-    cout<<"max= "<<max<<endl;
+ //   cout<<"max= "<<max<<endl;
     for(int y=0;y<numBlocksOutY;y++)
         for(int x=0;x<numBlocksOutX;x++)
           {
             if(max==numPointsInBlock[y][x])
               {
-                cout <<"out block selected" <<x <<","<<y<<endl;
+   //             cout <<"out block selected" <<x <<","<<y<<endl;
                 getFeatVec (y,x,temp);
                 maxBlockFeats.push_back(temp);
               }
@@ -207,7 +207,7 @@ void computeHog(IplImage * img)
 {
   assert(img->nChannels==3);
   double * matlabImage= (double *)calloc(img->width*img->height*img->nChannels,sizeof(double));
-  cout<<"processing an image of size"<<img->width<<","<<img->height<<endl;
+ // cout<<"processing an image of size"<<img->width<<","<<img->height<<endl;
   int ndims[3]={img->height,img->width,3};
   for(size_t y=0;y<img->height;y++)
      for(size_t x=0;x<img->width;x++)

@@ -57,6 +57,9 @@ bool BinFeatures=true;
     static const string nodeBinFile="binStumpsN.txt";
     static const string edgeBinFile="binStumpsE.txt";
 
+map<int,int> invLabelMap;
+    pcl::PCDWriter writer;
+    
     class BinStumps
 {
 public:
@@ -114,6 +117,29 @@ void readStumpValues(vector<BinStumps> & featBins,const string & file) {
     }
     myfile.close();
 
+}
+
+void readInvLabelMap(map<int,int> & invLabelMap,const string & file) {
+    //    char lineBuf[1000]; // assuming a line is less than 
+    string line;
+    ifstream myfile(file.data());
+
+    if(!myfile.is_open())
+    {
+        cerr<<"cound not find the file:" << file << " which stores the labelmap .. you should run this program from the folder scene_processing(do roscd scene_processing), or put the missing file in current folder and rerun ... exiting with assertion failure"<<endl ;
+    }
+    assert(myfile.is_open());
+
+    int origLabel, svmLabel;
+    while (myfile.good()) 
+    {
+     
+        myfile>>origLabel>>svmLabel;
+//        getline(myfile, line);
+//        cout << line << endl;
+        invLabelMap[svmLabel]=origLabel;
+    }
+    myfile.close();
 }
 
 void readAllStumpValues()
@@ -1100,11 +1126,11 @@ void getSpectralProfile(const pcl::PointCloud<PointT> &cloud, SpectralProfile &s
   for(int i=0;i<3;i++)
     {
       
-          cout<<"eig value:"<<eigen_values(i)<<endl;
+    //      cout<<"eig value:"<<eigen_values(i)<<endl;
       if(minEigV>eigen_values(i))
         {
           minEigV=eigen_values(i);
-          cout<<"min eig value:"<<minEigV<<endl;
+      //    cout<<"min eig value:"<<minEigV<<endl;
           spectralProfile.normal=eigen_vectors.col(i);
           // check the angle with line joining the centroid to origin
           VectorG centroid(spectralProfile.centroid.x,spectralProfile.centroid.y,spectralProfile.centroid.z);
@@ -1544,7 +1570,37 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
     
 }
 
-
+void parseAndApplyLabels(std::ifstream  & file, pcl::PointCloud<pcl::PointXYZRGBCamSL> & cloud,std::vector<pcl::PointCloud<PointT> > & segment_clouds )
+{
+        string tokens[3];
+        char_separator<char> sep1(" ");
+        char_separator<char> sep2(":");
+        string line;
+        getline(file, line);
+        int count;
+        tokenizer<char_separator<char> > tokens1(line, sep1);        
+        map<int,int> segId2label;
+        BOOST_FOREACH(string t, tokens1) 
+        {
+            count=0;
+            tokenizer<char_separator<char> > tokens2(t, sep2);        
+            BOOST_FOREACH(string t2, tokens2)
+            {
+                assert(count<3);
+                tokens[count]=t2;
+                count++;
+            }
+            int segmentIndex=(lexical_cast<int>(tokens[0]))-1;
+            int segmentId=segment_clouds[segmentIndex].points[1].segment;
+            segId2label[segmentId]=lexical_cast<int>(tokens[1]);
+            
+        }
+        
+        for(int i=0;i<cloud.size();i++)
+        {
+            cloud.points[i].label=segId2label[invLabelMap[cloud.points[i].segment]];
+        }
+}
 
 int counts[640*480];
 int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr & cloud_ptr ,int scene_num) {
@@ -1681,7 +1737,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     int totatAssocFeats=NUM_ASSOCIATIVE_FEATS;
     if(BinFeatures)
         totatAssocFeats=NUM_ASSOCIATIVE_FEATS*BinStumps::NUM_BINS;
-        featfile<<segment_clouds.size()<<" "<<num_edges<<" "<<20/*should not matter ... it is read from modelfile*/<<totatAssocFeats<<endl;
+        featfile<<segment_clouds.size()<<" "<<num_edges<<" "<<17/*should not matter ... it is read from modelfile*/<<" "<<totatAssocFeats<<endl;
     
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         assert(nodeFeatNames.size ()==(*it).second.size ());
@@ -1723,7 +1779,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
         // print pair-wise features
         for (map< int, vector<float> >::iterator it2 = edge_features.begin(); it2 != edge_features.end(); it2++) {
           //  cerr << "edge: ("<< (*it).first << "," << (*it2).first << "):\t";
-            featfile  << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << " " << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label << (*it).first << " " << (*it2).first << " "  ;
+            featfile  << segment_clouds[segment_num_index_map[(*it).first]].points[1].label << " " << segment_clouds[segment_num_index_map[(*it2).first]].points[1].label <<" "<< (*it).first << " " << (*it2).first  ;
                     assert(edgeFeatNames.size ()==(*it2).second.size ());
 
         int featIndex=0;
@@ -1749,7 +1805,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     }
   
     
-    cout << "DONE!!\n";
+//    cout << "DONE!!\n";
     // write features to file
 /*    for (vector<float>::iterator it = features.begin(); it < features.end(); it++) {
       outfile << *it << "\t";
@@ -1758,6 +1814,19 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
  */
     //labelfile.close();
     featfile.close();
+//    std::ofstream  featfile;
+    featfile.open(("temp."+featfilename).data());
+    featfile<<featfilename;
+    featfile.close();
+    string command="../svm-python-v204/svm_python_classify --m svmstruct_mrf --l micro --lm objassoc --cm qbpo --omf ../svm-python-v204/home_objectMap.txt temp."+featfilename+" ../svm-python-v204/homeModel pred."+featfilename+" > out."+featfilename;
+    system(command.data());
+    
+    std:: ifstream predLabels;
+    predLabels.open(("pred."+featfilename).data()); // open the file containing predictions
+    parseAndApplyLabels(predLabels,cloud,segment_clouds);
+    predLabels.close();
+    writer.write<pcl::PointXYZRGBCamSL > (featfilename+".pcd", cloud, true);    
+    
  //   efeatfile.close();
 
 
@@ -1827,6 +1896,7 @@ int main(int argc, char** argv)
      readAllStumpValues();
   }
   
+  readInvLabelMap(invLabelMap,"../svm-python-v204/home_labelmap.txt");
   OpenNIListener kinect_listener(n, 
                                  "/camera/rgb/image_mono",  
                                  "/camera/depth/image",
