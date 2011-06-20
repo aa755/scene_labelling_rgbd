@@ -218,7 +218,7 @@ main(int argc, char** argv) {
 
        fn = "transformed_"  + std::string(argv[1]);
    viewer.createViewPort(0.0, 0.0, 1.0, 1.0, viewportOrig);
- //  viewer.addCoordinateSystem (1);
+   viewer.addCoordinateSystem (1);
      sensor_msgs::PointCloud2 cloud_blob;
         viewer.setBackgroundColor (1.0,1.0,1.0);
 

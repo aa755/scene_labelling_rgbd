@@ -142,7 +142,7 @@ TransformG readTranform(const string & file) {
         assert(tf_count == 1);
                 TransformG transG(final_tft);
                 bag.close();
-//                transG.print ();
+                transG.print ();
   //              originalFrame->setCameraTrans (transG);
                 return transG;
 }
@@ -944,7 +944,7 @@ public:
       double principalAngle=toDegress(atan(y/x));
   //    cout<<"y:"<<y<<"x:"<<x<<"angle:"<<principalAngle<<endl;
       double fullAngle;
-      if(x>0)
+      if(x>=0)
           fullAngle= principalAngle;
       else
           fullAngle= principalAngle+180.0;
@@ -1035,13 +1035,32 @@ void getSegmentDistanceToBoundaryOptimized( const pcl::PointCloud<PointT> &cloud
     }
     
 }
-void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features,std::vector<pcl::PointCloud<PointT> > & segment_clouds){
+
+void add_distance_features(pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features,std::vector<pcl::PointCloud<PointT> > & segment_clouds){
+    bool outputDistancePCD=true;
     map<int,float> segment_boundary_distance;
     getSegmentDistanceToBoundaryOptimized(cloud,segment_boundary_distance,segment_clouds);
     for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
     {
         int segid = (*it).first;
         features[segid].push_back((*it).second);
+    }
+    
+    if(outputDistancePCD)
+    {
+    pcl::PointCloud<PointT> temp;
+    temp.header=cloud.header;
+        for(int i=0;i<cloud.size();i++)
+        {
+            if(segment_boundary_distance.find(cloud.points[i].segment)!=segment_boundary_distance.end())
+            {
+                PointT tp=cloud.points[i];
+                
+                    tp.distance=segment_boundary_distance[cloud.points[i].segment];
+                    temp.points.push_back(tp);
+            }
+        }
+        writer.write<pcl::PointXYZRGBCamSL > ("data_scene_distance.pcd", temp, true);    
     }
 }
 
@@ -1626,7 +1645,7 @@ void parseAndApplyLabels(std::ifstream  & file, pcl::PointCloud<pcl::PointXYZRGB
         
         for(int i=0;i<cloud.size();i++)
         {
-            cloud.points[i].label=segId2label[invLabelMap[cloud.points[i].segment]];
+            cloud.points[i].label=invLabelMap[segId2label[cloud.points[i].segment]];
         }
 }
 
@@ -1846,7 +1865,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     featfile.open(("temp."+featfilename).data());
     featfile<<featfilename;
     featfile.close();
-    string command="../svm-python-v204/svm_python_classify --m svmstruct_mrf --l micro --lm objassoc --cm qbpo --omf ../svm-python-v204/home_objectMap.txt temp."+featfilename+" ../svm-python-v204/homeModel pred."+featfilename+" > out."+featfilename;
+    string command="../svm-python-v204/svm_python_classify --m svmstruct_mrf --l micro --lm objassoc --cm sum1.IP --omf ../svm-python-v204/home_objectMap.txt temp."+featfilename+" ../svm-python-v204/homeModel pred."+featfilename+" > out."+featfilename;
     system(command.data());
     
     std:: ifstream predLabels;
@@ -1923,7 +1942,7 @@ int main(int argc, char** argv)
   
   readInvLabelMap(invLabelMap,"../svm-python-v204/home_labelmap.txt");
   globalTransform=readTranform("globalTransform.bag");
-  ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",2,cameraCallback);
+  ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",1000,cameraCallback);
 								 
    ros::spin();
   
