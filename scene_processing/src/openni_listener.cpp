@@ -119,6 +119,34 @@ void readStumpValues(vector<BinStumps> & featBins,const string & file) {
 
 }
 
+TransformG readTranform(const string & file) {
+          rosbag::Bag bag;
+    bag.open(file, rosbag::bagmode::Read);
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+                tf_count++;
+                final_tft = tft;
+        }
+
+        assert(tf_count == 1);
+                TransformG transG(final_tft);
+                bag.close();
+//                transG.print ();
+  //              originalFrame->setCameraTrans (transG);
+                return transG;
+}
+
 void readInvLabelMap(map<int,int> & invLabelMap,const string & file) {
     //    char lineBuf[1000]; // assuming a line is less than 
     string line;
@@ -1864,6 +1892,8 @@ OpenNIListener::OpenNIListener( ros::NodeHandle nh,  const char* visual_topic,
 
 }
 
+TransformG globalTransform;
+
 void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_img_msg, 
                                      const sensor_msgs::ImageConstPtr& depth_img_msg,   
                                      const sensor_msgs::CameraInfoConstPtr& cam_info,
@@ -1879,7 +1909,7 @@ void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_im
        convertType(cloud,*cloud_seg_ptr,origin,0);
        assert(cloud_seg_ptr->size()==640*480);
        segmentInPlace(*cloud_seg_ptr);
-       write_feats(TransformG(),cloud_seg_ptr,callback_counter_);
+       write_feats(globalTransform,cloud_seg_ptr,callback_counter_);
        
    }
 }
@@ -1897,6 +1927,7 @@ int main(int argc, char** argv)
   }
   
   readInvLabelMap(invLabelMap,"../svm-python-v204/home_labelmap.txt");
+  globalTransform=readTranform("globalTransform.bag");
   OpenNIListener kinect_listener(n, 
                                  "/camera/rgb/image_mono",  
                                  "/camera/depth/image",
