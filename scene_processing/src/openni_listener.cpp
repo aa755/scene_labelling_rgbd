@@ -57,6 +57,7 @@ bool UseVolFeats=false;
 bool BinFeatures=true;
     static const string nodeBinFile="binStumpsN.txt";
     static const string edgeBinFile="binStumpsE.txt";
+    string environment;
 
 map<int,int> invLabelMap;
     pcl::PCDWriter writer;
@@ -1717,7 +1718,7 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     featfile.open(("temp."+featfilename).data());
     featfile<<featfilename;
     featfile.close();
-    string command="../svm-python-v204/svm_python_classify --m svmstruct_mrf --l micro --lm objassoc --cm sum1.IP --omf ../svm-python-v204/home_objectMap.txt temp."+featfilename+" ../svm-python-v204/homeModel pred."+featfilename+" > out."+featfilename;
+    string command="../svm-python-v204/svm_python_classify --m svmstruct_mrf --l micro --lm objassoc --cm sum1.IP --omf ../svm-python-v204/"+environment+"_objectMap.txt temp."+featfilename+" ../svm-python-v204/"+environment+"Model pred."+featfilename+" > out."+featfilename;
     system(command.data());
     
     std:: ifstream predLabels;
@@ -1791,8 +1792,8 @@ int main(int argc, char** argv)
   {
      readAllStumpValues();
   }
-  
-  readInvLabelMap(invLabelMap,"../svm-python-v204/home_labelmap.txt");
+  environment="office";
+  readInvLabelMap(invLabelMap,"../svm-python-v204/"+environment+"_labelmap.txt");
   globalTransform=readTranform("globalTransform.bag");
   ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",1000,cameraCallback);
 								 
