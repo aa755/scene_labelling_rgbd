@@ -1795,7 +1795,7 @@ int main(int argc, char** argv)
   }
   readInvLabelMap(invLabelMap,"../svm-python-v204/"+environment+"_labelmap.txt");
   globalTransform=readTranform("globalTransform.bag");
-  ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",1000,cameraCallback);
+  ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",2,cameraCallback);
 								 
    ros::spin();
   
