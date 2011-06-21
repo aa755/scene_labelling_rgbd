@@ -54,7 +54,7 @@
 
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
-#include <pcl/point_types.h>
+#include "point_types.h"
 
 #include <pcl_ros/io/bag_io.h>
 
