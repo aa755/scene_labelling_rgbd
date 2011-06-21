@@ -5,10 +5,12 @@ rm data_nodefeats.*.txt data_edgefeats.*.txt
 rm datas_*.txt
 perl filter.pl data_nodefeats.txt
 perl filter.pl data_edgefeats.txt
-nohup matlab -nodesktop -nosplash -r normalize
+#cp data_nodefeats.txt temp_data_nodefeats.txt
+#cp data_edgefeats.txt temp_data_edgefeats.txt
+#nohup matlab -nodesktop -nosplash -r normalize
 nohup matlab -nodesktop -nosplash -r binfeats
-cat header_data_nodefeats.txt temp_data_nodefeats.n.txt > data_nodefeats.n.txt
-cat header_data_edgefeats.txt temp_data_edgefeats.n.txt > data_edgefeats.n.txt
+#cat header_data_nodefeats.txt temp_data_nodefeats.n.txt > data_nodefeats.n.txt
+#cat header_data_edgefeats.txt temp_data_edgefeats.n.txt > data_edgefeats.n.txt
 cat header_data_nodefeats.txt temp_data_nodefeats.b.txt > data_nodefeats.b.txt
 cat header_data_edgefeats.txt temp_data_edgefeats.b.txt > data_edgefeats.b.txt
 rm temp_data_* 
@@ -20,15 +22,19 @@ echo "folder is $folderName"
 for i in `seq 1 4` 
 do
 
+mkdir fold$i/pred/
+mkdir fold$i/logs/
+mkdir fold$i/models/
+mkdir fold$i/imodels/
 rm fold$i/pred/*
 rm fold$i/logs/*
-rm fold$i/out/*
 rm fold$i/models/*
 rm fold$i/imodels/*
 
-sed s/data23-edge-binned-template/$folderName/ fold$i/train$i >temp
+sed s/officedata-new-singles-new-new-new-new-new/$folderName/ fold$i/train$i >temp
+
 mv temp fold$i/train$i
 
-sed s/data23-edge-binned-template/$folderName/ fold$i/test$i >temp
+sed s/officedata-new-singles-new-new-new-new-new/$folderName/ fold$i/test$i >temp
 mv temp fold$i/test$i
 done
