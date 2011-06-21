@@ -174,8 +174,8 @@ void readInvLabelMap(map<int,int> & invLabelMap,const string & file) {
 
 void readAllStumpValues()
 {
-    readStumpValues(nodeFeatStumps,nodeBinFile);
-    readStumpValues(edgeFeatStumps,edgeBinFile);
+    readStumpValues(nodeFeatStumps,environment+"/"+nodeBinFile);
+    readStumpValues(edgeFeatStumps,environment+"/"+edgeBinFile);
 }
 
 using namespace pcl;
@@ -1759,7 +1759,7 @@ OpenNIListener::OpenNIListener( ros::NodeHandle nh,  const char* visual_topic,
 */
         
 TransformG globalTransform;
-
+int step=1;
 void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg, 
                                      const sensor_msgs::ImageConstPtr& depth_img_msg,   
                                      const sensor_msgs::CameraInfoConstPtr& cam_info,*/
@@ -1767,7 +1767,7 @@ void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg,
 
   static int callback_counter_=0;
   callback_counter_++;
- //  if(++callback_counter_%step_ == 0) {
+   if(++callback_counter_%step == 0) {
    ROS_INFO("Received data from kinect");
    
        pcl::PointCloud<pcl::PointXYZRGB> cloud;
@@ -1778,21 +1778,21 @@ void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg,
        segmentInPlace(*cloud_seg_ptr);
        write_feats(globalTransform,cloud_seg_ptr,callback_counter_);
        
-   //}
+   }
 }
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv,"hi");
-  unsigned int step = 10;
+//  unsigned int step = 10;
   if(argc > 1)  step = atoi(argv[1]);
   ros::NodeHandle n;
   //Instantiate the kinect image listener
+  environment="office";
   if(BinFeatures)
   {
      readAllStumpValues();
   }
-  environment="office";
   readInvLabelMap(invLabelMap,"../svm-python-v204/"+environment+"_labelmap.txt");
   globalTransform=readTranform("globalTransform.bag");
   ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",1000,cameraCallback);
