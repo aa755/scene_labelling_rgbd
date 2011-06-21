@@ -63,9 +63,7 @@
   (pcl::BorderDescription)    \
   (pcl::IntensityGradient)    \
   (pcl::Histogram<2>)         \
-  (pcl::PointWithScale)         \
-  (pcl::PointXYGRGBCam)		\
-  (pcl::PointXYZRGBCamSL)
+  (pcl::PointWithScale)         
 
 
 // Define all point types that include XYZ data
@@ -80,17 +78,14 @@
   (pcl::PointXYZINormal)      \
   (pcl::PointWithRange)       \
   (pcl::PointWithViewpoint)   \
-  (pcl::PointWithScale)         \
-  (pcl::PointXYGRGBCam)      \
-  (pcl::PointXYZRGBCamSL)         
+  (pcl::PointWithScale)         
 
 // Define all point types that include normal[3] data
 #define PCL_NORMAL_POINT_TYPES  \
   (pcl::Normal)                 \
   (pcl::PointNormal)            \
   (pcl::PointXYZRGBNormal)      \
-  (pcl::PointXYZINormal)        \
-  (pcl::PointXYGRGBCam)
+  (pcl::PointXYZINormal)        
 
 
 namespace pcl
@@ -206,35 +201,6 @@ inline std::ostream& operator << (std::ostream& os, const PointXYZRGBA& p)
   os << "(" << p.x << "," << p.y << "," << p.z << " - " << (int)(*rgba_ptr) << "," << (int)(*(rgba_ptr+1)) << "," << (int)(*(rgba_ptr+2)) << "," <<(int)(*(rgba_ptr+3)) << ")";
   return (os);
 }
-    struct PointXYGRGBCam
-    {
-        PCL_ADD_POINT4D;
-       float rgb;
-        PCL_ADD_NORMAL4D;
-       uint32_t cameraIndex;
-       float distance;
-             float curvature;
-
-    };
-
-    struct PointXYZRGBCamSL
-    {
-        PCL_ADD_POINT4D;
-  union
-  {
-    struct
-    {
-      float rgb;
-    };
-    float data_c[4];
-  };
-       uint32_t cameraIndex;
-       float distance;
-       uint32_t segment;
-       uint32_t label;
-         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-   
 
 
  /*   struct PointXYGRGBDist
