@@ -87,7 +87,7 @@ void    writeBinnedValues(double value, std::ofstream & file, int featIndex)
         for(int i=0;i<NUM_BINS;i++)
         {
             binv=0;
-            if(value<binStumps[i])
+            if(value<=binStumps[i])
                 binv=1;
             bindex=featIndex*NUM_BINS+i+1;
             file<<" "<<bindex<<":"<<binv;

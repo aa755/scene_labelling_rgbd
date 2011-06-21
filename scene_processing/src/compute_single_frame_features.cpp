@@ -1510,8 +1510,8 @@ int main(int argc, char** argv) {
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
  //   assert(nodeFeatNames.size ()<100); // some error in setting flag can cause trouble
-    for(size_t i=0;i<nodeFeatNames.size ();i++)
-      nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
+  //  for(size_t i=0;i<nodeFeatNames.size ();i++)
+  //    nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
     
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         assert(nodeFeatNames.size ()==(*it).second.size ());
