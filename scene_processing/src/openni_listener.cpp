@@ -48,6 +48,7 @@ using namespace std;
 using namespace boost;
 using namespace octomap;
 #include "wallDistance.h"
+ros::Publisher pub;
 //#include <Eig>
 //typedef pcl::PointXYGRGBCam PointT;
 
@@ -1725,7 +1726,11 @@ int write_feats(TransformG transG,  pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr 
     predLabels.open(("pred."+featfilename).data()); // open the file containing predictions
     parseAndApplyLabels(predLabels,cloud,segment_clouds);
     predLabels.close();
-    writer.write<pcl::PointXYZRGBCamSL > (featfilename+".pcd", cloud, true);    
+    writer.write<pcl::PointXYZRGBCamSL > (featfilename+".pcd", cloud, true);
+    sensor_msgs::PointCloud2 cloudMsg;
+    toROSMsg(cloud,cloudMsg);
+    pub.publish(cloudMsg);
+    
     
  //   efeatfile.close();
 
@@ -1767,8 +1772,9 @@ void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg,
 
   static int callback_counter_=0;
   callback_counter_++;
+   ROS_INFO("Received frame from kinect");
    if(++callback_counter_%step == 0) {
-   ROS_INFO("Received data from kinect");
+   ROS_INFO("accepted it");
    
        pcl::PointCloud<pcl::PointXYZRGB> cloud;
        pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr cloud_seg_ptr(new pcl::PointCloud<pcl::PointXYZRGBCamSL > ());
@@ -1779,6 +1785,8 @@ void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg,
        write_feats(globalTransform,cloud_seg_ptr,callback_counter_);
        
    }
+   else
+          ROS_INFO("rejected it");
 }
 
 int main(int argc, char** argv)
@@ -1795,7 +1803,10 @@ int main(int argc, char** argv)
   }
   readInvLabelMap(invLabelMap,"../svm-python-v204/"+environment+"_labelmap.txt");
   globalTransform=readTranform("globalTransform.bag");
-  ros::Subscriber cloud_sub_=n.subscribe("/rgbdslam/my_clouds",2,cameraCallback);
+   pub = n.advertise<sensor_msgs::PointCloud2>("/scene_labler/labeled_cloud", 10);
+//    std_msgs::String str;
+//    str.data = "hello world";
+    ros::Subscriber cloud_sub_=n.subscribe("/camera/rgb/points",2,cameraCallback);
 								 
    ros::spin();
   
