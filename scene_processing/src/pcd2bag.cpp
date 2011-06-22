@@ -184,7 +184,7 @@ main (int argc, char** argv)
 
           
           out_frame_count++;
-          //ROS SUCKS ... SO MUCH WORK TO JUST INCLUDE A TRANSFORM IN BAG :( ... NO BLODDY DOCUMENTATION
+          //... SO MUCH WORK TO JUST INCLUDE A TRANSFORM IN BAG :( ... NO DOCUMENTATION
           pcl::toROSMsg (frame_cloud, *cloud_out_blob);
           writeToBag ();
           
