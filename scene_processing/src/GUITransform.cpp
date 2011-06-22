@@ -185,6 +185,39 @@ void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud)
                  }
     }
     int globalFrameCount=0;
+    
+    void writeMatrixToBag()
+    {
+                  ros::Time ftime=ros::Time::now ();
+
+           rosbag::Bag bag_;  
+           bag_.open("globalTransform.bag", rosbag::bagmode::Write);
+           Matrix4f globalTrans=computeTransformXYZYPR(conf.x, conf.y, conf.z, conf.yaw/180.0*PI, conf.pitch/180.0*PI, conf.roll/180.0*PI);
+
+           TransformG frameTrans;
+        int ctr=0;
+      for (int r = 0; r < 4; r++)
+        {
+          for (int c = 0; c < 4; c++)
+            {
+              frameTrans.transformMat(c,r)=globalTrans.data()[ctr];//matrix was originally written in transposed form
+              ctr++;
+            }
+        }
+                 
+          geometry_msgs::TransformStamped gmMsg;
+          tf::transformStampedTFToMsg (tf::StampedTransform(frameTrans.getAsRosMsg(), ftime,"/openni_camera", "/batch_transform"),gmMsg);
+          tf::tfMessage tfMsg;
+          tfMsg.set_transforms_size (1);
+                      std::vector<geometry_msgs::TransformStamped> bt;
+                      bt.push_back (gmMsg);
+
+          tfMsg.set_transforms_vec (bt);
+          bag_.write("/tf",ftime,tfMsg);
+          bag_.close();
+          
+    }
+
 void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
@@ -196,8 +229,8 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     if(conf.update) {
         conf.update=false;
         doUpdate=true;
-        updateUI();
-        conf.z=0;
+        updatePC=true;
+       // conf.z=0;
                 
 
     }
@@ -288,7 +321,7 @@ ros::Subscriber cloud_sub_;
     srv = new dynamic_reconfigure::Server < scene_processing::pcmergerConfig > (global_mutex);
     dynamic_reconfigure::Server < scene_processing::pcmergerConfig >::CallbackType f = boost::bind(&reconfig, _1, _2);
 
-        conf.z=0;
+      //  conf.z=0;
     srv->setCallback(f);
     conf.done = false;
     while (true) {
@@ -335,11 +368,12 @@ ros::Subscriber cloud_sub_;
         double meanSqrZ=sqrsum/countGround;
         double meanZ=sum/countGround;
         double stdDev=sqrt (meanSqrZ-meanZ);
-                assert(fabs(meanZ)<0.1);
-                assert(stdDev<0.2);
+         //       assert(fabs(meanZ)<0.1);
+           //     assert(stdDev<0.2);
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         cout<<"mean of z(ground points)"<<meanZ<<endl;
 
+        writeMatrixToBag();
    // viewer.removePointCloud("pred");
 
 

@@ -1731,6 +1731,7 @@ void cameraCallback (/*const sensor_msgs::ImageConstPtr& visual_img_msg,
        convertType(cloud,*cloud_seg_ptr,globalTransform.getOrigin(),0);
        assert(cloud_seg_ptr->size()==640*480);
        segmentInPlace(*cloud_seg_ptr);
+       globalTransform.transformPointCloudInPlaceAndSetOrigin(*cloud_seg_ptr);
        write_feats(globalTransform,cloud_seg_ptr,callback_counter_);
        
    }
