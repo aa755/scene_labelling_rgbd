@@ -379,7 +379,7 @@ main(int argc, char** argv) {
 
     std::ifstream labelFile;
     std::string line;
-    labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
+    labelFile.open("labels.txt");
 
     std::cerr << "you can only quit by pressing 9 when the prompt mentions... quitting in other ways will discard any newly added labels\n";
     if (labelFile.is_open()) {

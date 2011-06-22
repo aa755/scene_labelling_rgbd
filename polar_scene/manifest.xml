@@ -1,0 +1,16 @@
+<package>
+  <description brief="polar_scene">
+
+     polar_scene
+
+  </description>
+  <author>nav</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/polar_scene</url>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+
+</package>
+
+
