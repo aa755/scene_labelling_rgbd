@@ -122,33 +122,6 @@ void readStumpValues(vector<BinStumps> & featBins,const string & file) {
 
 }
 
-TransformG readTranform(const string & file) {
-          rosbag::Bag bag;
-    bag.open(file, rosbag::bagmode::Read);
-        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
-        int tf_count = 0;
-
-        tf::Transform final_tft;
-
-        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
-        {
-            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
-            assert(tf_ptr != NULL);
-            std::vector<geometry_msgs::TransformStamped> bt;
-            tf_ptr->get_transforms_vec(bt);
-            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
-
-                tf_count++;
-                final_tft = tft;
-        }
-
-        assert(tf_count == 1);
-                TransformG transG(final_tft);
-                bag.close();
-                transG.print ();
-  //              originalFrame->setCameraTrans (transG);
-                return transG;
-}
 
 void readInvLabelMap(map<int,int> & invLabelMap,const string & file) {
     //    char lineBuf[1000]; // assuming a line is less than 

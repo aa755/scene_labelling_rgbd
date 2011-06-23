@@ -16,6 +16,9 @@
  <depend package="octomap_ros"/>
  <depend package="point_cloud_mapping"/>
   <depend package="opencv2"/>
+  <export>
+    <cpp cflags="-I${prefix}/src/include"/>
+  </export>
  <!-- 
  <depend package="cloud_geometry"/>
  <depend package="cloud_io"/>
