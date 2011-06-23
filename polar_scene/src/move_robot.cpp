@@ -37,7 +37,7 @@ public:
 
   RobotDriver(ros::NodeHandle &nh)
   {
-    label=5;
+    label=7;
     threshold=0.0;
     flag=0;
     f=0;
@@ -121,7 +121,7 @@ public:
 		}
 
 		//compute forward motion	
-		fdx=sqrt(center_x*center_x+center_y*center_y)*1000.0;
+		fdx=sqrt(center_x*center_x+center_y*center_y)*1000.0*0.6;
 		cout<<fdx<<endl;
 		time_to_move=(int)round(((double)fdx*30.0/73.629));
 		j=0;
@@ -144,8 +144,9 @@ public:
 		if(flag==0){
 			geometry_msgs::Twist base_cmd;
 			ros::Rate r(30);
-			theta=0.1*1000.0;
-			time_to_move=(int)round(((double)theta*970.0/1570.0));
+			theta=-0.2*1000.0;
+			cout<<"here"<<endl;
+			time_to_move=(int)round(((double)-theta*970.0/1570.0));
  			int j=0;
 			while(nh_.ok()){
 				r.sleep();
