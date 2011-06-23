@@ -2,9 +2,9 @@
 $outFile = shift;
 $method= shift;
 $dir = shift;
-$labelmapfile = "./$dir/labelmap.txt';
+$labelmapfile = "./$dir/labelmap.txt";
 $labelsfile = '../scene_processing/labels.txt';
-$numClasses=`cut -f 2 -d ' ' labelmap.txt | sort -n | tail -1`;
+$numClasses=`cut -f 2 -d ' ' $labelmapfile | sort -n | tail -1`;
 
 %lmap=();
 open(F,$labelmapfile);
