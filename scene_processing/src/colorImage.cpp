@@ -18,7 +18,7 @@
 #include <fstream>
 //#include <X11/X.h>
 //#include "pcl/io/pcd_io.h"
-#include "point_types.h"
+#include "includes/point_types.h"
 
 #include "sensor_msgs/point_cloud_conversion.h"
 #include "color.cpp"

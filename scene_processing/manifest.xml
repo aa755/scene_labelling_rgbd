@@ -17,7 +17,7 @@
  <depend package="point_cloud_mapping"/>
   <depend package="opencv2"/>
   <export>
-    <cpp cflags="-I${prefix}/src/include"/>
+    <cpp cflags="-I${prefix}/src/includes"/>
   </export>
  <!-- 
  <depend package="cloud_geometry"/>

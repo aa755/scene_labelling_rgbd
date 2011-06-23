@@ -54,7 +54,7 @@
 
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
-#include "point_types.h"
+#include "includes/point_types.h"
 
 #include <pcl_ros/io/bag_io.h>
 
@@ -63,7 +63,7 @@
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
 typedef pcl::PointXYZRGB PointT;
-#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
 //#include "CombineUtils.h"
 
 

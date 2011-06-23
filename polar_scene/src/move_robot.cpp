@@ -1,4 +1,27 @@
-#include"/home/nav/pkg/scene_labelling/scene_processing/src/point_types.h"
+#include<point_types.h>
+#include "float.h"
+#include "math.h"
+#include <iostream>
+#include <fstream>
+#include "pcl/io/pcd_io.h"
+#include "pcl/filters/passthrough.h"
+#include "pcl/filters/extract_indices.h"
+#include "pcl/features/intensity_spin.h"
+#include "pcl/features/normal_3d.h"
+//#include "descriptors_3d/all_descriptors.h"
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
+#include <point_cloud_mapping/kdtree/kdtree_ann.h>
+#include <vector>
+#include "sensor_msgs/point_cloud_conversion.h"
+#include "pcl/kdtree/kdtree.h"
+#include "pcl/kdtree/tree_types.h"
+#include <point_cloud_mapping/geometry/nearest.h>
+#include <pcl_ros/io/bag_io.h>
+typedef pcl::PointXYZRGBCamSL PointT;
+#include<CombineUtils.h>
+
 #include <ros/ros.h>
 #include <iostream>
 #include <geometry_msgs/Twist.h>
@@ -44,6 +67,7 @@ public:
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     world_pos= nh_.advertise<geometry_msgs::Twist>("/current_openrave_pos",1);
+    
     printf("hello1\n");
     geometry_msgs::Twist base_cmd;
     base_cmd.linear.x=0;
