@@ -281,7 +281,7 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         in.points[i].z = matrixPtr[2];
     }
     
-    in.sensor_origin_=getOrigin().toEigenFormat();
+    in.sensor_origin_=getOrigin().toEigenFormat(); // does not work, on reading, reader looses these values
 }
     
     boost::numeric::ublas::matrix<double> transformMat;

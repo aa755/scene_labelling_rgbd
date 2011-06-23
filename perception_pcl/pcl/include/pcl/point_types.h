@@ -173,10 +173,6 @@ namespace pcl
   struct PointSurfel;
   // Members: float x, y, z, normal[3], rgba, radius, confidence, curvature;
 
-  struct PointXYGRGBCam;
-  // Members: float x, y, z, rgb, cameraIndex, distance;
-
-  struct PointXYZRGBCamSL;
   // Members: float x, y, z, rgb, segment_id, label;
 
   // -----Functions on points-----
@@ -208,27 +204,6 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::_PointXYZ,
 );
 
 
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-        pcl::PointXYGRGBCam,
-        (float, x, x)
-        (float, y, y)
-        (float, z, z)
-        (float, rgb, rgb)
-        (uint32_t, cameraIndex, cameraIndex)
-        (float, distance, distance)
-        );
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-        pcl::PointXYZRGBCamSL,
-        (float, x, x)
-        (float, y, y)
-        (float, z, z)
-        (float, rgb, rgb)
-        (uint32_t, cameraIndex, cameraIndex)
-        (float, distance, distance)
-        (uint32_t, segment, segment)
-        (uint32_t, label, label)
-        );
 
 
 

@@ -50,9 +50,10 @@ void OpenNIListener::cameraCallback (const sensor_msgs::ImageConstPtr& visual_im
                                      const sensor_msgs::CameraInfoConstPtr& cam_info,
                                      const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
 
+   ROS_INFO("Received a frame from kinect");
   
    if(++callback_counter_%step_ == 0) {
-   ROS_INFO("Received data from kinect");
+   ROS_INFO("accepted the frame");
      bag_.write ( "/camera/rgb/image_mono" , visual_img_msg->header.stamp, visual_img_msg );
      bag_.write ( "/camera/depth/image" , depth_img_msg->header.stamp, depth_img_msg );
      bag_.write ( "/camera/rgb/camera_info" , cam_info->header.stamp, cam_info );

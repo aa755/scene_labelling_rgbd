@@ -54,7 +54,7 @@
 
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
-#include <pcl/point_types.h>
+#include "point_types.h"
 
 #include <pcl_ros/io/bag_io.h>
 
@@ -62,7 +62,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
-typedef pcl::PointXYZRGBCamSL PointT;
+typedef pcl::PointXYZRGB PointT;
 #include "CombineUtils.h"
 //#include "CombineUtils.h"
 
@@ -115,8 +115,12 @@ int skipNum = 20;
 scene_processing::pcmergerConfig InitialTransformConfig;
 
 bool noMoreUndo=false;
-
+bool updatePC=false;
+bool ready=false;
 void updateUI() {
+    if(!ready)
+        return;
+    boost::recursive_mutex::scoped_lock lock(global_mutex);
     pcl::PointCloud<PointT> cloud;
 
 
@@ -124,11 +128,37 @@ void updateUI() {
     transformXYZYPR(*cloud_ptr, *cloud_mod_ptr, conf.x, conf.y, conf.z, conf.yaw/180.0*PI, conf.pitch/180.0*PI, conf.roll/180.0*PI);
     viewer.removePointCloud("new");
     pcl::toROSMsg(*cloud_mod_ptr, cloud_blobc_mod);
-    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_mod));
+//    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_mod));
     viewer.addPointCloud(*cloud_mod_ptr, color_handler_new, "new", viewportOrig);
     
    // viewer.spinOnce();
 }
+
+int step=1;
+void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) 
+{
+   boost::recursive_mutex::scoped_lock lock(global_mutex);
+  static int callback_counter_=0;
+  callback_counter_++;
+   ROS_INFO("Received frame from kinect");
+   if(++callback_counter_%step == 0) {
+   ROS_INFO("accepted it");
+   
+       pcl::PointCloud<pcl::PointXYZRGB> cloud;
+       pcl::fromROSMsg(*point_cloud, *cloud_ptr);
+       //convertTypeDummy(cloud,*cloud_ptr,0);
+    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (*point_cloud));
+       updatePC=true;
+       ready=true;
+       
+       
+   }
+   else
+          ROS_INFO("rejected it");
+    
+}
+
+
     std::ofstream transformFile;
 
     void writeMatrixToFile(Matrix4f globalTrans)
@@ -142,6 +172,39 @@ void updateUI() {
                  }
     }
     int globalFrameCount=0;
+    
+    void writeMatrixToBag()
+    {
+                  ros::Time ftime=ros::Time::now ();
+
+           rosbag::Bag bag_;  
+           bag_.open("globalTransform.bag", rosbag::bagmode::Write);
+           Matrix4f globalTrans=computeTransformXYZYPR(conf.x, conf.y, conf.z, conf.yaw/180.0*PI, conf.pitch/180.0*PI, conf.roll/180.0*PI);
+
+           TransformG frameTrans;
+        int ctr=0;
+      for (int r = 0; r < 4; r++)
+        {
+          for (int c = 0; c < 4; c++)
+            {
+              frameTrans.transformMat(c,r)=globalTrans.data()[ctr];//matrix was originally written in transposed form
+              ctr++;
+            }
+        }
+                 
+          geometry_msgs::TransformStamped gmMsg;
+          tf::transformStampedTFToMsg (tf::StampedTransform(frameTrans.getAsRosMsg(), ftime,"/openni_camera", "/batch_transform"),gmMsg);
+          tf::tfMessage tfMsg;
+          tfMsg.set_transforms_size (1);
+                      std::vector<geometry_msgs::TransformStamped> bt;
+                      bt.push_back (gmMsg);
+
+          tfMsg.set_transforms_vec (bt);
+          bag_.write("/tf",ftime,tfMsg);
+          bag_.close();
+          
+    }
+
 void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
@@ -153,12 +216,12 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
     if(conf.update) {
         conf.update=false;
         doUpdate=true;
-        updateUI();
-        conf.z=0;
+        updatePC=true;
+       // conf.z=0;
                 
 
     }
-    
+    /*
     if(conf.setIT) {
         conf.setIT=false;
         doUpdate=true;
@@ -182,9 +245,9 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         conf.z=-meanZ;
         
-        
 
     }
+      */  
 }
 
 double mean (double * array, double N)
@@ -209,18 +272,21 @@ STD_DEV = STD_DEV + pow(array [i], 2);
 return sqrt ((STD_DEV/N) - (pow(sum/N,2)));
 } // function calculating standard deviation
 
-
-
 /* ---[ */
 int
 main(int argc, char** argv) {
     ros::init(argc, argv, "transform");
+      ros::NodeHandle n;
+ros::Subscriber cloud_sub_;
 
-       fn = "transformed_"  + std::string(argv[1]);
+
+       // = "transformed_"  + std::string(argv[1]);
    viewer.createViewPort(0.0, 0.0, 1.0, 1.0, viewportOrig);
    viewer.addCoordinateSystem (1);
      sensor_msgs::PointCloud2 cloud_blob;
-
+        viewer.setBackgroundColor (1.0,1.0,1.0);
+  if(argc>1)
+  {
   if (pcl::io::loadPCDFile (argv[1], cloud_blob) == -1)
     {
       ROS_ERROR ("Couldn't read file ");
@@ -230,16 +296,23 @@ main(int argc, char** argv) {
 
   // Convert to the templated message type
   pcl::fromROSMsg (cloud_blob, *cloud_ptr);
-
+  ready=true;
+          
+  }
+  else
+  {
+          cloud_sub_=n.subscribe("/camera/rgb/points",2,cameraCallback);
+  }
     //viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportPred);
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
     srv = new dynamic_reconfigure::Server < scene_processing::pcmergerConfig > (global_mutex);
     dynamic_reconfigure::Server < scene_processing::pcmergerConfig >::CallbackType f = boost::bind(&reconfig, _1, _2);
 
-        conf.z=0;
+      //  conf.z=0;
     srv->setCallback(f);
     conf.done = false;
     while (true) {
+      //      boost::recursive_mutex::scoped_lock lock(global_mutex);
         viewer.spinOnce();
         ros::spinOnce();
         if (conf.done) {
@@ -250,12 +323,18 @@ main(int argc, char** argv) {
         }
         if (doUpdate) {
             doUpdate = false;
+            
             srv->updateConfig(conf);
+        }
+        if(updatePC)
+        {
+            updatePC=false;
+            updateUI();
         }
     }
     
     pcl::PCDWriter writer;
-      writer.write ( fn,*cloud_mod_ptr, true);
+    //  writer.write ( fn,*cloud_mod_ptr, true);
     transformFile.close();
 
     
@@ -263,6 +342,7 @@ main(int argc, char** argv) {
         double sqrsum=0;
         double zval;
         int countGround=0;
+        /*
         for(int i=0;i<cloud_mod_ptr->size ();++i)
           {
             if(cloud_mod_ptr->points[i].label==2)
@@ -276,11 +356,12 @@ main(int argc, char** argv) {
         double meanSqrZ=sqrsum/countGround;
         double meanZ=sum/countGround;
         double stdDev=sqrt (meanSqrZ-meanZ);
-                assert(fabs(meanZ)<0.1);
-                assert(stdDev<0.2);
+         //       assert(fabs(meanZ)<0.1);
+           //     assert(stdDev<0.2);
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         cout<<"mean of z(ground points)"<<meanZ<<endl;
-
+*/
+        writeMatrixToBag();
    // viewer.removePointCloud("pred");
 
 

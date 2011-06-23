@@ -34,6 +34,7 @@ namespace lapack= boost::numeric::bindings::lapack;
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 #include "time.h"
+#include "wallDistance.h"
 
 #include <octomap/octomap.h>
 #include <octomap_ros/OctomapROS.h>
@@ -47,6 +48,7 @@ using namespace octomap;
 typedef  pcl::KdTree<PointT> KdTree;
 typedef  pcl::KdTree<PointT>::Ptr KdTreePtr;
 bool UseVolFeats=false;
+pcl::PCDWriter writer;
 
 using namespace pcl;
 class OriginalFrameInfo
@@ -545,7 +547,7 @@ void apply_segment_filter(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<Poin
        outcloud.points.clear ();
 }
 
-int MIN_SEG_SIZE=10;
+int MIN_SEG_SIZE=1500;
 /** it also discards unlabeled segments
  */
 void apply_segment_filter_and_compute_HOG(pcl::PointCloud<PointT> &incloud, pcl::PointCloud<PointT> &outcloud, int segment,SpectralProfile & feats) {
@@ -1327,17 +1329,6 @@ void get_pair_features( int segment_id, vector<int>  &neighbor_list,
     }
     
 }
-
-void add_distance_features(const pcl::PointCloud<PointT> &cloud, map< int,vector<float> >&features){
-    map<int,float> segment_boundary_distance;
-    getSegmentDistanceToBoundary(cloud,segment_boundary_distance);
-    for(map<int,float>::iterator it = segment_boundary_distance.begin(); it != segment_boundary_distance.end(); it++ )
-    {
-        int segid = (*it).first;
-        features[segid].push_back((*it).second);
-    }
-}
-
 int counts[640*480];
 int main(int argc, char** argv) {
   bool SHOW_CAM_POS_IN_VIEWER=false;
@@ -1509,7 +1500,7 @@ int main(int argc, char** argv) {
     }
     cerr<<"adding wall distance features"<<endl;
     start_time=clock();
-    add_distance_features(cloud,features);nodeFeatNames.push_back ("distance_from_wall0");
+    add_distance_features(cloud,features, segment_clouds);nodeFeatNames.push_back ("distance_from_wall0");
     elapsed=clock()-start_time;
     cerr<<"time for computing wall"<< elapsed /((double)CLOCKS_PER_SEC)<<endl;
 
@@ -1519,8 +1510,8 @@ int main(int argc, char** argv) {
    // get_avg_normals(segment_clouds,cloud_normals);
     // print the node features
  //   assert(nodeFeatNames.size ()<100); // some error in setting flag can cause trouble
-    for(size_t i=0;i<nodeFeatNames.size ();i++)
-      nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
+  //  for(size_t i=0;i<nodeFeatNames.size ();i++)
+  //    nfeatfile<<"#"<<nodeFeatNames[i]<<endl;
     
     for (map< int, vector<float> >::iterator it = features.begin(); it != features.end(); it++ ){
         assert(nodeFeatNames.size ()==(*it).second.size ());
