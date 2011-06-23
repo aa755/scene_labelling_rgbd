@@ -1,10 +1,10 @@
 #$labelmapfile = shift;
 #$labelsfile = shift;
-$labelmapfile = 'labelmap.txt';
-$labelsfile = '../../scene_processing/labels.txt';
 #$outFile=`cat fold$i/lastout.txt`;
 $outFile= shift;
-#$method = shift;
+$dir = shift;
+$labelmapfile = "./$dir/labelmap.txt";
+$labelsfile = '../scene_processing/labels.txt';
 
 %lmap=();
 open(F,$labelmapfile);
@@ -58,10 +58,10 @@ for $c (@C)
 #$outFile='model.w4.c0.1.e0.01.warm';
   for ( $i = 1; $i<= 4; $i++) 
   {
-	print "outputfile=fold$i/pred/$outFile\n";
-    $ls = `ls -l fold$i/pred/$outFile`;
+	print "outputfile=./$dir/fold$i/pred/$outFile\n";
+    $ls = `ls -l ./$dir/fold$i/pred/$outFile`;
     print "$ls\n";
-    $line =  `grep "^prec: " fold$i/pred/$outFile`   ;
+    $line =  `grep "^prec: " ./$dir/fold$i/pred/$outFile`   ;
     chomp ($line);
 
     #print "\n$line\n";
@@ -73,7 +73,7 @@ for $c (@C)
     $tp{$i} = $6;
     $tc{$i} = $10;
     $pc{$i} = $8;
-    $labellines = `grep "^label " fold$i/pred/$outFile`; 
+    $labellines = `grep "^label " ./$dir/fold$i/pred/$outFile`; 
     @labells = split/\n/,$labellines;
     foreach $label (@labells){
      chomp($label);

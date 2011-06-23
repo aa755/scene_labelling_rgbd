@@ -1,5 +1,0 @@
-./data/datas_1.txt
-./data/datas_2.txt
-./data/datas_3.txt
-./data/datas_4.txt
-./data/datas_5.txt

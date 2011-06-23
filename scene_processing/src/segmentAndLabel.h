@@ -374,12 +374,12 @@ void segment (const pcl::PointCloud<PointT> &cloud,  pcl::PointCloud<PointT> &ou
 
 void segmentInPlace (pcl::PointCloud<PointT> &cloud){
 
-    int min_pts_per_cluster = 1500;
+    int min_pts_per_cluster = 1000;
     int max_pts_per_cluster = INT_MAX;//3000000;
     assert(max_pts_per_cluster>3000000); //no overflows!
     
     int number_neighbours = 50;
-    float radius = 0.01;// 0.025
+    float radius = 0.02;// 0.025
     float angle = 0.52;
     KdTreePtr normals_tree_, clusters_tree_;
     pcl::NormalEstimation<PointT, pcl::Normal> n3d_;
@@ -409,6 +409,7 @@ void segmentInPlace (pcl::PointCloud<PointT> &cloud){
 
 void convertType(const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<PointT> &outcloud,VectorG origin,int camIndex){
 
+    cout<<"origin: "<<origin.v[0]<<" "<<origin.v[1]<<" "<<origin.v[2]<<endl;
   outcloud.header.frame_id = cloud.header.frame_id;
   outcloud.points.resize(cloud.points.size());
   for (size_t i =0 ; i<cloud.points.size(); i++)
@@ -418,7 +419,10 @@ void convertType(const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<Poi
       outcloud.points[i].z = cloud.points[i].z;
       outcloud.points[i].rgb = cloud.points[i].rgb;
       outcloud.points[i].cameraIndex = camIndex;
-      outcloud.points[i].distance = (origin.subtract(VectorG(cloud.points[i].x,cloud.points[i].y,cloud.points[i].z))).getNorm();
+        if(isnan(outcloud.points[i].x))
+            outcloud.points[i].distance=0;
+        else            
+            outcloud.points[i].distance = (origin.subtract(VectorG(outcloud.points[i].x,outcloud.points[i].y,outcloud.points[i].z))).getNorm();
       outcloud.points[i].segment = 0;
       outcloud.points[i].label = 0;
   }

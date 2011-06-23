@@ -221,8 +221,13 @@ vector <string> getTokens(std::string str)
   }
   return labels;    
 }
+bool updatePC=false;
+bool ready=false;
+
 
 void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
+    if(!ready)
+        return;
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
     pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
@@ -362,11 +367,41 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
 
 }
 
+int step=1;
+void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) 
+{
+   boost::recursive_mutex::scoped_lock lock(global_mutex);
+  static int callback_counter_=0;
+  callback_counter_++;
+   ROS_INFO("Received frame from predictor");
+   if(++callback_counter_%step == 0) {
+   ROS_INFO("accepted it");
+   
+       pcl::PointCloud<PointT> cloud;
+       pcl::fromROSMsg(*point_cloud, cloud_pred);
+       cloud_orig=cloud_pred;
+   // color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (*point_cloud));
+       updatePC=true;
+       ready=true;
+       conf.showLabel=true;
+       //reconfig(conf,1);
+    get_label_mapping(cloud_pred, label_mapping_pred);
+    get_label_mapping(cloud_pred, label_mapping_orig);
+       
+       
+   }
+   else
+          ROS_INFO("rejected it");
+    
+}
+
 /* ---[ */
 int
 main(int argc, char** argv) {
-
     ros::init(argc, argv, "labelviewer");
+      ros::NodeHandle n;
+ros::Subscriber cloud_sub_;
+
     bool groundSelected = false;
     bool editLabel = false;
     int targetLabel;
@@ -398,8 +433,8 @@ main(int argc, char** argv) {
     }
 
 
-
-    // read from file
+  if(argc>1)
+  {
     if (pcl::io::loadPCDFile(argv[1], cloud_blob_orig) == -1) {
         ROS_ERROR("Couldn't read file ");
         return (-1);
@@ -410,34 +445,43 @@ main(int argc, char** argv) {
         return (-1);
     }
     ROS_INFO("Loaded %d data points from %s with the following fields: %s", (int) (cloud_blob_pred.width * cloud_blob_pred.height), argv[2], pcl::getFieldsList(cloud_blob_pred).c_str());
-
-
-
-    // Convert to the templated message type
     pcl::fromROSMsg(cloud_blob_orig, cloud_orig);
     pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
 
     pcl::fromROSMsg(cloud_blob_pred, cloud_pred);
     pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
+          
+    get_label_mapping(*pred_cloud_ptr, label_mapping_pred);
+    get_label_mapping(*orig_cloud_ptr, label_mapping_orig);
+  }
+  else
+  {
+          cloud_sub_=n.subscribe("/scene_labler/labeled_cloud",2,cameraCallback);
+  }
+
+    // read from file
+
+
+
+    // Convert to the templated message type
 
 
 
     std::vector<int> segmentIndices;
     // get_sorted_indices(*cloud_ptr, segmentIndices, max_segment_num);
-    get_label_mapping(*pred_cloud_ptr, label_mapping_pred);
-    get_label_mapping(*orig_cloud_ptr, label_mapping_orig);
 
-    
+    //    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
+//    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
 
 
     viewer.createViewPort(0.0, 0.0, 0.5, 1.0, viewportOrig);
     viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportPred);
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
-    color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
+//    color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
 
-    color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
-    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
-    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
+//    color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
+//    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
+//    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
     //viewer.spinOnce(5000, true);
 
 
