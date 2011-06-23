@@ -13,9 +13,15 @@
   <depend package="pcl_visualization"/>
   <depend package="eigen"/>
  <depend package="stereo_msgs"/>
- <depend package="descriptors_3d"/>
  <depend package="octomap_ros"/>
+ <depend package="point_cloud_mapping"/>
+  <depend package="opencv2"/>
  <!-- 
+ <depend package="cloud_geometry"/>
+ <depend package="cloud_io"/>
+ <depend package="cloud_kdtree"/>
+ <depend package="sample_consensus"/>
+ <depend package="descriptors_3d"/>
 -  <depend package="tf"/>
  <depend package="octomap_ros"/>
 -  <depend package="tf2"/>
@@ -24,7 +30,6 @@
 -  <depend package="roscpp"/>
 -  <depend package="eigen"/>
 -  <depend package="pcl_ros"/>
--  <depend package="opencv2"/>
 -  <depend package="cv_bridge"/>
 -  <depend package="sensor_msgs"/>
 -  <depend package="geometry_msgs"/>
