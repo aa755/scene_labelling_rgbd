@@ -419,7 +419,10 @@ void convertType(const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<Poi
       outcloud.points[i].z = cloud.points[i].z;
       outcloud.points[i].rgb = cloud.points[i].rgb;
       outcloud.points[i].cameraIndex = camIndex;
-      outcloud.points[i].distance = (origin.subtract(VectorG(cloud.points[i].x,cloud.points[i].y,cloud.points[i].z))).getNorm();
+        if(isnan(outcloud.points[i].x))
+            outcloud.points[i].distance=0;
+        else            
+            outcloud.points[i].distance = (origin.subtract(VectorG(outcloud.points[i].x,outcloud.points[i].y,outcloud.points[i].z))).getNorm();
       outcloud.points[i].segment = 0;
       outcloud.points[i].label = 0;
   }
