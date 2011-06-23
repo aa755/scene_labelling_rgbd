@@ -62,7 +62,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
-typedef pcl::PointXYZRGBCamSL PointT;
+typedef pcl::PointXYZRGB PointT;
 #include "CombineUtils.h"
 //#include "CombineUtils.h"
 
@@ -118,6 +118,8 @@ bool noMoreUndo=false;
 bool updatePC=false;
 bool ready=false;
 void updateUI() {
+    if(!ready)
+        return;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
     pcl::PointCloud<PointT> cloud;
 
@@ -126,26 +128,10 @@ void updateUI() {
     transformXYZYPR(*cloud_ptr, *cloud_mod_ptr, conf.x, conf.y, conf.z, conf.yaw/180.0*PI, conf.pitch/180.0*PI, conf.roll/180.0*PI);
     viewer.removePointCloud("new");
     pcl::toROSMsg(*cloud_mod_ptr, cloud_blobc_mod);
-    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_mod));
+//    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blobc_mod));
     viewer.addPointCloud(*cloud_mod_ptr, color_handler_new, "new", viewportOrig);
     
    // viewer.spinOnce();
-}
-void convertTypeDummy(const pcl::PointCloud<pcl::PointXYZRGB> &cloud,  pcl::PointCloud<PointT> &outcloud,int camIndex){
-
-  outcloud.header.frame_id = cloud.header.frame_id;
-  outcloud.points.resize(cloud.points.size());
-  for (size_t i =0 ; i<cloud.points.size(); i++)
-  {
-      outcloud.points[i].x = cloud.points[i].x;
-      outcloud.points[i].y = cloud.points[i].y;
-      outcloud.points[i].z = cloud.points[i].z;
-      outcloud.points[i].rgb = cloud.points[i].rgb;
-      outcloud.points[i].cameraIndex = camIndex;
-      outcloud.points[i].distance = 0;
-      outcloud.points[i].segment = 0;
-      outcloud.points[i].label = 0;
-  }
 }
 
 int step=1;
@@ -159,8 +145,9 @@ void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud)
    ROS_INFO("accepted it");
    
        pcl::PointCloud<pcl::PointXYZRGB> cloud;
-       pcl::fromROSMsg(*point_cloud, cloud);
-       convertTypeDummy(cloud,*cloud_ptr,0);
+       pcl::fromROSMsg(*point_cloud, *cloud_ptr);
+       //convertTypeDummy(cloud,*cloud_ptr,0);
+    color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (*point_cloud));
        updatePC=true;
        ready=true;
        
@@ -234,7 +221,7 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
                 
 
     }
-    
+    /*
     if(conf.setIT) {
         conf.setIT=false;
         doUpdate=true;
@@ -258,9 +245,9 @@ void reconfig(scene_processing::pcmergerConfig & config, uint32_t level) {
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         conf.z=-meanZ;
         
-        
 
     }
+      */  
 }
 
 double mean (double * array, double N)
@@ -355,6 +342,7 @@ ros::Subscriber cloud_sub_;
         double sqrsum=0;
         double zval;
         int countGround=0;
+        /*
         for(int i=0;i<cloud_mod_ptr->size ();++i)
           {
             if(cloud_mod_ptr->points[i].label==2)
@@ -372,7 +360,7 @@ ros::Subscriber cloud_sub_;
            //     assert(stdDev<0.2);
         cout<<"std dev of z(ground points)"<<stdDev<<endl;
         cout<<"mean of z(ground points)"<<meanZ<<endl;
-
+*/
         writeMatrixToBag();
    // viewer.removePointCloud("pred");
 
