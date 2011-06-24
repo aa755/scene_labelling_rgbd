@@ -74,7 +74,8 @@ public:
     TransformG groundTrans=readTranform("../scene_processing/globalTransform.bag");
     TransformG groundTransformInv=groundTrans.inverse();
     TransformG armTransform(transKinBarretBase);
-    totalTransform=groundTrans.preMultiply(armTransform);
+    totalTransform=groundTransformInv.preMultiply(armTransform);
+    totalTransform.print();
     
     
             
