@@ -60,6 +60,7 @@ public:
   ros::Subscriber cloud_sub;
   ros::Subscriber get_pose;
   TransformG totalTransform;
+  TransformG groundTransformInv;
   //centroid c[10];
 
   RobotDriver(ros::NodeHandle &nh)
@@ -72,7 +73,7 @@ public:
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     world_pos= nh_.advertise<geometry_msgs::Twist>("/current_openrave_pos",1);
     TransformG groundTrans=readTranform("../scene_processing/globalTransform.bag");
-    TransformG groundTransformInv=groundTrans.inverse();
+    groundTransformInv=groundTrans.inverse();
     TransformG armTransform(transKinBarretBase);
     totalTransform=groundTransformInv.preMultiply(armTransform);
     totalTransform.print();
@@ -124,7 +125,13 @@ public:
                 centroid.y=center_y;
                 centroid.z=center_z;
                 totalTransform.transformPointInPlace(centroid);
-                cout<<"centroid for barret"<<endl;
+                cout<<"centroid in barret"<<endl;
+                cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
+                centroid.x=center_x;
+                centroid.y=center_y;
+                centroid.z=center_z;
+                groundTransformInv.transformPointInPlace(centroid);
+                cout<<"centroid in kinect"<<endl;
                 cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
                 }
           
