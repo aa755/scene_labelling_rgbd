@@ -64,9 +64,9 @@ public:
 
   RobotDriver(ros::NodeHandle &nh)
   {
-    label=7;
+    label=5;
     threshold=0.0;
-    flag=0;
+    flag=2;
     f=0;
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
