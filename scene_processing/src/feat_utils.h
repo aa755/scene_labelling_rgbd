@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include "pcl/filters/passthrough.h"
 #include "pcl/filters/extract_indices.h"
 #include "pcl/features/intensity_spin.h"
@@ -22,7 +22,7 @@
 #include <pcl_ros/io/bag_io.h>
 #include "HOG.cpp"
 typedef pcl::PointXYZRGBCamSL PointT;
-#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
 #include<boost/numeric/ublas/matrix.hpp>
 #include<boost/numeric/ublas/io.hpp>
 #include<boost/numeric/bindings/traits/ublas_matrix.hpp>

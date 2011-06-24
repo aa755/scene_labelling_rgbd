@@ -15,7 +15,8 @@
  * - a ROS Node,
  * - a ROS listener, listening to and processing kinect data
  */
-
+#include <iostream>
+using namespace std;
 
 
 

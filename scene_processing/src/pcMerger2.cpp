@@ -53,7 +53,7 @@
 
 
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include <pcl/point_types.h>
 
 #include <pcl_ros/io/bag_io.h>
@@ -63,8 +63,8 @@
 #include <scene_processing/pcmergerConfig.h>
 #include "transformation.h"
 typedef pcl::PointXYZRGBCamSL PointT;
-#include "CombineUtils.h"
-//#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
+//#include "includes/CombineUtils.h"
 
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;

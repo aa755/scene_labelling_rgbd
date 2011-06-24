@@ -90,7 +90,7 @@ public:
   }
   
   void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
-      if(flag==2){
+      if(flag==2){     
 		cout<<"hello"<<endl;
 		unsigned int segment=1000000;
 		int num=0;

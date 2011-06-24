@@ -64,7 +64,7 @@
 #include "transformation.h"
 typedef pcl::PointXYZRGB PointT;
 #include "includes/CombineUtils.h"
-//#include "CombineUtils.h"
+//#include "includes/CombineUtils.h"
 
 
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;

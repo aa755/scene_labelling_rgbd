@@ -38,11 +38,15 @@ using namespace pcl;
 
 int main(int argc, char** argv) {
 
-  if(argc!=3)
+  bool colorLabels=true;
+  if(argc<3)
     {
-    cerr<<"usage: "<<argv[1]<<" pointCloudFile label2color"<<endl;
+    cerr<<"usage: "<<argv[1]<<" pointCloudFile label2color [NoLabels]"<<endl;
     exit(-1);
     }
+  if(argc==4)
+      colorLabels=false;
+  
   std::map<int,int> color_mapping; 
 
     sensor_msgs::PointCloud2 cloud_blob;
@@ -106,10 +110,12 @@ int main(int argc, char** argv) {
         int index=x+y*size.width;
         tmp= cloud.points[index];
             ColorRGB tmpColor(tmp.rgb);
-        if(tmp.label>0&&color_mapping[tmp.label]>0)
+            
+        if(colorLabels&&tmp.label>0&&color_mapping[tmp.label]>0)
         {
            tmpColor=*labelColors[color_mapping[tmp.label]]; 
         }
+            
         CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
         CV_IMAGE_ELEM ( image, float, y, 3 * x + 1 ) = tmpColor.g;
         CV_IMAGE_ELEM ( image, float, y, 3 * x + 2 ) = tmpColor.r;
