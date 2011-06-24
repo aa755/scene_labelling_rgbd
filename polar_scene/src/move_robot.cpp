@@ -28,6 +28,10 @@ typedef pcl::PointXYZRGBCamSL PointT;
 #include <math.h>
 
 using namespace std;
+  double transKinBarretBase[16]={ -0.0431,-0.4261, 0.9249,-0.1156, \
+-0.9874, 0.0070,-0.0455, 0.1387, \
+ 0.0202,-0.8612,-0.3883, 1.0495, \
+0,0,0,1};
 /*
 typedef struct{
 	float x;
@@ -49,13 +53,13 @@ private:
   int flag,f;
   int time_to_move;
   double theta,fdx;
-  double movex,movey,center_x,center_y;
+  double movex,movey,movez,center_x,center_y,center_z;
 public:
   unsigned int label;		//do not change
   double threshold;	//do not change
   ros::Subscriber cloud_sub;
   ros::Subscriber get_pose;
-  
+  TransformG totalTransform;
   //centroid c[10];
 
   RobotDriver(ros::NodeHandle &nh)
@@ -67,7 +71,13 @@ public:
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     world_pos= nh_.advertise<geometry_msgs::Twist>("/current_openrave_pos",1);
+    TransformG groundTrans=readTranform("../scene_processing/globalTransform.bag");
+    TransformG groundTransformInv=groundTrans.inverse();
+    TransformG armTransform(transKinBarretBase);
+    totalTransform=groundTrans.preMultiply(armTransform);
     
+    
+            
     printf("hello1\n");
     geometry_msgs::Twist base_cmd;
     base_cmd.linear.x=0;
@@ -77,8 +87,7 @@ public:
   }
   
   void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
-        if(flag==0)
-	{
+      if(flag==2){
 		cout<<"hello"<<endl;
 		unsigned int segment=1000000;
 		int num=0;
@@ -87,6 +96,7 @@ public:
 	       	cout<<"read a pcd of size "<<cloud_seg_ptr->size()<<endl;
 		movex=0.0;
 		movey=0.0;
+		movez=0.0;
 	       	for(unsigned int i=0;i<cloud_seg_ptr->size();i++)
 	       	{
 			if(cloud_seg_ptr->points[i].label==label && segment==1000000){
@@ -97,6 +107,7 @@ public:
 			{
 				movex+=	cloud_seg_ptr->points[i].x;
 				movey+= cloud_seg_ptr->points[i].y;
+				movez+= cloud_seg_ptr->points[i].z;
 				num++;
 			}	
 			//cout<<cloud_seg_ptr->points[i].x;
@@ -106,6 +117,56 @@ public:
 		if(f==1){
 		center_x=movex/(double)num;
 		center_y=movey/(double)num;
+		center_z=movez/(double)num;
+                PointT centroid;
+                centroid.x=center_x;
+                centroid.y=center_y;
+                centroid.z=center_z;
+                totalTransform.transformPointInPlace(centroid);
+                cout<<"centroid for barret"<<endl;
+                cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
+                }
+          
+      }
+        if(flag==0)
+	{
+		cout<<"hello"<<endl;
+		unsigned int segment=1000000;
+		int num=0;
+	       	pcl::PointCloud<pcl::PointXYZRGBCamSL>::Ptr cloud_seg_ptr(new pcl::PointCloud<pcl::PointXYZRGBCamSL > ());
+	       	pcl::fromROSMsg(*point_cloud, *cloud_seg_ptr);
+	       	cout<<"read a pcd of size "<<cloud_seg_ptr->size()<<endl;
+		movex=0.0;
+		movey=0.0;
+		movez=0.0;
+	       	for(unsigned int i=0;i<cloud_seg_ptr->size();i++)
+	       	{
+			if(cloud_seg_ptr->points[i].label==label && segment==1000000){
+				segment=cloud_seg_ptr->points[i].segment;
+				f=1;
+			}
+			if(cloud_seg_ptr->points[i].label==label && cloud_seg_ptr->points[i].segment==segment)
+			{
+				movex+=	cloud_seg_ptr->points[i].x;
+				movey+= cloud_seg_ptr->points[i].y;
+				movez+= cloud_seg_ptr->points[i].z;
+				num++;
+			}	
+			//cout<<cloud_seg_ptr->points[i].x;
+			//cout<<cloud_seg_ptr->points[i].label;
+			//cout<<cloud_seg_ptr->points[i].segment;
+	       	}
+		if(f==1){
+		center_x=movex/(double)num;
+		center_y=movey/(double)num;
+		center_z=movez/(double)num;
+                PointT centroid;
+                centroid.x=center_x;
+                centroid.y=center_y;
+                centroid.z=center_z;
+                totalTransform.transformPointInPlace(centroid);
+                cout<<"centroid for barret"<<endl;
+                
 		cout<<center_x<<endl;
 		cout<<center_y<<endl;
 		geometry_msgs::Twist base_cmd;

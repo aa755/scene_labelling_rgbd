@@ -284,7 +284,27 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
     in.sensor_origin_=getOrigin().toEigenFormat(); // does not work, on reading, reader looses these values
 }
     
-    boost::numeric::ublas::matrix<double> transformMat;
+void transformPointInPlace( PointT & in)
+{
+
+    boost::numeric::ublas::matrix<double> matIn(4, 1);
+
+        double * matrixPtr = matIn.data().begin();
+
+        matrixPtr[0] = in.x;
+        matrixPtr[1] = in.y;
+        matrixPtr[2] = in.z;
+        matrixPtr[3] = 1;
+        boost::numeric::ublas::matrix<double> matOut = prod(transformMat, matIn);
+        matrixPtr = matOut.data().begin();
+
+        in.x = matrixPtr[0];
+        in.y = matrixPtr[1];
+        in.z = matrixPtr[2];
+    
+}
+
+boost::numeric::ublas::matrix<double> transformMat;
 
     TransformG(const tf::Transform& bt)
     {
@@ -314,9 +334,19 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         return true;
 
     }
+    
+    TransformG(double vo[])
+    {
+        for(int r=0;r<4;r++)
+        {
+            for(int c=0;c<4;c++)
+            {
+                transformMat(r,c)=vo[r*4+c];
+            }
+        }        
+    }
 
-    TransformG inverse() {
-        TransformG ret;
+    TransformG inverse() const{
         double vi[16];
         double vo[16];
         for(int r=0;r<4;r++)
@@ -330,13 +360,7 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         print();
 
         gluInvertMatrix(vi,vo);
-        for(int r=0;r<4;r++)
-        {
-            for(int c=0;c<4;c++)
-            {
-                ret.transformMat(r,c)=vo[r*4+c];
-            }
-        }
+        TransformG ret(vo);
         cout<<"inverse is:"<<endl;
         ret.print();
         return ret;
@@ -371,7 +395,7 @@ static TransformG readTranform(const string & file) {
                 return transG;
 }
 */
-    bool gluInvertMatrix(const double m[16], double invOut[16]) {
+    static bool gluInvertMatrix(const double m[16], double invOut[16]) {
         double inv[16], det;
         int i;
 
@@ -504,7 +528,7 @@ static TransformG readTranform(const string & file) {
     }
 
     void
-    print()
+    print() const
     {
         for (int i = 0; i < 4; i++)
         {
