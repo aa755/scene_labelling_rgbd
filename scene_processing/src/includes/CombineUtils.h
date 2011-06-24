@@ -335,8 +335,9 @@ boost::numeric::ublas::matrix<double> transformMat;
 
     }
     
-    TransformG(double vo[])
+    TransformG(double *vo)
     {
+        boost::numeric::ublas::matrix<double> transformMat(4, 4);
         for(int r=0;r<4;r++)
         {
             for(int c=0;c<4;c++)
@@ -360,10 +361,10 @@ boost::numeric::ublas::matrix<double> transformMat;
         print();
 
         gluInvertMatrix(vi,vo);
-        TransformG ret(vo);
-        cout<<"inverse is:"<<endl;
-        ret.print();
-        return ret;
+        TransformG retmat(vo);
+        cout<<"inversen is:"<<endl;
+        //ret.print();
+        return retmat;
 
     }
 /*    
