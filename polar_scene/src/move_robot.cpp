@@ -41,6 +41,8 @@ typedef struct{
   	int segment;
 }centroid;
 */
+      ros::Publisher pub;
+
 class RobotDriver
 {
 private:
@@ -133,6 +135,12 @@ public:
                 groundTransformInv.transformPointInPlace(centroid);
                 cout<<"centroid in kinect"<<endl;
                 cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
+                   geometry_msgs::Twist arm;
+                   arm.linear.x=centroid.x;
+                   arm.linear.y=centroid.y;
+                   arm.linear.z=centroid.z;
+                   pub.publish(arm);
+
                 }
           
       }
@@ -279,6 +287,7 @@ int main(int argc, char** argv)
   //Instantiate the kinect image listener
   rd.cloud_sub=nh.subscribe("/scene_labler/labeled_cloud",2,&RobotDriver::cameraCallback,&rd);
   //rd.get_pose=nh.subscribe("/world_pose",1,&RobotDriver::callback,&rd);	
+  pub = nh.advertise<geometry_msgs::Twist>("/arm_end_effect", 1);
   ros::spin();
 }
 
