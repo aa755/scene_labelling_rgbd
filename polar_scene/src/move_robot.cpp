@@ -139,7 +139,10 @@ public:
                    arm.linear.x=centroid.x;
                    arm.linear.y=centroid.y;
                    arm.linear.z=centroid.z;
-                   pub.publish(arm);
+                   char buf[1000];
+                   sprintf(buf,"echo %d,%d,%d > centArm; scp centArm arm@arm-stair.cs.cornell.edu:",centroid.x,centroid.y,centroid.z);
+                   system(buf);
+                   //pub.publish(arm);
 
                 }
           
@@ -287,7 +290,7 @@ int main(int argc, char** argv)
   //Instantiate the kinect image listener
   rd.cloud_sub=nh.subscribe("/scene_labler/labeled_cloud",2,&RobotDriver::cameraCallback,&rd);
   //rd.get_pose=nh.subscribe("/world_pose",1,&RobotDriver::callback,&rd);	
-  pub = nh.advertise<geometry_msgs::Twist>("/arm_end_effect", 1);
+//  pub = nh.advertise<geometry_msgs::Twist>("/arm_end_effect", 1);
   ros::spin();
 }
 
