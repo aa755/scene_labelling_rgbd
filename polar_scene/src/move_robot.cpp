@@ -62,6 +62,7 @@ public:
   ros::Subscriber cloud_sub;
   ros::Subscriber get_pose;
   TransformG totalTransform;
+  TransformG groundTransformInv;
   //centroid c[10];
 
   RobotDriver(ros::NodeHandle &nh)
@@ -74,7 +75,7 @@ public:
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     world_pos= nh_.advertise<geometry_msgs::Twist>("/current_openrave_pos",1);
     TransformG groundTrans=readTranform("../scene_processing/globalTransform.bag");
-    TransformG groundTransformInv=groundTrans.inverse();
+    groundTransformInv=groundTrans.inverse();
     TransformG armTransform(transKinBarretBase);
     totalTransform=groundTransformInv.preMultiply(armTransform);
     totalTransform.print();
@@ -90,7 +91,8 @@ public:
   }
   
   void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) {
-      if(flag==2){     
+      if(flag==2){
+f=0;
 		cout<<"hello"<<endl;
 		unsigned int segment=1000000;
 		int num=0;
@@ -102,11 +104,11 @@ public:
 		movez=0.0;
 	       	for(unsigned int i=0;i<cloud_seg_ptr->size();i++)
 	       	{
-			if(cloud_seg_ptr->points[i].label==label && segment==1000000){
+			if(cloud_seg_ptr->points[i].label==11 && segment==1000000){
 				segment=cloud_seg_ptr->points[i].segment;
 				f=1;
 			}
-			if(cloud_seg_ptr->points[i].label==label && cloud_seg_ptr->points[i].segment==segment)
+			if(cloud_seg_ptr->points[i].label==11 && cloud_seg_ptr->points[i].segment==segment)
 			{
 				movex+=	cloud_seg_ptr->points[i].x;
 				movey+= cloud_seg_ptr->points[i].y;
@@ -126,16 +128,22 @@ public:
                 centroid.y=center_y;
                 centroid.z=center_z;
                 totalTransform.transformPointInPlace(centroid);
-                cout<<"centroid for barret"<<endl;
+                cout<<"centroid in barret"<<endl;
                 cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
                    geometry_msgs::Twist arm;
                    arm.linear.x=centroid.x;
                    arm.linear.y=centroid.y;
                    arm.linear.z=centroid.z;
                    char buf[1000];
-                   sprintf(buf,"echo %d,%d,%d > centArm; scp centArm arm@arm-stair.cs.cornell.edu:",centroid.x,centroid.y,centroid.z);
+                   sprintf(buf,"echo %f %f %f > centArm; scp centArm arm@arm-stair.cs.cornell.edu:",centroid.x,centroid.y,centroid.z);
                    system(buf);
                    //pub.publish(arm);
+                centroid.x=center_x;
+                centroid.y=center_y;
+                centroid.z=center_z;
+                groundTransformInv.transformPointInPlace(centroid);
+                cout<<"centroid in kinect"<<endl;
+                cout<<centroid.x<<","<<centroid.y<<","<<centroid.z<<endl;
 
                 }
           
@@ -218,7 +226,7 @@ public:
 		}
 
 		//compute forward motion	
-		fdx=sqrt(center_x*center_x+center_y*center_y)*1000.0*0.6;
+		fdx=sqrt(center_x*center_x+center_y*center_y)*1000.0*0.6-200.0;
 		cout<<fdx<<endl;
 		time_to_move=(int)round(((double)fdx*30.0/73.629));
 		j=0;
@@ -237,7 +245,9 @@ public:
       			cmd_vel_pub_.publish(base_cmd);
       			j++;
 			if(j>2+time_to_move)break;
-		}}
+		}
+		flag=2;
+		}
 		if(flag==0){
 			geometry_msgs::Twist base_cmd;
 			ros::Rate r(30);
@@ -281,7 +291,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   RobotDriver rd=RobotDriver(nh);
   //Instantiate the kinect image listener
-  rd.cloud_sub=nh.subscribe("/scene_labler/labeled_cloud",2,&RobotDriver::cameraCallback,&rd);
+  rd.cloud_sub=nh.subscribe("/scene_labler/labeled_cloud",1,&RobotDriver::cameraCallback,&rd);
   //rd.get_pose=nh.subscribe("/world_pose",1,&RobotDriver::callback,&rd);	
 //  pub = nh.advertise<geometry_msgs::Twist>("/arm_end_effect", 1);
   ros::spin();
