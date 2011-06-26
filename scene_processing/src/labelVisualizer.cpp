@@ -453,6 +453,7 @@ ros::Subscriber cloud_sub_;
           
     get_label_mapping(*pred_cloud_ptr, label_mapping_pred);
     get_label_mapping(*orig_cloud_ptr, label_mapping_orig);
+ready=true;
   }
   else
   {

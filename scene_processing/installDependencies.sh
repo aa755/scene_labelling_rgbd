@@ -6,9 +6,9 @@ echo "installing boost numeric bindings for gels least squares fitting and other
 make
 sudo make install
 cd ..
-sudo apt-get install svn ros-diamondback-octomap-mapping
+sudo apt-get install subversion ros-diamondback-octomap-mapping
 cd ..
-#svn co https://code.ros.org/svn/wg-ros-pkg/branches/trunk_boxturtle/stacks/semantic_mapping
+svn co https://code.ros.org/svn/wg-ros-pkg/branches/trunk_boxturtle/stacks/semantic_mapping
 rosstack find semantic_mapping # scene_labelling must be in ROS_PACKAGE_PATH
 cd semantic_mapping
 cd ANN
