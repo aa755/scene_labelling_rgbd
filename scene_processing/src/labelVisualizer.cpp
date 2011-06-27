@@ -45,6 +45,8 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
+#include <boost/foreach.hpp>
+#include <boost/tokenizer.hpp>
 #include <stdint.h>
 //#include <pcl_visualization/cloud_viewer.h>
 #include "pcl_visualization/pcl_visualizer.h"
@@ -78,7 +80,7 @@
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 typedef pcl::PointXYZRGBCamSL PointT;
-
+using namespace boost;
 dynamic_reconfigure::Server < scene_processing::labelviewerConfig > *srv;
 scene_processing::labelviewerConfig conf;
 boost::recursive_mutex global_mutex;
@@ -207,18 +209,14 @@ void spinThread() {
 
 vector <string> getTokens(std::string str)
 {
-  char * pch;
-  char  buffer[100];
-  str.copy(buffer,str.length(),0);
-  pch = strtok (buffer,",");
-  vector<string> labels;
-  while (pch != NULL)
-  {
-      labels.push_back(string(pch));
-      cerr<<"added token"<<string(pch)<<endl;
-      pch = strtok (NULL, ",");
-  }
-  return labels;    
+        char_separator<char> sep(",");
+        tokenizer<char_separator<char> > tokens(str, sep);
+       vector<string> out; 
+        BOOST_FOREACH(string t, tokens) 
+        {
+		out.push_back(t);
+        }
+	return out;
 }
 
 void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
@@ -465,7 +463,7 @@ main(int argc, char** argv) {
     }
 
     string filename=string(argv[1]).append(".labelColored.pcd");
-    writer.write<PointT > (filename, *pred_cloud_ptr, true);
+    writer.write<PointT > (filename, *cloud_colored_pred, true);
     cout << "normal kill";
     return (0);
 
