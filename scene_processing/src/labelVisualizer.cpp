@@ -45,6 +45,8 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
+#include <boost/foreach.hpp>
+#include <boost/tokenizer.hpp>
 #include <stdint.h>
 //#include <pcl_visualization/cloud_viewer.h>
 #include "pcl_visualization/pcl_visualizer.h"
@@ -57,8 +59,7 @@
 #include <pcl/features/normal_3d.h>
 
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
-#include "point_types.h"
+#include "includes/point_types.h"
 
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
@@ -79,7 +80,7 @@
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
 typedef pcl::PointXYZRGBCamSL PointT;
-
+using namespace boost;
 dynamic_reconfigure::Server < scene_processing::labelviewerConfig > *srv;
 scene_processing::labelviewerConfig conf;
 boost::recursive_mutex global_mutex;
@@ -208,26 +209,17 @@ void spinThread() {
 
 vector <string> getTokens(std::string str)
 {
-  char * pch;
-  char  buffer[100];
-  str.copy(buffer,str.length(),0);
-  pch = strtok (buffer,",");
-  vector<string> labels;
-  while (pch != NULL)
-  {
-      labels.push_back(string(pch));
-      cerr<<"added token"<<string(pch)<<endl;
-      pch = strtok (NULL, ",");
-  }
-  return labels;    
+        char_separator<char> sep(",");
+        tokenizer<char_separator<char> > tokens(str, sep);
+       vector<string> out; 
+        BOOST_FOREACH(string t, tokens) 
+        {
+		out.push_back(t);
+        }
+	return out;
 }
-bool updatePC=false;
-bool ready=false;
-
 
 void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
-    if(!ready)
-        return;
     conf = config;
     boost::recursive_mutex::scoped_lock lock(global_mutex);
     pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
@@ -367,41 +359,11 @@ void reconfig(scene_processing::labelviewerConfig & config, uint32_t level) {
 
 }
 
-int step=1;
-void cameraCallback (const sensor_msgs::PointCloud2ConstPtr& point_cloud) 
-{
-   boost::recursive_mutex::scoped_lock lock(global_mutex);
-  static int callback_counter_=0;
-  callback_counter_++;
-   ROS_INFO("Received frame from predictor");
-   if(++callback_counter_%step == 0) {
-   ROS_INFO("accepted it");
-   
-       pcl::PointCloud<PointT> cloud;
-       pcl::fromROSMsg(*point_cloud, cloud_pred);
-       cloud_orig=cloud_pred;
-   // color_handler_new.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (*point_cloud));
-       updatePC=true;
-       ready=true;
-       conf.showLabel=true;
-       //reconfig(conf,1);
-    get_label_mapping(cloud_pred, label_mapping_pred);
-    get_label_mapping(cloud_pred, label_mapping_orig);
-       
-       
-   }
-   else
-          ROS_INFO("rejected it");
-    
-}
-
 /* ---[ */
 int
 main(int argc, char** argv) {
-    ros::init(argc, argv, "labelviewer");
-      ros::NodeHandle n;
-ros::Subscriber cloud_sub_;
 
+    ros::init(argc, argv, "labelviewer");
     bool groundSelected = false;
     bool editLabel = false;
     int targetLabel;
@@ -414,7 +376,7 @@ ros::Subscriber cloud_sub_;
 
     std::ifstream labelFile;
     std::string line;
-    labelFile.open("/opt/ros/unstable/stacks/scene_processing/labels.txt");
+    labelFile.open("labels.txt");
 
     std::cerr << "you can only quit by pressing 9 when the prompt mentions... quitting in other ways will discard any newly added labels\n";
     if (labelFile.is_open()) {
@@ -433,8 +395,8 @@ ros::Subscriber cloud_sub_;
     }
 
 
-  if(argc>1)
-  {
+
+    // read from file
     if (pcl::io::loadPCDFile(argv[1], cloud_blob_orig) == -1) {
         ROS_ERROR("Couldn't read file ");
         return (-1);
@@ -445,43 +407,34 @@ ros::Subscriber cloud_sub_;
         return (-1);
     }
     ROS_INFO("Loaded %d data points from %s with the following fields: %s", (int) (cloud_blob_pred.width * cloud_blob_pred.height), argv[2], pcl::getFieldsList(cloud_blob_pred).c_str());
+
+
+
+    // Convert to the templated message type
     pcl::fromROSMsg(cloud_blob_orig, cloud_orig);
     pcl::PointCloud<PointT>::Ptr orig_cloud_ptr(new pcl::PointCloud<PointT > (cloud_orig));
 
     pcl::fromROSMsg(cloud_blob_pred, cloud_pred);
     pcl::PointCloud<PointT>::Ptr pred_cloud_ptr(new pcl::PointCloud<PointT > (cloud_pred));
-          
-    get_label_mapping(*pred_cloud_ptr, label_mapping_pred);
-    get_label_mapping(*orig_cloud_ptr, label_mapping_orig);
-  }
-  else
-  {
-          cloud_sub_=n.subscribe("/scene_labler/labeled_cloud",2,cameraCallback);
-  }
-
-    // read from file
-
-
-
-    // Convert to the templated message type
 
 
 
     std::vector<int> segmentIndices;
     // get_sorted_indices(*cloud_ptr, segmentIndices, max_segment_num);
+    get_label_mapping(*pred_cloud_ptr, label_mapping_pred);
+    get_label_mapping(*orig_cloud_ptr, label_mapping_orig);
 
-    //    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
-//    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
+    
 
 
     viewer.createViewPort(0.0, 0.0, 0.5, 1.0, viewportOrig);
     viewer.createViewPort(0.5, 0.0, 1.0, 1.0, viewportPred);
     //for (int i = 1 ; i <= max_segment_num ; i++ ){
-//    color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
+    color_handler_orig.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_orig));
 
-//    color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
-//    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
-//    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
+    color_handler_pred.reset(new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2 > (cloud_blob_pred));
+    viewer.addPointCloud(*orig_cloud_ptr, color_handler_orig, "orig", viewportOrig);
+    viewer.addPointCloud(*pred_cloud_ptr, color_handler_pred, "pred", viewportPred);
     //viewer.spinOnce(5000, true);
 
 
@@ -508,6 +461,9 @@ ros::Subscriber cloud_sub_;
             srv->updateConfig(conf);
         }
     }
+
+    string filename=string(argv[1]).append(".labelColored.pcd");
+    writer.write<PointT > (filename, *cloud_colored_pred, true);
     cout << "normal kill";
     return (0);
 

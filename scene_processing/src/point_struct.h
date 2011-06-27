@@ -1,7 +1,7 @@
 #ifndef PREGRASP_POINT_STRUCT
 #define PREGRASP_POINT_STRUCT
 
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 
 namespace pcl{
 #define  RGB_INDEX_CLUSTER_C_STRUCT union {                   \

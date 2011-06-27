@@ -3,6 +3,6 @@ all:
 
 install:
 	for header in `find boost -name '*.hpp' -o -name '*.h'`; do \
-	  install -D $$header ${PREFIX}/include/boost-numeric-bindings/$$header ; \
+	  install -D $$header ${PREFIX}/include/$$header ; \
 	  done
 	  

@@ -37,11 +37,11 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include "pcl/filters/statistical_outlier_removal.h"
 #include "pcl/point_cloud.h"
 typedef pcl::PointXYZRGBNormal PointT;
-#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
 #include<set>
 #include "pcl_visualization/pcl_visualizer.h"
 using namespace std;

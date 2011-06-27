@@ -15,7 +15,8 @@
  * - a ROS Node,
  * - a ROS listener, listening to and processing kinect data
  */
-
+#include <iostream>
+using namespace std;
 
 
 
@@ -284,7 +285,27 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
     in.sensor_origin_=getOrigin().toEigenFormat(); // does not work, on reading, reader looses these values
 }
     
-    boost::numeric::ublas::matrix<double> transformMat;
+void transformPointInPlace( PointT & in)
+{
+
+    boost::numeric::ublas::matrix<double> matIn(4, 1);
+
+        double * matrixPtr = matIn.data().begin();
+
+        matrixPtr[0] = in.x;
+        matrixPtr[1] = in.y;
+        matrixPtr[2] = in.z;
+        matrixPtr[3] = 1;
+        boost::numeric::ublas::matrix<double> matOut = prod(transformMat, matIn);
+        matrixPtr = matOut.data().begin();
+
+        in.x = matrixPtr[0];
+        in.y = matrixPtr[1];
+        in.z = matrixPtr[2];
+    
+}
+
+boost::numeric::ublas::matrix<double> transformMat;
 
     TransformG(const tf::Transform& bt)
     {
@@ -303,16 +324,127 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         VectorG orig1=getOrigin();
         VectorG orig2=other.getOrigin();
         VectorG disp=orig1.subtract(orig2);
-        if(disp.getNormSqr()>0.5) // if the camera moved by more than 40 cm
+        if (disp.getNormSqr() > 0.5) // if the camera moved by more than 40 cm
             return false;
-        double angle=34;
-        double cosTurn=fabs(getZUnitVector().dotProduct(other.getZUnitVector()));
-        std::cerr<<"turn by"<<cosTurn<<std::endl;
-        if(cosTurn<cos(angle*PI/180.0)) //if the camera turned by more than "angle"
+        double angle = 34;
+        double cosTurn = fabs(getZUnitVector().dotProduct(other.getZUnitVector()));
+        std::cerr << "turn by" << cosTurn << std::endl;
+        if (cosTurn < cos(angle * PI / 180.0)) //if the camera turned by more than "angle"
             return false;
-        
+
         return true;
-            
+
+    }
+    
+    TransformG(double *vo)
+    {
+        transformMat.resize(4, 4);
+        cout<<"here in vo constructor"<<endl;
+        for(int r=0;r<4;r++)
+        {
+            for(int c=0;c<4;c++)
+            {
+                transformMat(r,c)=vo[r*4+c];
+            }
+        }        
+    }
+
+    TransformG inverse() const{
+        double vi[16];
+        double vo[16];
+        for(int r=0;r<4;r++)
+        {
+            for(int c=0;c<4;c++)
+            {
+                vi[r*4+c]=transformMat(r,c);
+            }
+        }
+                cout<<"mat is :"<<endl;
+        print();
+
+        gluInvertMatrix(vi,vo);
+        TransformG retmat(vo);
+        cout<<"inversen is:"<<endl;
+        retmat.print();
+        return retmat;
+
+    }
+/*    
+static TransformG readTranform(const string & file) {
+          rosbag::Bag bag;
+    bag.open(file, rosbag::bagmode::Read);
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+                tf_count++;
+                final_tft = tft;
+        }
+
+        assert(tf_count == 1);
+                TransformG transG(final_tft);
+                bag.close();
+                transG.print ();
+  //              originalFrame->setCameraTrans (transG);
+                return transG;
+}
+*/
+    static bool gluInvertMatrix(const double m[16], double invOut[16]) {
+        double inv[16], det;
+        int i;
+
+        inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
+                + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
+        inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15]
+                - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
+        inv[8] = m[4] * m[9] * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15]
+                + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
+        inv[12] = -m[4] * m[9] * m[14] + m[4] * m[10] * m[13] + m[8] * m[5] * m[14]
+                - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
+        inv[1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15]
+                - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
+        inv[5] = m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15]
+                + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
+        inv[9] = -m[0] * m[9] * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15]
+                - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
+        inv[13] = m[0] * m[9] * m[14] - m[0] * m[10] * m[13] - m[8] * m[1] * m[14]
+                + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
+        inv[2] = m[1] * m[6] * m[15] - m[1] * m[7] * m[14] - m[5] * m[2] * m[15]
+                + m[5] * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6];
+        inv[6] = -m[0] * m[6] * m[15] + m[0] * m[7] * m[14] + m[4] * m[2] * m[15]
+                - m[4] * m[3] * m[14] - m[12] * m[2] * m[7] + m[12] * m[3] * m[6];
+        inv[10] = m[0] * m[5] * m[15] - m[0] * m[7] * m[13] - m[4] * m[1] * m[15]
+                + m[4] * m[3] * m[13] + m[12] * m[1] * m[7] - m[12] * m[3] * m[5];
+        inv[14] = -m[0] * m[5] * m[14] + m[0] * m[6] * m[13] + m[4] * m[1] * m[14]
+                - m[4] * m[2] * m[13] - m[12] * m[1] * m[6] + m[12] * m[2] * m[5];
+        inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10] + m[5] * m[2] * m[11]
+                - m[5] * m[3] * m[10] - m[9] * m[2] * m[7] + m[9] * m[3] * m[6];
+        inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11]
+                + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6];
+        inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11]
+                - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5];
+        inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10]
+                + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
+
+        det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+        if (det == 0)
+            return false;
+
+        det = 1.0 / det;
+
+        for (i = 0; i < 16; i++)
+            invOut[i] = inv[i] * det;
+
+        return true;
     }
     
     TransformG preMultiply(TransformG multiplicand)
@@ -399,7 +531,7 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
     }
 
     void
-    print()
+    print() const
     {
         for (int i = 0; i < 4; i++)
         {
@@ -409,6 +541,7 @@ void transformPointCloudInPlaceAndSetOrigin( pcl::PointCloud<PointT> & in)
         }
     }
 };
+
 
 btQuaternion
 getQuaternion(geometry_msgs::Quaternion q)
@@ -421,6 +554,33 @@ getVector3(geometry_msgs::Vector3 v)
 {
     return btVector3(v.x, v.y, v.z);
 
+}
+TransformG readTranform(const string & file) {
+          rosbag::Bag bag;
+    bag.open(file, rosbag::bagmode::Read);
+        rosbag::View view_tf(bag, rosbag::TopicQuery("/tf"));//, ptime - ros::Duration(0, 1), ptime + ros::Duration(0, 100000000));
+        int tf_count = 0;
+
+        tf::Transform final_tft;
+
+        BOOST_FOREACH(rosbag::MessageInstance const mtf, view_tf)
+        {
+            tf::tfMessageConstPtr tf_ptr = mtf.instantiate<tf::tfMessage > ();
+            assert(tf_ptr != NULL);
+            std::vector<geometry_msgs::TransformStamped> bt;
+            tf_ptr->get_transforms_vec(bt);
+            tf::Transform tft(getQuaternion(bt[0].transform.rotation), getVector3(bt[0].transform.translation));
+
+                tf_count++;
+                final_tft = tft;
+        }
+
+        assert(tf_count == 1);
+                TransformG transG(final_tft);
+                bag.close();
+                transG.print ();
+  //              originalFrame->setCameraTrans (transG);
+                return transG;
 }
 void appendCamIndex(pcl::PointCloud<PointT>::Ptr in,pcl::PointCloud<pcl::PointXYGRGBCam>::Ptr out,int camIndex)
 {

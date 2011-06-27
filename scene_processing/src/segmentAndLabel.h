@@ -9,7 +9,7 @@
 #include <pcl/features/normal_3d.h>
 
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include <pcl/point_types.h>
 
 #include <pcl/filters/extract_indices.h>
@@ -18,7 +18,7 @@
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
-#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
 
 typedef pcl::PointXYZRGBCamSL PointT;
 typedef pcl::PointXYGRGBCam PointCamT;
@@ -409,7 +409,7 @@ void segmentInPlace (pcl::PointCloud<PointT> &cloud){
 
 void convertType(const pcl::PointCloud<PointFrameT> &cloud,  pcl::PointCloud<PointT> &outcloud,VectorG origin,int camIndex){
 
-    cout<<"origin: "<<origin.v[0]<<" "<<origin.v[1]<<" "<<origin.v[2]<<endl;
+    cout<<"originc: "<<origin.v[0]<<" "<<origin.v[1]<<" "<<origin.v[2]<<endl;
   outcloud.header.frame_id = cloud.header.frame_id;
   outcloud.points.resize(cloud.points.size());
   for (size_t i =0 ; i<cloud.points.size(); i++)

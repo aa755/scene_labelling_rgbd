@@ -15,13 +15,13 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include "float.h"
 #include "math.h"
 #include <iostream>
 #include <fstream>
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include "pcl/filters/passthrough.h"
 #include "pcl/filters/extract_indices.h"
 #include "pcl/features/intensity_spin.h"
@@ -71,10 +71,10 @@ typedef pcl::PointXYZRGBCamSL PointT;
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include "pcl/filters/statistical_outlier_removal.h"
 #include "pcl/point_cloud.h"
-#include "CombineUtils.h"
+#include "includes/CombineUtils.h"
 using namespace std;
 
     sensor_msgs::PointCloud2Ptr cloud_out_blob(new sensor_msgs::PointCloud2());

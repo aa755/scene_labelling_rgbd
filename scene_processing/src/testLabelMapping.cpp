@@ -8,7 +8,7 @@
 #include <pcl/features/normal_3d.h>
 
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 #include <pcl/point_types.h>
 
 #include <pcl/filters/extract_indices.h>
