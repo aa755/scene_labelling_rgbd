@@ -54,6 +54,7 @@ rosbuild_add_executable (colorImage src/colorImage.cpp)
 rosbuild_add_executable (live_segment_computeFeats src/openni_listener.cpp)
 rosbuild_add_executable (combineVisibility src/VisibilityMerge.cpp)
 rosbuild_add_executable (bag2pcd src/bag2pcd.cpp)
+rosbuild_add_executable (image_and_label src/genImageAndLabelFile.cpp)
 
 
 

@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
             
         if(colorLabels&&tmp.label>0&&color_mapping[tmp.label]>0)
         {
-           tmpColor=*labelColors[color_mapping[tmp.label]]; 
+           tmpColor=*labelColors[color_mapping[tmp.label]-1]; 
         }
             
         CV_IMAGE_ELEM ( image, float, y, 3 * x ) = tmpColor.b;
