@@ -1,11 +1,11 @@
 for i in `seq 1 4` 
 do
-#  grep "Setting"  fold$i/logs/log* | tail -1
+  grep "Setting"  fold$i/logs/log* | tail -1
 #echo "fold$i "
-rm fold$i/models/*
-rm fold$i/imodels/*
-rm fold$i/logs/*
-rm fold$i/pred/*
+#rm fold$i/models/*
+#rm fold$i/imodels/*
+#rm fold$i/logs/*
+#rm fold$i/pred/*
 #  grep "^prec:"  fold$i/pred/out.c.1.e005.opt.infer.sum1 
 #  echo "train$i"
 #  grep "22"  fold$i/train$i

@@ -1,0 +1,19 @@
+code is divided into 2 main folders at top level
+
+
+1) svm-python-v204/
+2) scene_processing/
+
+1 contains the modules for running SVMStruct inference and learning. Please check the README files inside that folder for more details
+
+2 is a ROS package which contains modules for processing pointclouds eg segmentation, stitching, feature generation, live classification. For now, we only support live classification. Check the RAEDME inside that folder for instructions on running live classifier.
+
+
+INSTALLATION
+
+1) our code has many dependencies.  We have provided scripts to install many of them on 64 bit machines running Ubuntu. Run install_dependencies.sh in current folder. Also run scene_processing/installDependencies.sh to install dependencies for our ROS package
+2) Then run make in svm-python-v204/ and scene_processing/. We have tested our code only on 64 bit machines running Ubuntu. 
+
+
+If you face difficulties, contact "aa755" or "hema" at cs.cornell.edu
+

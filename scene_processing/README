@@ -1,0 +1,12 @@
+
+To run the live classifier:
+
+1) Live classifier assumes that your Kinect is at a constant height from ground and at a constant vertical orientation. If you are running it for the first time or have changed either of the 2, you need to calibrate. Do rosrun scene_processing GUITransform and rosrun dynamic_reconfigure reconfigure_gui and make the Z axis(blue) align with vertical and origin at ground level. Then select Done. This will save globalTransform.bag which contains the camera transformation and will be used by the live segmenter
+
+2) do rosrun openni_camera openni_node
+
+3) do rosrun scene_processing live_segment_computeFeats . It will publish labeled clouds the topic /scene_labler/labeled_cloud . Check the pointtype in src/includes/point_types.h . check ../polar_scene to see of we used this module to create a package which moves robot to a keyboard
+
+
+
+
