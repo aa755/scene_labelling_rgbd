@@ -1716,10 +1716,11 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv,"hi");
 //  unsigned int step = 10;
-  if(argc > 1)  step = atoi(argv[1]);
+  environment="office";
+  if(argc > 1)  environment = argv[1];
+  cout<<"using evv= "<<environment<<endl;
   ros::NodeHandle n;
   //Instantiate the kinect image listener
-  environment="office";
   if(BinFeatures)
   {
      readAllStumpValues();
