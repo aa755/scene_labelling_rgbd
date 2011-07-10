@@ -7,7 +7,7 @@
   <author>Hema Koppula and Abhishek Anand</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/scene_processing</url>
+  <url>http://pr.cs.cornell.edu/sceneunderstanding/</url>
   <depend package="pcl"/>
   <depend package="pcl_ros"/>
   <depend package="pcl_visualization"/>
