@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping
+END
+cloud_io.h
+K 25
+svn:wc:ra_dav:version-url
+V 138
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/cloud_io.h
+END
+normal_estimation_in_proc.h
+K 25
+svn:wc:ra_dav:version-url
+V 155
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/normal_estimation_in_proc.h
+END
+cloud_geometry.h
+K 25
+svn:wc:ra_dav:version-url
+V 144
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/cloud_geometry.h
+END
+octree_node.h
+K 25
+svn:wc:ra_dav:version-url
+V 141
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/octree_node.h
+END
+cloud_octree.h
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/cloud_octree.h
+END
+octree_index.h
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/octree_index.h
+END

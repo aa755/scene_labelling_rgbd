@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src
+END
+planar_fit.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/planar_fit.cpp
+END
+cloud_downsampler.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_downsampler.cpp
+END
+normal_estimation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/normal_estimation.cpp
+END
+organized_normal_estimation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 135
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/organized_normal_estimation.cpp
+END
+player_laser_log_to_msg.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/player_laser_log_to_msg.cpp
+END
+normal_estimation_in_proc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/normal_estimation_in_proc.cpp
+END

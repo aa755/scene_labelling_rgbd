@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test/cloud_geometry
+END
+test_geometry_angles.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 144
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test/cloud_geometry/test_geometry_angles.cpp
+END
+test_geometry_statistics.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test/cloud_geometry/test_geometry_statistics.cpp
+END
+test_geometry_areas.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 143
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test/cloud_geometry/test_geometry_areas.cpp
+END
+test_geometry_transform.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 147
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test/cloud_geometry/test_geometry_transform.cpp
+END

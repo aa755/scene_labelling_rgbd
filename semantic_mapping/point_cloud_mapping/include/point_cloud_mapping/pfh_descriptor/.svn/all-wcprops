@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/pfh_descriptor
+END
+pfh.h
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/pfh_descriptor/pfh.h
+END
+fpfh.h
+K 25
+svn:wc:ra_dav:version-url
+V 149
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/pfh_descriptor/fpfh.h
+END

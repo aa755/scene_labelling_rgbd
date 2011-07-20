@@ -1,0 +1,40 @@
+10
+
+dir
+50460
+https://code.ros.org/svn/wg-ros-pkg/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/test
+https://code.ros.org/svn/wg-ros-pkg
+
+
+
+2009-09-25T04:10:20.287942Z
+24267
+gerkey
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+7275ad9f-c29b-430a-bdc5-66f4b3af1622
+
+cloud_geometry
+dir
+
+sample_consensus
+dir
+
+cloud_kdtree
+dir
+
+cloud_io
+dir
+

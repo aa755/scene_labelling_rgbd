@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry
+END
+transforms.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/transforms.cpp
+END
+projections.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/projections.cpp
+END
+nearest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/nearest.cpp
+END
+angles.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/angles.cpp
+END
+intersections.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 136
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/intersections.cpp
+END
+point.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/point.cpp
+END
+statistics.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/statistics.cpp
+END
+areas.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/areas.cpp
+END
+distances.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/cloud_geometry/distances.cpp
+END

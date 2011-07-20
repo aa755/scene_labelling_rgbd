@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 144
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus
+END
+rransac.h
+K 25
+svn:wc:ra_dav:version-url
+V 154
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/rransac.h
+END
+sac_model_parallel_lines.h
+K 25
+svn:wc:ra_dav:version-url
+V 171
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_parallel_lines.h
+END
+sac_model_sphere.h
+K 25
+svn:wc:ra_dav:version-url
+V 163
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_sphere.h
+END
+sac_model_line.h
+K 25
+svn:wc:ra_dav:version-url
+V 161
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_line.h
+END
+sac_model_oriented_plane.h
+K 25
+svn:wc:ra_dav:version-url
+V 171
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_oriented_plane.h
+END
+mlesac.h
+K 25
+svn:wc:ra_dav:version-url
+V 153
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/mlesac.h
+END
+lmeds.h
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/lmeds.h
+END
+rmsac.h
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/rmsac.h
+END
+sac_model_plane.h
+K 25
+svn:wc:ra_dav:version-url
+V 162
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_plane.h
+END
+sac.h
+K 25
+svn:wc:ra_dav:version-url
+V 150
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac.h
+END
+sac_model_circle.h
+K 25
+svn:wc:ra_dav:version-url
+V 163
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_circle.h
+END
+ransac.h
+K 25
+svn:wc:ra_dav:version-url
+V 153
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/ransac.h
+END
+sac_model_normal_plane.h
+K 25
+svn:wc:ra_dav:version-url
+V 169
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_normal_plane.h
+END
+sac_model_cylinder.h
+K 25
+svn:wc:ra_dav:version-url
+V 165
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_cylinder.h
+END
+msac.h
+K 25
+svn:wc:ra_dav:version-url
+V 151
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/msac.h
+END
+model_types.h
+K 25
+svn:wc:ra_dav:version-url
+V 158
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/model_types.h
+END
+sac_model_oriented_line.h
+K 25
+svn:wc:ra_dav:version-url
+V 170
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model_oriented_line.h
+END
+sac_model.h
+K 25
+svn:wc:ra_dav:version-url
+V 156
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/include/point_cloud_mapping/sample_consensus/sac_model.h
+END

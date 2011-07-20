@@ -8,9 +8,9 @@ sudo make install
 cd ..
 sudo apt-get install subversion ros-diamondback-octomap-mapping ros-diamondback-perception-pcl ros-diamondback-perception-pcl-addons
 cd ..
-svn co https://code.ros.org/svn/wg-ros-pkg/branches/trunk_boxturtle/stacks/semantic_mapping
-rosstack find semantic_mapping # scene_labelling must be in ROS_PACKAGE_PATH
-cd semantic_mapping
+#svn co https://code.ros.org/svn/wg-ros-pkg/branches/trunk_boxturtle/stacks/semantic_mapping
+#rosstack find semantic_mapping # scene_labelling must be in ROS_PACKAGE_PATH
+cd ../semantic_mapping
 cd ANN
 make
 cd ../cminpack

@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus
+END
+sac_model_oriented_plane.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 149
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_oriented_plane.cpp
+END
+mlesac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/mlesac.cpp
+END
+lmeds.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/lmeds.cpp
+END
+sac_model_plane.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 140
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_plane.cpp
+END
+rmsac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/rmsac.cpp
+END
+sac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac.cpp
+END
+sac_model_circle.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 141
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_circle.cpp
+END
+ransac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/ransac.cpp
+END
+sac_model_normal_plane.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 147
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_normal_plane.cpp
+END
+sac_model_cylinder.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 143
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_cylinder.cpp
+END
+msac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/msac.cpp
+END
+sac_model_oriented_line.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_oriented_line.cpp
+END
+sac_model.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model.cpp
+END
+rransac.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/rransac.cpp
+END
+sac_model_parallel_lines.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 149
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_parallel_lines.cpp
+END
+sac_model_sphere.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 141
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_sphere.cpp
+END
+sac_model_line.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/wg-ros-pkg/!svn/ver/32274/branches/trunk_boxturtle/stacks/semantic_mapping/point_cloud_mapping/src/sample_consensus/sac_model_line.cpp
+END
