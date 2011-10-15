@@ -1,8 +1,8 @@
 #include "pcl/io/pcd_io.h"
-#include "pcl/point_types.h"
+#include "includes/point_types.h"
 
 //typedef pcl::PointXYGRGBCam PointT;
-typedef pcl::PointXYZRGBCamSL PointT;
+typedef pcl::PointXYZRGBCamSL  PointT;
 
 int
   main (int argc, char** argv)
@@ -23,7 +23,7 @@ int
   std::string fn (argv[1]);
   fn = fn.substr(0,fn.find('.'));
   fn = fn+ "_ascii.pcd";
-  pcl::io::savePCDFile (fn, cloud, false);
+  pcl::io::savePCDFileASCII (fn, cloud);
   ROS_INFO ("Saved %d data points to pcd file.", (int)cloud.points.size ());
 
   return (0);

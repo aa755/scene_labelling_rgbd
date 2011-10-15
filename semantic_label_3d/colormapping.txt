@@ -1,0 +1,12 @@
+red	monitor
+green tableTop
+blue keyboard
+yellow cpuFront
+cyan chairBackRest 
+magenta chairBase
+darkRed paper
+darkGreen chairBack
+darkBlue tableLeg
+darkYellow floor/ printer
+darkCyan tableDrawer
+darkMagenta wall

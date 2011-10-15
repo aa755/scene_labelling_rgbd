@@ -10,6 +10,7 @@
   <url>http://ros.org/wiki/scene_generic</url>
   <depend package="pcl"/>
   <depend package="pcl_ros"/>
+  <!--depend package="scene_processing"/-->
 
 
 </package>

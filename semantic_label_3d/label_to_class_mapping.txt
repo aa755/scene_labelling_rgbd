@@ -1,0 +1,17 @@
+0	wall
+1	tableTop
+2	floor
+3	monitor
+4	chairBackRest
+5	chairBase
+6	tableLeg
+7	keyboard
+8	tableDrawer
+9	cpuFront
+10	chairBack
+11	cpuSide
+12	cpuTop
+13	paper
+14	printerSide
+15	printerFront
+16	book

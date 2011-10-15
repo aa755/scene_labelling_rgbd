@@ -4,7 +4,7 @@
 $outFile= shift;
 $dir = shift;
 $labelmapfile = "./$dir/labelmap.txt";
-$labelsfile = '../scene_processing/labels.txt';
+$labelsfile = '../../scene_processing/labels.txt';
 
 %lmap=();
 open(F,$labelmapfile);
