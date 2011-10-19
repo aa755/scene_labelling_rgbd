@@ -4,7 +4,7 @@
      scene_processing
 
   </description>
-  <author> <a href="http://www.cs.cornell.edu/~aa755/">Abhishek Anand</a>, Hema Koppula, Dave Kotfis </author>
+  <author> Abhishek Anand, Hema Koppula, Dave Kotfis </author>
   <review status="unreviewed" notes=""/>
   <url>http://pr.cs.cornell.edu/sceneunderstanding/</url>
   <depend package="pcl_ros"/>
