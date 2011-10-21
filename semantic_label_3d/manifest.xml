@@ -1,7 +1,8 @@
 <package>
   <description brief="semantic_label_3d">
 
-     a package which labels a kinect pointcloud with semantic labels. see url for more details
+     This labels a kinect pointcloud with semantic labels like wall, chair, table, computer, monitor, printer etc.
+     It also contains tools to segment , label and transform pointclouds. See url for more details
 
   </description>
   <author> Abhishek Anand, Hema Koppula, Dave Kotfis </author>
