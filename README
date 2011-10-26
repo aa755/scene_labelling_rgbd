@@ -12,7 +12,7 @@ code is divided into 2 main folders at top level
 INSTALLATION
 
 1) our code has many dependencies.  We have provided scripts to install many of them on 64 bit machines running Ubuntu. Run install_dependencies.sh in current folder. Also run semantic_label_3d/installDependencies.sh to install dependencies for our ROS package .(only tested with Diamondback)
-2) Then run make in svm-python-v204/ and scene_processing/. We have tested our code only on 64 bit machines running Ubuntu. 
+2) Then run make in svm-python-v204/ and semantic_label_3d/. We have tested our code only on 64 bit machines running Ubuntu. 
 
 
 If you face difficulties, contact "aa755" or "hema" at cs.cornell.edu
