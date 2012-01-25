@@ -27,11 +27,11 @@ typedef pcl::PointXYZRGBCamSL PointT;
 #include "includes/CombineUtils.h"
 #include<boost/numeric/ublas/matrix.hpp>
 #include<boost/numeric/ublas/io.hpp>
-#include<boost/numeric/bindings/traits/ublas_matrix.hpp>
-#include<boost/numeric/bindings/lapack/gels.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
-namespace ublas = boost::numeric::ublas;
-namespace lapack= boost::numeric::bindings::lapack;
+//#include<boost/numeric/bindings/traits/ublas_matrix.hpp>
+//#include<boost/numeric/bindings/lapack/gels.hpp>
+//#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
+//namespace ublas = boost::numeric::ublas;
+//namespace lapack= boost::numeric::bindings::lapack;
 #include "pcl_visualization/pcl_visualizer.h"
 typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
 typedef ColorHandler::Ptr ColorHandlerPtr;
