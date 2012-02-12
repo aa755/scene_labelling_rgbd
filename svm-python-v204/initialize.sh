@@ -16,25 +16,20 @@ cat header_data_edgefeats.txt temp_data_edgefeats.b.txt > data_edgefeats.b.txt
 rm temp_data_* 
 rm header_data_*
 perl format.pl data_nodefeats.b.txt data_edgefeats.b.txt labelmap.txt 1 
-folderName=`pwd | cut -f 7 -d '/'`
-echo "folder is $folderName"
+#folderName=`pwd | cut -f 7 -d '/'`
+#echo "folder is $folderName"
 
 for i in `seq 1 4` 
 do
 
+mkdir fold$i
 mkdir fold$i/pred/
 mkdir fold$i/logs/
 mkdir fold$i/models/
 mkdir fold$i/imodels/
-rm fold$i/pred/*
-rm fold$i/logs/*
-rm fold$i/models/*
-rm fold$i/imodels/*
 
-sed s/officedata-new-singles-new-new-new-new-new/$folderName/ fold$i/train$i >temp
-
-mv temp fold$i/train$i
-
-sed s/officedata-new-singles-new-new-new-new-new/$folderName/ fold$i/test$i >temp
-mv temp fold$i/test$i
+#sed s/officedata/$folderName/ fold$i/train$i >temp
+#mv temp fold$i/train$i
+#sed s/officedata/$folderName/ fold$i/test$i >temp
+#mv temp fold$i/test$i
 done
