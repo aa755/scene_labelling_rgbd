@@ -16,7 +16,7 @@ INSTALLATION
 
 
 We have tested our code only on 64 bit machines running Ubuntu and on diamondback release of ROS.
-It has some issues with the latest electric distribution(which is mostly due to bugs in the ros distribution)
+It has some issues with the latest electric distribution(which is due to change in pcd format ... PCD files written by diamondback version cannot be read by electric version)
 
 
 If you face difficulties, contact "hema" or "aa755" at cs.cornell.edu
